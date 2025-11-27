@@ -1482,6 +1482,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a365d',
     paddingTop: Platform.OS === 'ios' ? 44 : 25,
+    maxWidth: '100vw',
+    alignSelf: 'center',
   },
   
   // Login Screen
