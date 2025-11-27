@@ -161,7 +161,27 @@ const LoginForm = ({
         </View>
         <Text style={styles.title}>BPay</Text>
         <Text style={styles.subtitle}>Crypto to Cash Trading</Text>
-        <Text style={styles.regions}>NG Nigeria • KE Kenya</Text>
+        <View style={styles.flagsContainer}>
+          <View style={styles.flagItem}>
+            <View style={[styles.flag, styles.nigeriaFlag]}>
+              <View style={styles.nigeriaGreen} />
+              <View style={styles.nigeriaWhite} />
+              <View style={styles.nigeriaGreen} />
+            </View>
+            <Text style={styles.flagText}>Nigeria</Text>
+          </View>
+          <Text style={styles.flagSeparator}>•</Text>
+          <View style={styles.flagItem}>
+            <View style={[styles.flag, styles.kenyaFlag]}>
+              <View style={styles.kenyaBlack} />
+              <View style={styles.kenyaRed} />
+              <View style={styles.kenyaWhite} />
+              <View style={styles.kenyaRed} />
+              <View style={styles.kenyaGreen} />
+            </View>
+            <Text style={styles.flagText}>Kenya</Text>
+          </View>
+        </View>
 
       </View>
       
@@ -246,12 +266,26 @@ const LoginForm = ({
           <View style={styles.socialLogin}>
             <Text style={styles.orText}>Or continue with</Text>
             <View style={styles.socialButtons}>
-              <TouchableOpacity style={styles.socialButton}>
-                <Text style={styles.socialIcon}>G</Text>
+              <TouchableOpacity 
+                style={styles.socialButton}
+                onPress={() => {
+                  Alert.alert('Google Sign In', 'Google authentication will be available soon. For now, please use email registration.');
+                }}
+              >
+                <View style={styles.googleIcon}>
+                  <Text style={styles.googleG}>G</Text>
+                </View>
                 <Text style={styles.socialText}>Google</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <Text style={styles.socialIcon}></Text>
+              <TouchableOpacity 
+                style={styles.socialButton}
+                onPress={() => {
+                  Alert.alert('Apple Sign In', 'Apple authentication will be available soon. For now, please use email registration.');
+                }}
+              >
+                <View style={styles.appleIcon}>
+                  <Text style={styles.appleSymbol}></Text>
+                </View>
                 <Text style={styles.socialText}>Apple</Text>
               </TouchableOpacity>
             </View>
@@ -1699,6 +1733,95 @@ const styles = StyleSheet.create({
   },
   socialText: {
     color: 'white',
+    fontSize: 14,
+  },
+  
+  // Flag styles
+  flagsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  flagItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  flag: {
+    width: 24,
+    height: 16,
+    borderRadius: 2,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  flagText: {
+    color: '#94a3b8',
+    fontSize: 12,
+  },
+  flagSeparator: {
+    color: '#94a3b8',
+    fontSize: 16,
+  },
+  
+  // Nigeria flag
+  nigeriaFlag: {
+    flexDirection: 'row',
+  },
+  nigeriaGreen: {
+    flex: 1,
+    backgroundColor: '#008751',
+  },
+  nigeriaWhite: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  
+  // Kenya flag
+  kenyaFlag: {
+    flexDirection: 'column',
+  },
+  kenyaBlack: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  kenyaRed: {
+    flex: 1,
+    backgroundColor: '#ce1126',
+  },
+  kenyaWhite: {
+    flex: 0.5,
+    backgroundColor: '#ffffff',
+  },
+  kenyaGreen: {
+    flex: 1,
+    backgroundColor: '#007a3d',
+  },
+  
+  // Enhanced social icons
+  googleIcon: {
+    width: 20,
+    height: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  googleG: {
+    color: '#4285f4',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  appleIcon: {
+    width: 20,
+    height: 20,
+    backgroundColor: '#000000',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  appleSymbol: {
+    color: '#ffffff',
     fontSize: 14,
   },
   
