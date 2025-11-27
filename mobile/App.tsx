@@ -456,6 +456,9 @@ const useAppContext = () => {
 function AppContent() {
   const { state, dispatch } = useAppContext();
   const [screen, setScreen] = useState('login');
+  const [darkMode, setDarkMode] = useState(false);
+  const [language, setLanguage] = useState('en');
+  const [detectedCountry, setDetectedCountry] = useState('NG');
   const [isSignup, setIsSignup] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -488,9 +491,6 @@ function AppContent() {
   const [tradeType, setTradeType] = useState('buy');
   const [showSideMenu, setShowSideMenu] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [darkMode, setDarkMode] = useState(false);
-  const [language, setLanguage] = useState('en');
-  const [detectedCountry, setDetectedCountry] = useState('NG');
 
   const fetchRates = async (showLoading = false) => {
     if (!state.isOnline && offlineRates) {
