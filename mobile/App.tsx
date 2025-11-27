@@ -231,13 +231,12 @@ const LoginForm = ({
 
         
         <TouchableOpacity 
-          style={[styles.loginButton, (loading || isLocked) && styles.disabledButton]} 
+          style={[styles.loginButton, loading && styles.disabledButton]} 
           onPress={handleAuth}
-          disabled={loading || isLocked}
+          disabled={loading}
         >
           <Text style={styles.loginButtonText}>
-            {isLocked ? `Locked (${loginAttempts}/3 attempts)` :
-              loading ? 'Please wait...' : 
+            {loading ? 'Please wait...' : 
               (isForgotPassword ? 'Send Reset Code' : 
                 (isSignup ? 'Create Account' : 'Login'))}
           </Text>
@@ -415,8 +414,6 @@ function AppContent() {
   const [tradeType, setTradeType] = useState('buy');
   const [showSideMenu, setShowSideMenu] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [loginAttempts, setLoginAttempts] = useState(0);
-  const [isLocked, setIsLocked] = useState(false);
 
   const fetchRates = async (showLoading = false) => {
     if (!state.isOnline && offlineRates) {
@@ -761,20 +758,8 @@ function AppContent() {
           setShowVerification(true);
           Alert.alert('Verification Code Sent', `Your code is: ${code}\n(In production, this would be sent via SMS/Email)`);
         } else {
-          const newAttempts = loginAttempts + 1;
-          setLoginAttempts(newAttempts);
           setLoading(false);
-          
-          if (newAttempts >= 3) {
-            setIsLocked(true);
-            Alert.alert('Account Locked', 'Too many failed attempts. Please try again in 15 minutes.');
-            setTimeout(() => {
-              setIsLocked(false);
-              setLoginAttempts(0);
-            }, 900000); // 15 minutes
-          } else {
-            Alert.alert('Error', `Invalid email or password. ${3 - newAttempts} attempts remaining.`);
-          }
+          Alert.alert('Error', 'Invalid email or password');
         }
       }
     }, 1500);
