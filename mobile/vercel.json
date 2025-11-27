@@ -1,6 +1,5 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "expo export:web",
+  "buildCommand": "npx expo export:web",
   "outputDirectory": "web-build",
   "devCommand": "expo start --web",
   "installCommand": "npm install",
