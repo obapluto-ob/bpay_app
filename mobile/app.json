@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "BPay Mobile",
+    "slug": "bpay-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/5782897843587714011_120.jpg",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/5782897843587714011_120.jpg",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a365d"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/5782897843587714011_120.jpg",
+        "backgroundColor": "#1a365d"
+      }
+    },
+    "web": {
+      "favicon": "./assets/images/5782897843587714011_120.jpg",
+      "bundler": "metro"
+    }
+  }
+}

@@ -2,10 +2,36 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { Pool } = require('pg');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Auto-migrate database on startup
+async function initDatabase() {
+  if (process.env.NODE_ENV === 'production') {
+    try {
+      console.log('Initializing database...');
+      const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+      });
+      
+      const schemaPath = path.join(__dirname, 'src/database/schema.sql');
+      if (fs.existsSync(schemaPath)) {
+        const schema = fs.readFileSync(schemaPath, 'utf8');
+        await pool.query(schema);
+        console.log('Database initialized successfully!');
+      }
+      await pool.end();
+    } catch (error) {
+      console.log('Database already exists or error:', error.message);
+    }
+  }
+}
 
 // Security middleware
 app.use(helmet());
@@ -47,6 +73,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`BPay API server running on port ${PORT}`);
+  await initDatabase();
 });
