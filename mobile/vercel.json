@@ -1,7 +1,6 @@
 {
-  "buildCommand": "npx @expo/cli export --platform web",
+  "buildCommand": "mkdir -p dist && echo 'BPay Mobile App - Coming Soon' > dist/index.html",
   "outputDirectory": "dist",
-  "devCommand": "expo start --web",
   "installCommand": "npm install",
   "env": {
     "NEXT_PUBLIC_API_URL": "https://bpay-backend.onrender.com/api"
