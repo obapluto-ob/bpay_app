@@ -1,0 +1,43 @@
+/* Custom scrollbar for mobile-like experience */
+::-webkit-scrollbar {
+  width: 2px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Hide scrollbar for Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Mobile-like body styling */
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Remove default margins and paddings */
+* {
+  box-sizing: border-box;
+}
+
+/* Mobile-like container */
+#root {
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+}

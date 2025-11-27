@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, useReducer } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, TextInput, Alert, Image, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+
+// Import web styles for mobile-like scrollbar
+if (Platform.OS === 'web') {
+  require('./web-styles.css');
+}
 // NetInfo import removed - will handle network status differently
 
 // Enhanced storage with error handling
