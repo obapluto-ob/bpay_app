@@ -166,6 +166,24 @@ const LoginForm = ({
         </View>
         <Text style={styles.title}>BPay</Text>
         <Text style={styles.subtitle}>Crypto to Cash Trading</Text>
+        <View style={styles.controlsRow}>
+          <TouchableOpacity 
+            style={styles.controlButton}
+            onPress={() => setDarkMode(!darkMode)}
+          >
+            <Text style={styles.controlIcon}>{darkMode ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.controlButton}
+            onPress={() => setLanguage(language === 'en' ? 'local' : 'en')}
+          >
+            <Text style={styles.controlText}>{language === 'en' ? 'EN' : 'NG'}</Text>
+          </TouchableOpacity>
+          <View style={styles.locationIndicator}>
+            <Text style={styles.locationText}>📍 {detectedCountry === 'NG' ? 'Nigeria' : 'Kenya'}</Text>
+          </View>
+        </View>
+        
         <View style={styles.flagsContainer}>
           <View style={styles.flagItem}>
             <View style={[styles.flag, styles.nigeriaFlag]}>
@@ -268,6 +286,21 @@ const LoginForm = ({
                 (isSignup ? 'Create Account' : 'Login'))}
           </Text>
         </TouchableOpacity>
+        
+        {!isSignup && !isForgotPassword && (
+          <TouchableOpacity 
+            style={styles.biometricLogin}
+            onPress={() => {
+              Alert.alert('Biometric Login', 'Use your fingerprint or face to login securely', [
+                {text: 'Use Biometric', onPress: () => Alert.alert('Demo', 'Biometric authentication would work here')},
+                {text: 'Cancel', style: 'cancel'}
+              ]);
+            }}
+          >
+            <Text style={styles.biometricIcon}>🔒</Text>
+            <Text style={styles.biometricText}>Use Fingerprint</Text>
+          </TouchableOpacity>
+        )}
         
         {!isSignup && !isForgotPassword && (
           <View style={styles.socialLogin}>
@@ -455,6 +488,9 @@ function AppContent() {
   const [tradeType, setTradeType] = useState('buy');
   const [showSideMenu, setShowSideMenu] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
+  const [language, setLanguage] = useState('en');
+  const [detectedCountry, setDetectedCountry] = useState('NG');
 
   const fetchRates = async (showLoading = false) => {
     if (!state.isOnline && offlineRates) {
@@ -1493,6 +1529,12 @@ function AppContent() {
     <View style={styles.app}>
       <OfflineBanner isOnline={state.isOnline} />
       <ErrorDisplay />
+      {/* Live Crypto Ticker */}
+      <View style={styles.cryptoTicker}>
+        <Text style={styles.tickerText}>
+          BTC: ${rates.BTC.NGN.toLocaleString()} • ETH: ${rates.ETH.NGN.toLocaleString()} • USDT: ${rates.USDT.NGN.toLocaleString()}
+        </Text>
+      </View>
       {!isLoggedIn ? (
         showVerification ? (
           <VerificationForm 
@@ -1872,6 +1914,77 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: 'white',
     fontWeight: 'bold',
+  },
+  
+  // Crypto Ticker
+  cryptoTicker: {
+    backgroundColor: 'rgba(245, 158, 11, 0.9)',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    overflow: 'hidden',
+  },
+  tickerText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  
+  // Controls Row
+  controlsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  controlButton: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  controlIcon: {
+    fontSize: 14,
+  },
+  controlText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  locationIndicator: {
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  locationText: {
+    color: '#10b981',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  
+  // Biometric Login
+  biometricLogin: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginBottom: 16,
+    gap: 8,
+  },
+  biometricIcon: {
+    fontSize: 16,
+  },
+  biometricText: {
+    color: '#10b981',
+    fontSize: 14,
+    fontWeight: '600',
   },
   disabledButton: {
     opacity: 0.6,
