@@ -180,8 +180,10 @@ const LoginForm = ({
             <View style={[styles.flag, styles.kenyaFlag]}>
               <View style={styles.kenyaBlack} />
               <View style={styles.kenyaRed} />
-              <View style={styles.kenyaWhite} />
-              <View style={styles.kenyaRed} />
+              <View style={styles.kenyaWhite}>
+                <View style={styles.kenyaShield} />
+              </View>
+              <View style={styles.kenyaRedBottom} />
               <View style={styles.kenyaGreen} />
             </View>
             <Text style={styles.flagText}>Kenya</Text>
@@ -289,7 +291,7 @@ const LoginForm = ({
                 }}
               >
                 <View style={styles.appleIcon}>
-                  <Text style={styles.appleSymbol}></Text>
+                  <Text style={styles.appleSymbol}></Text>
                 </View>
                 <Text style={styles.socialText}>Apple</Text>
               </TouchableOpacity>
@@ -1785,22 +1787,38 @@ const styles = StyleSheet.create({
   // Kenya flag
   kenyaFlag: {
     flexDirection: 'column',
+    position: 'relative',
   },
   kenyaBlack: {
-    flex: 1,
+    height: 3,
     backgroundColor: '#000000',
   },
   kenyaRed: {
-    flex: 1,
+    height: 3,
     backgroundColor: '#ce1126',
   },
   kenyaWhite: {
-    flex: 0.5,
+    height: 4,
     backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  kenyaRedBottom: {
+    height: 3,
+    backgroundColor: '#ce1126',
   },
   kenyaGreen: {
-    flex: 1,
+    height: 3,
     backgroundColor: '#007a3d',
+  },
+  kenyaShield: {
+    position: 'absolute',
+    top: 6,
+    left: 8,
+    width: 8,
+    height: 4,
+    backgroundColor: '#8B4513',
+    borderRadius: 1,
   },
   
   // Enhanced social icons
@@ -1811,11 +1829,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   googleG: {
     color: '#4285f4',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
+    fontFamily: 'Arial',
   },
   appleIcon: {
     width: 20,
@@ -1827,7 +1847,8 @@ const styles = StyleSheet.create({
   },
   appleSymbol: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   
   // Floating Action Button
