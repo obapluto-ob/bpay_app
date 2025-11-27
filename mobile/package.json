@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build": "expo export --platform web",
-    "build:static": "mkdir -p build && cp -r public/* build/ && echo 'Building static version...'"
+    "build:static": "mkdir -p build && cp -r public/* build/ && echo 'Building static version...'",
     "install-deps": "npm install"
   },
   "dependencies": {
