@@ -1,0 +1,16 @@
+{
+  "name": "BPay - Easy Bitcoin Payments",
+  "short_name": "BPay",
+  "description": "Trade crypto with Naira and Kenyan Shillings",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f97316",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "/5782897843587714011_120.jpg",
+      "sizes": "120x120",
+      "type": "image/jpeg"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+node_modules/
+.env
+*.log
+.DS_Store
+.expo/
+dist/
+build/
+*.tgz
+.npm
+.eslintcache
+.vscode/
+.idea/
