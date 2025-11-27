@@ -228,25 +228,7 @@ const LoginForm = ({
           </View>
         )}
         
-        {!isSignup && !isForgotPassword && (
-          <View style={styles.optionsRow}>
-            <TouchableOpacity 
-              style={styles.checkboxRow}
-              onPress={() => setRememberMe(!rememberMe)}
-            >
-              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                {rememberMe && <Text style={styles.checkmark}>✓</Text>}
-              </View>
-              <Text style={styles.checkboxText}>Remember Me</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.biometricButton}
-              onPress={() => Alert.alert('Biometric Login', 'Biometric authentication available on supported devices')}
-            >
-              <Text style={styles.biometricIcon}>🔒</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+
         
         <TouchableOpacity 
           style={[styles.loginButton, (loading || isLocked) && styles.disabledButton]} 
@@ -433,7 +415,6 @@ function AppContent() {
   const [tradeType, setTradeType] = useState('buy');
   const [showSideMenu, setShowSideMenu] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [rememberMe, setRememberMe] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
 
@@ -1703,47 +1684,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  optionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderColor: '#cbd5e1',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: '#f59e0b',
-    borderColor: '#f59e0b',
-  },
-  checkmark: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  checkboxText: {
-    color: '#cbd5e1',
-    fontSize: 14,
-  },
-  biometricButton: {
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-    padding: 8,
-    borderRadius: 8,
-  },
-  biometricIcon: {
-    fontSize: 16,
-  },
+
   socialLogin: {
     marginTop: 20,
     alignItems: 'center',

@@ -1,10 +1,7 @@
 // Service Worker for PWA
 const CACHE_NAME = 'bpay-mobile-v1';
 const urlsToCache = [
-  '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/assets/images/5782897843587714011_120.jpg'
+  '/'
 ];
 
 self.addEventListener('install', (event) => {
