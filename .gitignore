@@ -10,3 +10,7 @@ build/
 .eslintcache
 .vscode/
 .idea/
+
+# Next.js
+.next/
+out/
