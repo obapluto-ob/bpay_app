@@ -9,14 +9,14 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/assets/images/5782897843587714011_120.jpg",
+      "src": "./assets/images/5782897843587714011_120.jpg",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/jpeg"
     },
     {
-      "src": "/assets/images/5782897843587714011_120.jpg", 
+      "src": "./assets/images/5782897843587714011_120.jpg", 
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/jpeg"
     }
   ]
 }

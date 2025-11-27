@@ -162,14 +162,7 @@ const LoginForm = ({
         <Text style={styles.title}>BPay</Text>
         <Text style={styles.subtitle}>Crypto to Cash Trading</Text>
         <Text style={styles.regions}>NG Nigeria • KE Kenya</Text>
-        <View style={styles.featureRow}>
-          <TouchableOpacity style={styles.themeToggle} onPress={() => setDarkMode(!darkMode)}>
-            <Text style={styles.themeIcon}>{darkMode ? '☀️' : '🌙'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.langToggle} onPress={() => setLanguage(language === 'en' ? 'local' : 'en')}>
-            <Text style={styles.langText}>{language === 'en' ? 'EN' : 'LOCAL'}</Text>
-          </TouchableOpacity>
-        </View>
+
       </View>
       
       <View style={styles.loginForm}>
@@ -440,13 +433,9 @@ function AppContent() {
   const [tradeType, setTradeType] = useState('buy');
   const [showSideMenu, setShowSideMenu] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [darkMode, setDarkMode] = useState(false);
-  const [language, setLanguage] = useState('en');
   const [rememberMe, setRememberMe] = useState(false);
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const fetchRates = async (showLoading = false) => {
     if (!state.isOnline && offlineRates) {
