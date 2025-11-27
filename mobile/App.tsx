@@ -161,7 +161,15 @@ const LoginForm = ({
         </View>
         <Text style={styles.title}>BPay</Text>
         <Text style={styles.subtitle}>Crypto to Cash Trading</Text>
-        <Text style={styles.regions}>🇳🇬 Nigeria • 🇰🇪 Kenya</Text>
+        <Text style={styles.regions}>NG Nigeria • KE Kenya</Text>
+        <View style={styles.featureRow}>
+          <TouchableOpacity style={styles.themeToggle} onPress={() => setDarkMode(!darkMode)}>
+            <Text style={styles.themeIcon}>{darkMode ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.langToggle} onPress={() => setLanguage(language === 'en' ? 'local' : 'en')}>
+            <Text style={styles.langText}>{language === 'en' ? 'EN' : 'LOCAL'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       
       <View style={styles.loginForm}>
@@ -203,7 +211,7 @@ const LoginForm = ({
               style={styles.eyeButton}
               onPress={() => setShowPassword(!showPassword)}
             >
-              <Text style={styles.eyeText}>{showPassword ? '👁️' : '🙈'}</Text>
+              <Text style={styles.eyeIcon}>{showPassword ? '👁' : '👁‍🗨'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -227,17 +235,54 @@ const LoginForm = ({
           </View>
         )}
         
+        {!isSignup && !isForgotPassword && (
+          <View style={styles.optionsRow}>
+            <TouchableOpacity 
+              style={styles.checkboxRow}
+              onPress={() => setRememberMe(!rememberMe)}
+            >
+              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                {rememberMe && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.checkboxText}>Remember Me</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.biometricButton}
+              onPress={() => Alert.alert('Biometric Login', 'Biometric authentication available on supported devices')}
+            >
+              <Text style={styles.biometricIcon}>🔒</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
         <TouchableOpacity 
-          style={[styles.loginButton, loading && styles.disabledButton]} 
+          style={[styles.loginButton, (loading || isLocked) && styles.disabledButton]} 
           onPress={handleAuth}
-          disabled={loading}
+          disabled={loading || isLocked}
         >
           <Text style={styles.loginButtonText}>
-            {loading ? 'Please wait...' : 
+            {isLocked ? `Locked (${loginAttempts}/3 attempts)` :
+              loading ? 'Please wait...' : 
               (isForgotPassword ? 'Send Reset Code' : 
                 (isSignup ? 'Create Account' : 'Login'))}
           </Text>
         </TouchableOpacity>
+        
+        {!isSignup && !isForgotPassword && (
+          <View style={styles.socialLogin}>
+            <Text style={styles.orText}>Or continue with</Text>
+            <View style={styles.socialButtons}>
+              <TouchableOpacity style={styles.socialButton}>
+                <Text style={styles.socialIcon}>G</Text>
+                <Text style={styles.socialText}>Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.socialButton}>
+                <Text style={styles.socialIcon}></Text>
+                <Text style={styles.socialText}>Apple</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
         
         {!isForgotPassword && !isSignup && (
           <TouchableOpacity 
@@ -395,6 +440,13 @@ function AppContent() {
   const [tradeType, setTradeType] = useState('buy');
   const [showSideMenu, setShowSideMenu] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
+  const [language, setLanguage] = useState('en');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const fetchRates = async (showLoading = false) => {
     if (!state.isOnline && offlineRates) {
@@ -739,8 +791,20 @@ function AppContent() {
           setShowVerification(true);
           Alert.alert('Verification Code Sent', `Your code is: ${code}\n(In production, this would be sent via SMS/Email)`);
         } else {
+          const newAttempts = loginAttempts + 1;
+          setLoginAttempts(newAttempts);
           setLoading(false);
-          Alert.alert('Error', 'Invalid email or password');
+          
+          if (newAttempts >= 3) {
+            setIsLocked(true);
+            Alert.alert('Account Locked', 'Too many failed attempts. Please try again in 15 minutes.');
+            setTimeout(() => {
+              setIsLocked(false);
+              setLoginAttempts(0);
+            }, 900000); // 15 minutes
+          } else {
+            Alert.alert('Error', `Invalid email or password. ${3 - newAttempts} attempts remaining.`);
+          }
         }
       }
     }, 1500);
@@ -1009,6 +1073,22 @@ function AppContent() {
             <Text style={[styles.navText, screen === 'history' && styles.activeNavText]}>History</Text>
           </TouchableOpacity>
         </View>
+        
+        {/* Floating Action Button */}
+        <TouchableOpacity 
+          style={styles.fab}
+          onPress={() => {
+            Alert.alert('Quick Actions', 'Choose an action', [
+              {text: 'Quick Buy', onPress: () => setScreen('trade')},
+              {text: 'Quick Sell', onPress: () => setScreen('trade')},
+              {text: 'Send Money', onPress: () => Alert.alert('Send Money', 'Coming soon')},
+              {text: 'Scan QR', onPress: () => Alert.alert('QR Scanner', 'Coming soon')},
+              {text: 'Cancel', style: 'cancel'}
+            ]);
+          }}
+        >
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
       </ScrollView>
       
       {showSideMenu && (
@@ -1600,8 +1680,134 @@ const styles = StyleSheet.create({
   eyeButton: {
     padding: 16,
   },
-  eyeText: {
-    fontSize: 18,
+  eyeIcon: {
+    fontSize: 16,
+    color: '#64748b',
+  },
+  
+  // New feature styles
+  featureRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 20,
+    marginTop: 10,
+  },
+  themeToggle: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 8,
+    borderRadius: 20,
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  themeIcon: {
+    fontSize: 16,
+  },
+  langToggle: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  langText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#cbd5e1',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#f59e0b',
+    borderColor: '#f59e0b',
+  },
+  checkmark: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  checkboxText: {
+    color: '#cbd5e1',
+    fontSize: 14,
+  },
+  biometricButton: {
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    padding: 8,
+    borderRadius: 8,
+  },
+  biometricIcon: {
+    fontSize: 16,
+  },
+  socialLogin: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  orText: {
+    color: '#94a3b8',
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  socialButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  socialIcon: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  socialText: {
+    color: 'white',
+    fontSize: 14,
+  },
+  
+  // Floating Action Button
+  fab: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#f59e0b',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabIcon: {
+    fontSize: 24,
+    color: 'white',
+    fontWeight: 'bold',
   },
   disabledButton: {
     opacity: 0.6,
