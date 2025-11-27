@@ -9,7 +9,8 @@ const router = express.Router();
 router.post('/register', [
   body('email').isEmail().normalizeEmail(),
   body('password').isLength({ min: 6 }),
-  body('fullName').trim().isLength({ min: 2 })
+  body('firstName').trim().isLength({ min: 2 }),
+  body('lastName').trim().isLength({ min: 2 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -17,7 +18,7 @@ router.post('/register', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password, fullName } = req.body;
+    const { email, password, firstName, lastName } = req.body;
 
     // Check if user exists
     const existingUser = await db.query('SELECT id FROM users WHERE email = $1', [email]);
@@ -30,8 +31,8 @@ router.post('/register', [
 
     // Create user
     const result = await db.query(
-      'INSERT INTO users (email, password, full_name, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id, email, full_name',
-      [email, hashedPassword, fullName]
+      'INSERT INTO users (email, password, first_name, last_name, phone_number, country, preferred_currency, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING id, email, first_name, last_name',
+      [email, hashedPassword, firstName, lastName, '', 'NG', 'NGN']
     );
 
     const user = result.rows[0];
@@ -49,7 +50,8 @@ router.post('/register', [
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.full_name
+        firstName: user.first_name,
+        lastName: user.last_name
       }
     });
   } catch (error) {
@@ -98,7 +100,8 @@ router.post('/login', [
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.full_name
+        firstName: user.first_name,
+        lastName: user.last_name
       }
     });
   } catch (error) {
