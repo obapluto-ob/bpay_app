@@ -1,6 +1,6 @@
 {
-  "buildCommand": "npx expo export --platform web",
-  "outputDirectory": "web-build",
+  "buildCommand": "npm run build:static",
+  "outputDirectory": "build",
   "installCommand": "npm install",
   "env": {
     "NEXT_PUBLIC_API_URL": "https://bpay-backend.onrender.com/api"
