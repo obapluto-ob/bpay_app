@@ -114,7 +114,7 @@ const api = {
   }
 };
 
-const LoginScreen = ({ isSignup, email, setEmail, password, setPassword, confirmPassword, setConfirmPassword, fullName, setFullName, showPassword, setShowPassword, loading, handleAuth, setIsSignup, securityQuestion, setSecurityQuestion, securityAnswer, setSecurityAnswer, setShowForgotPassword }) => (
+const LoginScreen = ({ isSignup, email, setEmail, password, setPassword, confirmPassword, setConfirmPassword, fullName, setFullName, showPassword, setShowPassword, loading, handleAuth, setIsSignup, securityQuestion, setSecurityQuestion, securityAnswer, setSecurityAnswer, securityAnswer2, setSecurityAnswer2, setShowForgotPassword }) => (
   <View style={styles.safeArea}>
     <StatusBar barStyle="light-content" backgroundColor="#1a365d" />
     <ScrollView 
@@ -163,21 +163,37 @@ const LoginScreen = ({ isSignup, email, setEmail, password, setPassword, confirm
               autoCorrect={false}
             />
             
-            <TextInput 
-              style={styles.input}
-              placeholder="Security Question (e.g., What's your mother's maiden name?)"
-              placeholderTextColor="#64748b"
-              value={securityQuestion}
-              onChangeText={setSecurityQuestion}
-              autoCorrect={false}
-            />
+            <Text style={styles.questionLabel}>Security Question</Text>
+            <TouchableOpacity style={styles.questionPicker}>
+              <Text style={styles.questionPickerText}>
+                {securityQuestion || "What is your mother's maiden name?"}
+              </Text>
+            </TouchableOpacity>
             
+            <Text style={styles.questionLabel}>Security Answer</Text>
             <TextInput 
               style={styles.input}
-              placeholder="Security Answer"
+              placeholder="Enter your answer"
               placeholderTextColor="#64748b"
               value={securityAnswer}
               onChangeText={setSecurityAnswer}
+              autoCorrect={false}
+            />
+            
+            <Text style={styles.questionLabel}>Security Question 2</Text>
+            <TouchableOpacity style={styles.questionPicker}>
+              <Text style={styles.questionPickerText}>
+                What was the name of your first pet?
+              </Text>
+            </TouchableOpacity>
+            
+            <Text style={styles.questionLabel}>Security Answer 2</Text>
+            <TextInput 
+              style={styles.input}
+              placeholder="Enter your answer"
+              placeholderTextColor="#64748b"
+              value={securityAnswer2}
+              onChangeText={setSecurityAnswer2}
               autoCorrect={false}
             />
           </>
@@ -293,6 +309,7 @@ export default function App() {
   const [notifications, setNotifications] = useState([]);
   const [securityQuestion, setSecurityQuestion] = useState('');
   const [securityAnswer, setSecurityAnswer] = useState('');
+  const [securityAnswer2, setSecurityAnswer2] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [retrievedQuestion, setRetrievedQuestion] = useState('');
@@ -349,13 +366,21 @@ export default function App() {
     
     try {
       if (isSignup) {
-        if (!securityQuestion || !securityAnswer) {
-          Alert.alert('Error', 'Please provide security question and answer');
+        if (!securityAnswer || !securityAnswer2) {
+          Alert.alert('Error', 'Please answer both security questions');
           setLoading(false);
           return;
         }
         
-        const result = await api.register({ email, password, fullName, securityQuestion, securityAnswer });
+        const result = await api.register({ 
+          email, 
+          password, 
+          fullName, 
+          securityQuestion1: "What is your mother's maiden name?",
+          securityAnswer1: securityAnswer,
+          securityQuestion2: "What was the name of your first pet?",
+          securityAnswer2: securityAnswer2
+        });
         if (result.error) {
           Alert.alert('Error', result.error);
         } else {
@@ -366,6 +391,7 @@ export default function App() {
           setFullName('');
           setSecurityQuestion('');
           setSecurityAnswer('');
+          setSecurityAnswer2('');
         }
       } else {
         const result = await api.login({ email, password });
@@ -590,6 +616,8 @@ export default function App() {
         setSecurityQuestion={setSecurityQuestion}
         securityAnswer={securityAnswer}
         setSecurityAnswer={setSecurityAnswer}
+        securityAnswer2={securityAnswer2}
+        setSecurityAnswer2={setSecurityAnswer2}
         setShowForgotPassword={setShowForgotPassword}
       /> : <DashboardScreen />}
       
@@ -1247,6 +1275,28 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#f1f5f9',
     borderRadius: 8,
+    color: '#1a365d',
+  },
+  questionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  questionPicker: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  questionPickerText: {
+    fontSize: 17,
     color: '#1a365d',
   },
 });

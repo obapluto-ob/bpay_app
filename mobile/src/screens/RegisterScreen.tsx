@@ -9,8 +9,21 @@ export default function RegisterScreen({ navigation }: any) {
     email: '',
     phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    securityQuestion1: '',
+    securityAnswer1: '',
+    securityQuestion2: '',
+    securityAnswer2: ''
   });
+
+  const securityQuestions = [
+    "What was the name of your first pet?",
+    "What is your mother's maiden name?",
+    "What city were you born in?",
+    "What was the name of your first school?",
+    "What is your favorite food?",
+    "What was your childhood nickname?"
+  ];
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -100,6 +113,29 @@ export default function RegisterScreen({ navigation }: any) {
             }
           />
           
+          <Text style={styles.sectionTitle}>Security Questions</Text>
+          <Text style={styles.sectionSubtitle}>Answer these questions for account recovery</Text>
+          
+          <Text style={styles.questionText}>What was the name of your first pet?</Text>
+          <TextInput
+            label="Your Answer"
+            value={formData.securityAnswer1}
+            onChangeText={(value) => updateField('securityAnswer1', value)}
+            mode="outlined"
+            style={styles.input}
+            placeholder="Enter your answer"
+          />
+          
+          <Text style={styles.questionText}>What is your mother's maiden name?</Text>
+          <TextInput
+            label="Your Answer"
+            value={formData.securityAnswer2}
+            onChangeText={(value) => updateField('securityAnswer2', value)}
+            mode="outlined"
+            style={styles.input}
+            placeholder="Enter your answer"
+          />
+          
           <Button 
             mode="contained" 
             onPress={handleRegister}
@@ -165,5 +201,56 @@ const styles = StyleSheet.create({
   loginLink: {
     color: '#f97316',
     fontWeight: 'bold',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 5,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 15,
+  },
+  questionText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  questionContainer: {
+    marginBottom: 20,
+  },
+  questionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    padding: 15,
+    marginBottom: 10,
+    backgroundColor: '#f9f9f9',
+    minHeight: 50,
+  },
+  pickerText: {
+    fontSize: 16,
+    color: '#333',
+    flexWrap: 'wrap',
+  },
+  questionOption: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  questionOptionText: {
+    fontSize: 14,
+    color: '#333',
+    flexWrap: 'wrap',
+    lineHeight: 20,
   },
 });
