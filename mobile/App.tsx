@@ -155,12 +155,12 @@ const LoginScreen = ({ isSignup, email, setEmail, password, setPassword, confirm
         
         <View style={styles.flagsContainer}>
           <View style={styles.flagItem}>
-            <Text style={styles.flag}>🇳🇬</Text>
+            <Text style={styles.flag}>NG</Text>
             <Text style={styles.flagText}>Nigeria</Text>
           </View>
-          <Text style={styles.flagSeparator}>•</Text>
+          <Text style={styles.flagSeparator}>|</Text>
           <View style={styles.flagItem}>
-            <Text style={styles.flag}>🇰🇪</Text>
+            <Text style={styles.flag}>KE</Text>
             <Text style={styles.flagText}>Kenya</Text>
           </View>
         </View>
@@ -615,7 +615,7 @@ export default function App() {
                 onPress={() => setUserCountry(userCountry === 'NG' ? 'KE' : 'NG')}
               >
                 <Text style={styles.countrySwitchText}>
-                  {userCountry === 'NG' ? '🇳🇬 NG' : '🇰🇪 KE'}
+                  {userCountry === 'NG' ? 'NG' : 'KE'}
                 </Text>
                 <Text style={styles.tapHint}>Tap to switch</Text>
               </TouchableOpacity>
@@ -718,7 +718,7 @@ export default function App() {
           <View style={styles.cryptoGrid}>
             <View style={styles.cryptoItem}>
               <View style={styles.cryptoIcon}>
-                <Text style={styles.cryptoIconText}>₿</Text>
+                <Text style={styles.cryptoIconText}>B</Text>
               </View>
               <Text style={styles.cryptoName}>Bitcoin</Text>
               <Text style={styles.cryptoAmount}>{balance.BTC} BTC</Text>
@@ -727,7 +727,7 @@ export default function App() {
             
             <View style={styles.cryptoItem}>
               <View style={styles.cryptoIcon}>
-                <Text style={styles.cryptoIconText}>Ξ</Text>
+                <Text style={styles.cryptoIconText}>E</Text>
               </View>
               <Text style={styles.cryptoName}>Ethereum</Text>
               <Text style={styles.cryptoAmount}>{balance.ETH} ETH</Text>
@@ -736,7 +736,7 @@ export default function App() {
             
             <View style={styles.cryptoItem}>
               <View style={styles.cryptoIcon}>
-                <Text style={styles.cryptoIconText}>₮</Text>
+                <Text style={styles.cryptoIconText}>T</Text>
               </View>
               <Text style={styles.cryptoName}>Tether</Text>
               <Text style={styles.cryptoAmount}>{balance.USDT} USDT</Text>
@@ -752,7 +752,7 @@ export default function App() {
           style={[styles.navItem, activeTab === 'home' && styles.activeNavItem]}
           onPress={() => setActiveTab('home')}
         >
-          <Text style={[styles.navIcon, activeTab === 'home' && styles.activeNavIcon]}>🏠</Text>
+          <Text style={[styles.navIcon, activeTab === 'home' && styles.activeNavIcon]}>H</Text>
           <Text style={[styles.navText, activeTab === 'home' && styles.activeNavText]}>Home</Text>
         </TouchableOpacity>
         
@@ -763,7 +763,7 @@ export default function App() {
             setShowTradeModal(true);
           }}
         >
-          <Text style={[styles.navIcon, activeTab === 'trade' && styles.activeNavIcon]}>💱</Text>
+          <Text style={[styles.navIcon, activeTab === 'trade' && styles.activeNavIcon]}>T</Text>
           <Text style={[styles.navText, activeTab === 'trade' && styles.activeNavText]}>Trade</Text>
         </TouchableOpacity>
         
@@ -774,7 +774,7 @@ export default function App() {
             setShowDepositModal(true);
           }}
         >
-          <Text style={[styles.navIcon, activeTab === 'deposit' && styles.activeNavIcon]}>💰</Text>
+          <Text style={[styles.navIcon, activeTab === 'deposit' && styles.activeNavIcon]}>+</Text>
           <Text style={[styles.navText, activeTab === 'deposit' && styles.activeNavText]}>Deposit</Text>
         </TouchableOpacity>
         
@@ -785,7 +785,7 @@ export default function App() {
             setShowHistory(true);
           }}
         >
-          <Text style={[styles.navIcon, activeTab === 'history' && styles.activeNavIcon]}>📊</Text>
+          <Text style={[styles.navIcon, activeTab === 'history' && styles.activeNavIcon]}>≡</Text>
           <Text style={[styles.navText, activeTab === 'history' && styles.activeNavText]}>History</Text>
         </TouchableOpacity>
         
@@ -793,7 +793,7 @@ export default function App() {
           style={[styles.navItem, activeTab === 'profile' && styles.activeNavItem]}
           onPress={() => setActiveTab('profile')}
         >
-          <Text style={[styles.navIcon, activeTab === 'profile' && styles.activeNavIcon]}>👤</Text>
+          <Text style={[styles.navIcon, activeTab === 'profile' && styles.activeNavIcon]}>P</Text>
           <Text style={[styles.navText, activeTab === 'profile' && styles.activeNavText]}>Profile</Text>
         </TouchableOpacity>
       </View>

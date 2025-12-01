@@ -1,6 +1,6 @@
 [build]
   publish = "out"
-  command = "npm install && npm run build"
+  command = "npm install && npm run build && npm run export"
 
 [[redirects]]
   from = "/*"
