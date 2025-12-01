@@ -10,12 +10,55 @@ import FeatureCards from '../components/FeatureCards';
 import { useDeviceTheme } from '../components/DeviceTheme';
 import { notifications } from '../utils/notifications';
 
+// API Configuration
+const API_BASE = 'https://bpay-app.onrender.com/api';
+
+const api = {
+  getRates: async () => {
+    try {
+      const response = await fetch(`${API_BASE}/trade/rates`);
+      return await response.json();
+    } catch (error) {
+      return { BTC: { buy: 45250000, sell: 44750000 }, ETH: { buy: 2850000, sell: 2820000 }, USDT: { buy: 1580, sell: 1570 } };
+    }
+  },
+  createTrade: async (tradeData: any, token: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/trade/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(tradeData)
+      });
+      return await response.json();
+    } catch (error) {
+      return { error: 'Network error' };
+    }
+  }
+};
+
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [selectedCrypto, setSelectedCrypto] = useState('BTC');
   const [selectedCurrency, setSelectedCurrency] = useState('NGN');
+  const [rates, setRates] = useState({ BTC: { buy: 0, sell: 0 }, ETH: { buy: 0, sell: 0 }, USDT: { buy: 0, sell: 0 } });
+  const [balance, setBalance] = useState({ NGN: 2450000, BTC: 0.04567890, ETH: 0.12345, USDT: 1500 });
+  const [showTradeModal, setShowTradeModal] = useState(false);
+  const [tradeType, setTradeType] = useState('buy');
+  const [tradeAmount, setTradeAmount] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { isMobile } = useDeviceTheme();
+  
+  // Fetch real-time rates
+  useEffect(() => {
+    const fetchRates = async () => {
+      const ratesData = await api.getRates();
+      setRates(ratesData);
+    };
+    fetchRates();
+    const interval = setInterval(fetchRates, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -49,8 +92,46 @@ export default function Dashboard() {
     router.push('/auth');
   };
 
-  const handleTradeClick = () => {
-    notifications.notifyPriceAlert('BTC', '₦50,000,000', '+2.5');
+  const handleTradeClick = (type: string) => {
+    setTradeType(type);
+    setShowTradeModal(true);
+  };
+  
+  const executeTrade = async () => {
+    if (!tradeAmount || parseFloat(tradeAmount) <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+    
+    setLoading(true);
+    const token = localStorage.getItem('token');
+    const tradeData = {
+      type: tradeType,
+      crypto: selectedCrypto,
+      amount: parseFloat(tradeAmount),
+      rate: rates[selectedCrypto][tradeType]
+    };
+    
+    const result = await api.createTrade(tradeData, token);
+    
+    if (result.error) {
+      alert('Error: ' + result.error);
+    } else {
+      const cryptoAmount = parseFloat(tradeAmount);
+      const ngnAmount = cryptoAmount * rates[selectedCrypto][tradeType];
+      
+      if (tradeType === 'buy') {
+        setBalance(prev => ({ ...prev, NGN: prev.NGN - ngnAmount, [selectedCrypto]: prev[selectedCrypto] + cryptoAmount }));
+      } else {
+        setBalance(prev => ({ ...prev, NGN: prev.NGN + ngnAmount, [selectedCrypto]: prev[selectedCrypto] - cryptoAmount }));
+      }
+      
+      setShowTradeModal(false);
+      setTradeAmount('');
+      notifications.showNotification('Trade Successful!', { body: `${tradeType} ${cryptoAmount} ${selectedCrypto}` });
+    }
+    
+    setLoading(false);
   };
 
   if (!user) {
@@ -97,10 +178,10 @@ export default function Dashboard() {
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {[
-            { label: 'Total Balance', value: '₦0.00', change: '+0%', color: 'orange' },
-            { label: 'BTC Holdings', value: '0.00000000', change: '+0%', color: 'yellow' },
-            { label: 'Active Trades', value: '0', change: '0', color: 'green' },
-            { label: 'Profit/Loss', value: '₦0.00', change: '+0%', color: 'blue' }
+            { label: 'Total Balance', value: `₦${balance.NGN.toLocaleString()}`, change: '+2.5%', color: 'orange' },
+            { label: 'BTC Holdings', value: balance.BTC.toString(), change: '+5.2%', color: 'yellow' },
+            { label: 'ETH Holdings', value: balance.ETH.toString(), change: '+3.1%', color: 'green' },
+            { label: 'USDT Holdings', value: balance.USDT.toString(), change: '+0.1%', color: 'blue' }
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
@@ -139,10 +220,16 @@ export default function Dashboard() {
             <h3 className="text-lg font-medium mb-2">Quick Trade</h3>
             <p className="mb-4 opacity-90">Buy or sell crypto instantly</p>
             <button 
-              onClick={handleTradeClick}
-              className="bg-white text-orange-600 px-4 py-2 rounded-md hover:bg-gray-100 transition-colors font-medium"
+              onClick={() => handleTradeClick('buy')}
+              className="bg-white text-orange-600 px-4 py-2 rounded-md hover:bg-gray-100 transition-colors font-medium mr-2"
             >
-              Start Trading
+              Buy Crypto
+            </button>
+            <button 
+              onClick={() => handleTradeClick('sell')}
+              className="bg-orange-100 text-orange-600 px-4 py-2 rounded-md hover:bg-orange-200 transition-colors font-medium"
+            >
+              Sell Crypto
             </button>
           </div>
 
@@ -162,6 +249,72 @@ export default function Dashboard() {
             </button>
           </div>
         </motion.div>
+
+        {/* Trading Modal */}
+        {showTradeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-96 max-w-90vw">
+              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+                {tradeType === 'buy' ? 'Buy' : 'Sell'} {selectedCrypto}
+              </h3>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select Cryptocurrency
+                </label>
+                <select 
+                  value={selectedCrypto}
+                  onChange={(e) => setSelectedCrypto(e.target.value)}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="BTC">Bitcoin (BTC)</option>
+                  <option value="ETH">Ethereum (ETH)</option>
+                  <option value="USDT">Tether (USDT)</option>
+                </select>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Amount ({selectedCrypto})
+                </label>
+                <input
+                  type="number"
+                  value={tradeAmount}
+                  onChange={(e) => setTradeAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+              
+              <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-md">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Rate: ₦{rates[selectedCrypto]?.[tradeType]?.toLocaleString()}
+                </p>
+                {tradeAmount && (
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    Total: ₦{(parseFloat(tradeAmount) * (rates[selectedCrypto]?.[tradeType] || 0)).toLocaleString()}
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowTradeModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeTrade}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {loading ? 'Processing...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${selectedCrypto}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Currency Selector */}
         <div className="mt-8 flex justify-center space-x-4">

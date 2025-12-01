@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, TextInput, Alert, Image, KeyboardAvoidingView, Platform, ActivityIndicator, Modal } from 'react-native';
 
 // API Configuration
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = 'https://bpay-app.onrender.com/api';
 
 // Simple storage for demo
 const storage: { [key: string]: string } = {};
