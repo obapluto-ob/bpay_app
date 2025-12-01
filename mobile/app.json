@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "BPay Mobile",
+    "name": "BPay",
     "slug": "bpay-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -24,8 +24,8 @@
       }
     },
     "web": {
-      "favicon": "./assets/images/5782897843587714011_120.jpg",
-      "bundler": "metro"
-    }
+      "favicon": "./assets/images/5782897843587714011_120.jpg"
+    },
+    "platforms": ["ios", "android", "web"]
   }
 }

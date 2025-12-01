@@ -17,6 +17,8 @@ CREATE TABLE users (
     verification_code VARCHAR(6),
     verification_code_expires TIMESTAMP,
     email_verified BOOLEAN DEFAULT FALSE,
+    security_question VARCHAR(255),
+    security_answer VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
