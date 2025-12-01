@@ -104,12 +104,18 @@ export default function RegisterForm({ onSuccess }: Props) {
           
           <div className="flex items-center space-x-4 mt-2">
             <div className="flex items-center space-x-2 p-2 border rounded cursor-pointer hover:bg-gray-50" 
-                 onClick={() => document.querySelector('select[name="country"]').value = 'NG'}>
+                 onClick={() => {
+                   const select = document.querySelector('select[name="country"]') as HTMLSelectElement;
+                   if (select) select.value = 'NG';
+                 }}>
               <img src="https://flagcdn.com/w20/ng.png" alt="Nigeria" className="w-5 h-auto" />
               <span className="text-sm">Nigeria</span>
             </div>
             <div className="flex items-center space-x-2 p-2 border rounded cursor-pointer hover:bg-gray-50"
-                 onClick={() => document.querySelector('select[name="country"]').value = 'KE'}>
+                 onClick={() => {
+                   const select = document.querySelector('select[name="country"]') as HTMLSelectElement;
+                   if (select) select.value = 'KE';
+                 }}>
               <img src="https://flagcdn.com/w20/ke.png" alt="Kenya" className="w-5 h-auto" />
               <span className="text-sm">Kenya</span>
             </div>
