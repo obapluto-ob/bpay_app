@@ -277,6 +277,7 @@ const LoginScreen = ({ isSignup, email, setEmail, password, setPassword, confirm
             setFullName('');
             setSecurityQuestion('');
             setSecurityAnswer('');
+            setSecurityAnswer2('');
           }}
         >
           <Text style={styles.linkText}>
@@ -304,7 +305,7 @@ export default function App() {
   const [selectedCrypto, setSelectedCrypto] = useState('BTC');
   const [tradeAmount, setTradeAmount] = useState('');
   const [trades, setTrades] = useState([]);
-  const [balance, setBalance] = useState({ NGN: 2450000, BTC: 0.04567890, ETH: 0.12345, USDT: 1500 });
+  const [balance, setBalance] = useState({ NGN: 2450000, KES: 350000, BTC: 0.04567890, ETH: 0.12345, USDT: 1500 });
   const [showHistory, setShowHistory] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [securityQuestion, setSecurityQuestion] = useState('');
@@ -316,6 +317,10 @@ export default function App() {
   const [forgotAnswer, setForgotAnswer] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [forgotStep, setForgotStep] = useState(1);
+  const [userCountry, setUserCountry] = useState('NG');
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositType, setDepositType] = useState('crypto');
+  const [depositAmount, setDepositAmount] = useState('');
   
   // Fetch real-time rates
   useEffect(() => {
@@ -338,7 +343,7 @@ export default function App() {
   
   const loadTradeHistory = async () => {
     const history = await api.getTradeHistory(userToken);
-    setTrades(history);
+    setTrades(Array.isArray(history) ? history : []);
   };
 
   const handleAuth = async () => {
@@ -544,54 +549,301 @@ export default function App() {
           </TouchableOpacity>
         </View>
         
+        {notifications.length > 0 && (
+          <View style={styles.notificationCard}>
+            <Text style={styles.notificationTitle}>Latest Activity</Text>
+            <Text style={styles.notificationText}>{notifications[0].message}</Text>
+            <Text style={styles.notificationText}>{notifications[0].timestamp}</Text>
+          </View>
+        )}
+        
         <View style={styles.balanceCard}>
           <View style={styles.balanceHeader}>
-            <Text style={styles.balanceLabel}>Total Balance (NGN)</Text>
+            <Text style={styles.balanceLabel}>Total Balance ({userCountry === 'NG' ? 'NGN' : 'KES'})</Text>
+            <View style={styles.headerRight}>
+              <TouchableOpacity 
+                style={styles.countrySwitch}
+                onPress={() => setUserCountry(userCountry === 'NG' ? 'KE' : 'NG')}
+              >
+                <Text style={styles.countrySwitchText}>
+                  {userCountry === 'NG' ? '🇳🇬 NG' : '🇰🇪 KE'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.historyButton}
+                onPress={() => setShowHistory(true)}
+              >
+                <Text style={styles.historyText}>History</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <Text style={styles.balanceAmount}>
-            ₦2,450,000
+            {userCountry === 'NG' ? '₦' : 'KSh'}{balance[userCountry === 'NG' ? 'NGN' : 'KES']?.toLocaleString() || '0'}
           </Text>
-          <Text style={styles.btcBalance}>
-            0.04567890 BTC ≈ ₦2,400,000
-          </Text>
+          <View style={styles.cryptoBalances}>
+            <Text style={styles.cryptoBalance}>BTC: {balance.BTC}</Text>
+            <Text style={styles.cryptoBalance}>ETH: {balance.ETH}</Text>
+            <Text style={styles.cryptoBalance}>USDT: {balance.USDT}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.depositSection}>
+          <Text style={styles.sectionTitle}>Add Money</Text>
+          <View style={styles.depositActions}>
+            <TouchableOpacity 
+              style={[styles.depositCard, styles.cryptoDeposit]}
+              onPress={() => {
+                setDepositType('crypto');
+                setShowDepositModal(true);
+              }}
+            >
+              <Text style={styles.depositTitle}>Crypto Deposit</Text>
+              <Text style={styles.depositSubtitle}>Send BTC/ETH/USDT</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.depositCard, styles.localDeposit]}
+              onPress={() => {
+                setDepositType('local');
+                setShowDepositModal(true);
+              }}
+            >
+              <Text style={styles.depositTitle}>Local Deposit</Text>
+              <Text style={styles.depositSubtitle}>
+                {userCountry === 'NG' ? 'Bank Transfer' : 'M-Pesa'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
         
         <View style={styles.quickActions}>
-          <TouchableOpacity style={[styles.actionCard, styles.buyCard]}>
+          <TouchableOpacity 
+            style={[styles.actionCard, styles.buyCard]}
+            onPress={() => {
+              setTradeType('buy');
+              setShowTradeModal(true);
+            }}
+          >
             <Text style={styles.actionTitle}>Buy Crypto</Text>
             <Text style={styles.actionSubtitle}>BTC, ETH, USDT</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={[styles.actionCard, styles.sellCard]}>
+          <TouchableOpacity 
+            style={[styles.actionCard, styles.sellCard]}
+            onPress={() => {
+              setTradeType('sell');
+              setShowTradeModal(true);
+            }}
+          >
             <Text style={styles.actionTitle}>Sell Crypto</Text>
             <Text style={styles.actionSubtitle}>Get NGN</Text>
           </TouchableOpacity>
         </View>
         
         <View style={styles.ratesCard}>
-          <Text style={styles.cardTitle}>Market Rates</Text>
+          <Text style={styles.cardTitle}>Live Market Rates</Text>
           <View style={styles.ratesList}>
-            <View style={styles.rateItem}>
-              <View style={styles.rateLeft}>
-                <View style={styles.cryptoIcon}>
-                  <Text style={styles.cryptoIconText}>B</Text>
+            {Object.entries(rates).map(([crypto, rate]) => (
+              <View key={crypto} style={styles.rateItem}>
+                <View style={styles.rateLeft}>
+                  <View style={styles.cryptoIcon}>
+                    <Text style={styles.cryptoIconText}>{crypto[0]}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.cryptoName}>{crypto}</Text>
+                    <Text style={styles.rateSubtext}>Buy/Sell</Text>
+                  </View>
                 </View>
-                <Text style={styles.cryptoName}>BTC</Text>
-              </View>
-              <Text style={styles.ratePrice}>₦65,000,000</Text>
-            </View>
-            <View style={styles.rateItem}>
-              <View style={styles.rateLeft}>
-                <View style={styles.cryptoIcon}>
-                  <Text style={styles.cryptoIconText}>E</Text>
+                <View style={styles.rateRight}>
+                  <Text style={styles.ratePrice}>₦{rate.buy?.toLocaleString()}</Text>
+                  <Text style={styles.rateSubtext}>₦{rate.sell?.toLocaleString()}</Text>
                 </View>
-                <Text style={styles.cryptoName}>ETH</Text>
               </View>
-              <Text style={styles.ratePrice}>₦3,950,000</Text>
-            </View>
+            ))}
           </View>
         </View>
       </ScrollView>
+      
+      {/* Trade Modal */}
+      <Modal visible={showTradeModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{tradeType === 'buy' ? 'Buy' : 'Sell'} Crypto</Text>
+            
+            <View style={styles.cryptoSelector}>
+              {['BTC', 'ETH', 'USDT'].map(crypto => (
+                <TouchableOpacity
+                  key={crypto}
+                  style={[styles.cryptoOption, selectedCrypto === crypto && styles.selectedCrypto]}
+                  onPress={() => setSelectedCrypto(crypto)}
+                >
+                  <Text style={[styles.cryptoOptionText, selectedCrypto === crypto && { color: 'white' }]}>
+                    {crypto}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            <Text style={styles.rateDisplay}>
+              Rate: ₦{rates[selectedCrypto]?.[tradeType]?.toLocaleString()} per {selectedCrypto}
+            </Text>
+            
+            <TextInput
+              style={styles.tradeInput}
+              placeholder={`Enter ${selectedCrypto} amount`}
+              value={tradeAmount}
+              onChangeText={setTradeAmount}
+              keyboardType="numeric"
+            />
+            
+            {tradeAmount && (
+              <Text style={styles.tradePreview}>
+                Total: ₦{(parseFloat(tradeAmount) * (rates[selectedCrypto]?.[tradeType] || 0)).toLocaleString()}
+              </Text>
+            )}
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowTradeModal(false);
+                  setTradeAmount('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.confirmButton, loading && styles.disabledButton]}
+                onPress={handleTrade}
+                disabled={loading}
+              >
+                <Text style={styles.confirmButtonText}>
+                  {loading ? 'Processing...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${selectedCrypto}`}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Trade History Modal */}
+      <Modal visible={showHistory} animationType="slide">
+        <View style={styles.historyModal}>
+          <View style={styles.historyHeader}>
+            <Text style={styles.historyTitle}>Trade History</Text>
+            <TouchableOpacity onPress={() => setShowHistory(false)}>
+              <Text style={styles.closeButton}>Close</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.historyList}>
+            {!trades || trades.length === 0 ? (
+              <Text style={styles.noTrades}>No trades yet</Text>
+            ) : (
+              trades.map((trade, index) => (
+                <View key={index} style={styles.tradeItem}>
+                  <Text style={styles.tradeType}>
+                    {trade.type?.toUpperCase()} {trade.crypto}
+                  </Text>
+                  <Text style={styles.tradeAmount}>
+                    Amount: {trade.amount} {trade.crypto}
+                  </Text>
+                  <Text style={styles.tradeValue}>
+                    Value: ₦{(trade.amount * trade.rate)?.toLocaleString()}
+                  </Text>
+                  <Text style={styles.tradeDate}>
+                    {new Date(trade.created_at).toLocaleDateString()}
+                  </Text>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+      
+      {/* Deposit Modal */}
+      <Modal visible={showDepositModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              {depositType === 'crypto' ? 'Crypto Deposit' : `${userCountry === 'NG' ? 'Bank Transfer' : 'M-Pesa'} Deposit`}
+            </Text>
+            
+            {depositType === 'crypto' ? (
+              <>
+                <Text style={styles.depositInstructions}>
+                  Send crypto to the address below and upload proof of payment
+                </Text>
+                <View style={styles.addressContainer}>
+                  <Text style={styles.addressLabel}>BTC Address:</Text>
+                  <Text style={styles.address}>1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</Text>
+                </View>
+                <TextInput
+                  style={styles.tradeInput}
+                  placeholder="Transaction Hash"
+                  value={depositAmount}
+                  onChangeText={setDepositAmount}
+                />
+              </>
+            ) : (
+              <>
+                <Text style={styles.depositInstructions}>
+                  {userCountry === 'NG' 
+                    ? 'Transfer to our bank account and upload proof'
+                    : 'Send money via M-Pesa and upload proof'
+                  }
+                </Text>
+                <View style={styles.addressContainer}>
+                  <Text style={styles.addressLabel}>
+                    {userCountry === 'NG' ? 'Account Details:' : 'M-Pesa Details:'}
+                  </Text>
+                  <Text style={styles.address}>
+                    {userCountry === 'NG' 
+                      ? 'GTBank: 0123456789\nBPay Technologies Ltd'
+                      : 'Paybill: 123456\nAccount: BPAY001'
+                    }
+                  </Text>
+                </View>
+                <TextInput
+                  style={styles.tradeInput}
+                  placeholder={`Amount in ${userCountry === 'NG' ? 'NGN' : 'KES'}`}
+                  value={depositAmount}
+                  onChangeText={setDepositAmount}
+                  keyboardType="numeric"
+                />
+              </>
+            )}
+            
+            <TouchableOpacity style={styles.uploadButton}>
+              <Text style={styles.uploadButtonText}>Upload Proof of Payment</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowDepositModal(false);
+                  setDepositAmount('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.confirmButton}
+                onPress={() => {
+                  Alert.alert('Success', 'Deposit request submitted! We will verify and credit your account within 24 hours.');
+                  setShowDepositModal(false);
+                  setDepositAmount('');
+                }}
+              >
+                <Text style={styles.confirmButtonText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 
@@ -1298,5 +1550,75 @@ const styles = StyleSheet.create({
   questionPickerText: {
     fontSize: 17,
     color: '#1a365d',
+  },
+  depositSection: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginBottom: 15,
+  },
+  depositActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  depositCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cryptoDeposit: {
+    backgroundColor: '#3b82f6',
+  },
+  localDeposit: {
+    backgroundColor: '#8b5cf6',
+  },
+  depositTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 4,
+  },
+  depositSubtitle: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  depositInstructions: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  addressContainer: {
+    backgroundColor: '#f1f5f9',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  addressLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginBottom: 5,
+  },
+  address: {
+    fontSize: 14,
+    color: '#64748b',
+    fontFamily: 'monospace',
+  },
+  uploadButton: {
+    backgroundColor: '#f59e0b',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  uploadButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
