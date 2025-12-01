@@ -4,22 +4,41 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, TextIn
 // API Configuration
 const API_BASE = 'https://bpay-app.onrender.com/api';
 
-// Simple storage for demo
+// Persistent storage
 const storage: { [key: string]: string } = {};
 
 const AsyncStorage = {
   getItem: async (key: string) => {
     try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage.getItem(key);
+      }
       return storage[key] || null;
     } catch (error) {
-      return null;
+      return storage[key] || null;
     }
   },
   setItem: async (key: string, value: string) => {
     try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(key, value);
+      }
       storage[key] = value;
       return true;
     } catch (error) {
+      storage[key] = value;
+      return false;
+    }
+  },
+  removeItem: async (key: string) => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(key);
+      }
+      delete storage[key];
+      return true;
+    } catch (error) {
+      delete storage[key];
       return false;
     }
   }
@@ -321,6 +340,31 @@ export default function App() {
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [depositType, setDepositType] = useState('crypto');
   const [depositAmount, setDepositAmount] = useState('');
+  const [activeTab, setActiveTab] = useState('home');
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Check for saved login on app start
+  useEffect(() => {
+    const checkSavedLogin = async () => {
+      try {
+        const savedToken = await AsyncStorage.getItem('userToken');
+        const savedEmail = await AsyncStorage.getItem('userEmail');
+        
+        if (savedToken && savedEmail) {
+          setUserToken(savedToken);
+          setEmail(savedEmail);
+          setIsLoggedIn(true);
+          addNotification('Welcome back!');
+        }
+      } catch (error) {
+        console.log('No saved login found');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkSavedLogin();
+  }, []);
   
   // Fetch real-time rates
   useEffect(() => {
@@ -405,6 +449,8 @@ export default function App() {
         } else {
           setUserToken(result.token);
           await AsyncStorage.setItem('userToken', result.token);
+          await AsyncStorage.setItem('userEmail', email);
+          await AsyncStorage.setItem('isLoggedIn', 'true');
           setIsLoggedIn(true);
           addNotification('Welcome back to BPay!');
         }
@@ -516,13 +562,16 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.setItem('userToken', '');
+    await AsyncStorage.removeItem('userToken');
+    await AsyncStorage.removeItem('userEmail');
+    await AsyncStorage.removeItem('isLoggedIn');
     setIsLoggedIn(false);
     setEmail('');
     setPassword('');
     setUserToken('');
     setTrades([]);
     setNotifications([]);
+    setActiveTab('home');
   };
 
 
@@ -568,6 +617,7 @@ export default function App() {
                 <Text style={styles.countrySwitchText}>
                   {userCountry === 'NG' ? '🇳🇬 NG' : '🇰🇪 KE'}
                 </Text>
+                <Text style={styles.tapHint}>Tap to switch</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.historyButton}
@@ -662,7 +712,91 @@ export default function App() {
             ))}
           </View>
         </View>
+        
+        <View style={styles.cryptoSection}>
+          <Text style={styles.sectionTitle}>Your Crypto Portfolio</Text>
+          <View style={styles.cryptoGrid}>
+            <View style={styles.cryptoItem}>
+              <View style={styles.cryptoIcon}>
+                <Text style={styles.cryptoIconText}>₿</Text>
+              </View>
+              <Text style={styles.cryptoName}>Bitcoin</Text>
+              <Text style={styles.cryptoAmount}>{balance.BTC} BTC</Text>
+              <Text style={styles.cryptoValue}>≈ ₦{(balance.BTC * (rates.BTC?.buy || 0)).toLocaleString()}</Text>
+            </View>
+            
+            <View style={styles.cryptoItem}>
+              <View style={styles.cryptoIcon}>
+                <Text style={styles.cryptoIconText}>Ξ</Text>
+              </View>
+              <Text style={styles.cryptoName}>Ethereum</Text>
+              <Text style={styles.cryptoAmount}>{balance.ETH} ETH</Text>
+              <Text style={styles.cryptoValue}>≈ ₦{(balance.ETH * (rates.ETH?.buy || 0)).toLocaleString()}</Text>
+            </View>
+            
+            <View style={styles.cryptoItem}>
+              <View style={styles.cryptoIcon}>
+                <Text style={styles.cryptoIconText}>₮</Text>
+              </View>
+              <Text style={styles.cryptoName}>Tether</Text>
+              <Text style={styles.cryptoAmount}>{balance.USDT} USDT</Text>
+              <Text style={styles.cryptoValue}>≈ ₦{(balance.USDT * (rates.USDT?.buy || 0)).toLocaleString()}</Text>
+            </View>
+          </View>
+        </View>
       </ScrollView>
+      
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity 
+          style={[styles.navItem, activeTab === 'home' && styles.activeNavItem]}
+          onPress={() => setActiveTab('home')}
+        >
+          <Text style={[styles.navIcon, activeTab === 'home' && styles.activeNavIcon]}>🏠</Text>
+          <Text style={[styles.navText, activeTab === 'home' && styles.activeNavText]}>Home</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.navItem, activeTab === 'trade' && styles.activeNavItem]}
+          onPress={() => {
+            setActiveTab('trade');
+            setShowTradeModal(true);
+          }}
+        >
+          <Text style={[styles.navIcon, activeTab === 'trade' && styles.activeNavIcon]}>💱</Text>
+          <Text style={[styles.navText, activeTab === 'trade' && styles.activeNavText]}>Trade</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.navItem, activeTab === 'deposit' && styles.activeNavItem]}
+          onPress={() => {
+            setActiveTab('deposit');
+            setShowDepositModal(true);
+          }}
+        >
+          <Text style={[styles.navIcon, activeTab === 'deposit' && styles.activeNavIcon]}>💰</Text>
+          <Text style={[styles.navText, activeTab === 'deposit' && styles.activeNavText]}>Deposit</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.navItem, activeTab === 'history' && styles.activeNavItem]}
+          onPress={() => {
+            setActiveTab('history');
+            setShowHistory(true);
+          }}
+        >
+          <Text style={[styles.navIcon, activeTab === 'history' && styles.activeNavIcon]}>📊</Text>
+          <Text style={[styles.navText, activeTab === 'history' && styles.activeNavText]}>History</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.navItem, activeTab === 'profile' && styles.activeNavItem]}
+          onPress={() => setActiveTab('profile')}
+        >
+          <Text style={[styles.navIcon, activeTab === 'profile' && styles.activeNavIcon]}>👤</Text>
+          <Text style={[styles.navText, activeTab === 'profile' && styles.activeNavText]}>Profile</Text>
+        </TouchableOpacity>
+      </View>
       
       {/* Trade Modal */}
       <Modal visible={showTradeModal} animationType="slide" transparent>
@@ -846,6 +980,15 @@ export default function App() {
       </Modal>
     </View>
   );
+
+  if (isLoading) {
+    return (
+      <View style={[styles.app, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#f59e0b" />
+        <Text style={styles.loadingText}>Loading BPay...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.app}>
@@ -1620,5 +1763,96 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  tapHint: {
+    fontSize: 10,
+    color: '#94a3b8',
+    marginTop: 2,
+  },
+  cryptoSection: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  cryptoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  cryptoItem: {
+    flex: 1,
+    minWidth: '30%',
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cryptoName: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 8,
+  },
+  cryptoAmount: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginTop: 4,
+  },
+  cryptoValue: {
+    fontSize: 12,
+    color: '#f59e0b',
+    marginTop: 2,
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+  },
+  activeNavItem: {
+    backgroundColor: '#fef3c7',
+  },
+  navIcon: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  activeNavIcon: {
+    fontSize: 22,
+  },
+  navText: {
+    fontSize: 10,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  activeNavText: {
+    color: '#f59e0b',
+    fontWeight: 'bold',
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: 16,
+    marginTop: 10,
   },
 });
