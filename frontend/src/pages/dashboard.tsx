@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 
 const API_BASE = 'https://bpay-app.onrender.com/api';
 
-export { default } from './professional-dashboard';
+export { default } from './mobile-exact-dashboard';
 
 // Legacy dashboard - keeping for reference
 function LegacyDashboard() {
