@@ -1302,12 +1302,19 @@ const ProfileScreenWeb = ({ fullName, email, user, userAvatar, setUserAvatar, on
                       });
                       if (response.ok) {
                         setUserAvatar(imageUrl);
+                        localStorage.setItem('userAvatar', imageUrl);
                         alert('Avatar updated successfully!');
                       } else {
-                        alert('Failed to update avatar');
+                        // Fallback to localStorage only
+                        setUserAvatar(imageUrl);
+                        localStorage.setItem('userAvatar', imageUrl);
+                        alert('Avatar updated locally!');
                       }
                     } catch (error) {
-                      alert('Network error');
+                      // Fallback to localStorage only
+                      setUserAvatar(imageUrl);
+                      localStorage.setItem('userAvatar', imageUrl);
+                      alert('Avatar updated locally!');
                     }
                   };
                   reader.readAsDataURL(file);
@@ -1815,13 +1822,23 @@ export default function MobileExactDashboard() {
           setBalance(balanceData);
         }
 
-        const avatarRes = await fetch(`${API_BASE}/avatar`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (avatarRes.ok) {
-          const avatarData = await avatarRes.json();
-          if (avatarData.avatar) {
-            setUserAvatar(avatarData.avatar);
+        // Try to get avatar from server, fallback to localStorage
+        try {
+          const avatarRes = await fetch(`${API_BASE}/avatar`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (avatarRes.ok) {
+            const avatarData = await avatarRes.json();
+            if (avatarData.avatar) {
+              setUserAvatar(avatarData.avatar);
+              localStorage.setItem('userAvatar', avatarData.avatar);
+            }
+          }
+        } catch (error) {
+          // Fallback to localStorage
+          const savedAvatar = localStorage.getItem('userAvatar');
+          if (savedAvatar) {
+            setUserAvatar(savedAvatar);
           }
         }
 
