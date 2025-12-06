@@ -42,32 +42,36 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#1a365d]">
       {/* Header */}
-      <div className="bg-[#1a365d] text-white p-6 pt-12">
-        <div className="flex justify-between items-center mb-8">
+      <div className="bg-[#1a365d] text-white p-4 md:p-6 pt-8 md:pt-12">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 md:mb-8 gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-[#f59e0b] rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-lg">B</span>
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden">
+              <img 
+                src="/5782897843587714011_120.jpg" 
+                alt="BPay Logo" 
+                className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover"
+              />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">BPay</h1>
-              <p className="text-sm text-slate-300">Crypto to Cash Trading</p>
+              <h1 className="text-xl md:text-2xl font-bold">BPay</h1>
+              <p className="text-xs md:text-sm text-slate-300">Crypto to Cash Trading</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-center sm:text-right">
             <p className="text-xs text-slate-400">🇳🇬 Nigeria • 🇰🇪 Kenya</p>
           </div>
         </div>
       </div>
 
-      <div className="bg-[#f8fafc] min-h-screen -mt-6 rounded-t-3xl p-6">
+      <div className="bg-[#f8fafc] min-h-screen -mt-4 md:-mt-6 rounded-t-3xl p-4 md:p-6">
         {/* Live Rates */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-[#1a365d] mb-4">Live Rates</h2>
-          <div className="space-y-3">
+        <div className="mb-6 md:mb-8">
+          <h2 className="text-lg md:text-xl font-bold text-[#1a365d] mb-3 md:mb-4">Live Rates</h2>
+          <div className="grid gap-3 md:gap-4">
             {Object.entries(rates).map(([crypto, price]) => (
-              <div key={crypto} className="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              <div key={crypto} className="bg-white p-3 md:p-4 rounded-xl shadow-sm flex justify-between items-center hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-xs md:text-sm ${
                     crypto === 'BTC' ? 'bg-orange-100' : crypto === 'ETH' ? 'bg-blue-100' : 'bg-green-100'
                   }`}>
                     <span className={`font-bold ${
@@ -75,16 +79,16 @@ export default function Home() {
                     }`}>{crypto}</span>
                   </div>
                   <div>
-                    <p className="font-bold text-[#1a365d]">{crypto}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-bold text-[#1a365d] text-sm md:text-base">{crypto}</p>
+                    <p className="text-xs md:text-sm text-gray-500">
                       {crypto === 'BTC' ? 'Bitcoin' : crypto === 'ETH' ? 'Ethereum' : 'Tether'}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-[#1a365d]">${price.toLocaleString()}</p>
-                  <p className="text-sm text-gray-500">₦{(price * exchangeRates.USDNGN).toLocaleString()}</p>
-                  <p className="text-sm text-gray-500">KSh{(price * exchangeRates.USDKES).toLocaleString()}</p>
+                  <p className="font-bold text-[#1a365d] text-sm md:text-base">${price.toLocaleString()}</p>
+                  <p className="text-xs md:text-sm text-gray-500">₦{(price * exchangeRates.USDNGN).toLocaleString()}</p>
+                  <p className="text-xs md:text-sm text-gray-500">KSh{(price * exchangeRates.USDKES).toLocaleString()}</p>
                 </div>
               </div>
             ))}
@@ -92,24 +96,24 @@ export default function Home() {
         </div>
 
         {/* Quick Actions */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-[#1a365d] mb-4">Get Started</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="mb-6 md:mb-8">
+          <h2 className="text-lg md:text-xl font-bold text-[#1a365d] mb-3 md:mb-4">Get Started</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
             <button 
               onClick={() => router.push('/auth')}
-              className="bg-[#10b981] text-white p-6 rounded-xl text-center hover:bg-[#059669] transition-colors"
+              className="bg-[#10b981] text-white p-4 md:p-6 rounded-xl text-center hover:bg-[#059669] transition-colors shadow-lg hover:shadow-xl"
             >
-              <div className="text-2xl mb-2">📱</div>
-              <p className="font-bold">User Login</p>
-              <p className="text-sm opacity-90">Trade crypto</p>
+              <div className="text-xl md:text-2xl mb-2">📱</div>
+              <p className="font-bold text-sm md:text-base">User Login</p>
+              <p className="text-xs md:text-sm opacity-90">Trade crypto</p>
             </button>
             <button 
               onClick={() => router.push('/admin/login')}
-              className="bg-[#f59e0b] text-white p-6 rounded-xl text-center hover:bg-[#d97706] transition-colors"
+              className="bg-[#f59e0b] text-white p-4 md:p-6 rounded-xl text-center hover:bg-[#d97706] transition-colors shadow-lg hover:shadow-xl"
             >
-              <div className="text-2xl mb-2">⚙️</div>
-              <p className="font-bold">Admin Panel</p>
-              <p className="text-sm opacity-90">Manage trades</p>
+              <div className="text-xl md:text-2xl mb-2">⚙️</div>
+              <p className="font-bold text-sm md:text-base">Admin Panel</p>
+              <p className="text-xs md:text-sm opacity-90">Manage trades</p>
             </button>
           </div>
         </div>
