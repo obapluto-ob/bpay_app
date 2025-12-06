@@ -26,6 +26,10 @@ async function initDatabase() {
         await pool.query(schema);
         console.log('Database initialized successfully!');
       }
+      
+      // Add avatar column if it doesn't exist
+      await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT;');
+      console.log('Avatar column added!');
       await pool.end();
     } catch (error) {
       console.log('Database already exists or error:', error.message);

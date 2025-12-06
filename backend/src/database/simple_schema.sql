@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
     usdt_balance DECIMAL(20, 8) DEFAULT 0,
     ngn_balance DECIMAL(20, 2) DEFAULT 0,
     kes_balance DECIMAL(20, 2) DEFAULT 0,
+    avatar TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
