@@ -156,7 +156,9 @@ export default function MobileStyleDashboard() {
             onClick={() => setShowNotifications(true)}
             className="relative p-2 bg-slate-700 rounded-full"
           >
-            <span className="text-white text-xl">🔔</span>
+            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+            </svg>
             {notifications.filter(n => !n.read).length > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {notifications.filter(n => !n.read).length}
@@ -195,7 +197,7 @@ export default function MobileStyleDashboard() {
                     : 'text-slate-600'
                 }`}
               >
-                🇳🇬 Nigeria
+NG Nigeria
               </button>
               <button
                 onClick={() => {
@@ -208,7 +210,7 @@ export default function MobileStyleDashboard() {
                     : 'text-slate-600'
                 }`}
               >
-                🇰🇪 Kenya
+                KE Kenya
               </button>
             </div>
 
@@ -240,7 +242,7 @@ export default function MobileStyleDashboard() {
               {selectedAccount === 'nigeria' && (
                 <>
                   <div className="flex items-center mb-3">
-                    <span className="text-2xl mr-2">🇳🇬</span>
+                    <span className="text-sm font-bold mr-2 bg-green-600 text-white px-2 py-1 rounded">NG</span>
                     <span className="text-slate-600 font-semibold">Nigeria</span>
                   </div>
                   <span className="text-3xl font-bold text-slate-900">₦{balance.NGN?.toLocaleString() || '0'}</span>
@@ -250,7 +252,7 @@ export default function MobileStyleDashboard() {
               {selectedAccount === 'kenya' && (
                 <>
                   <div className="flex items-center mb-3">
-                    <span className="text-2xl mr-2">🇰🇪</span>
+                    <span className="text-sm font-bold mr-2 bg-red-600 text-white px-2 py-1 rounded">KE</span>
                     <span className="text-slate-600 font-semibold">Kenya</span>
                   </div>
                   <span className="text-3xl font-bold text-slate-900">KSh{balance.KES?.toLocaleString() || '0'}</span>
