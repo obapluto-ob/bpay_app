@@ -1,9 +1,33 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const API_BASE = 'https://bpay-app.onrender.com/api';
 
-export default function Dashboard() {
+export { default } from './enhanced-dashboard';
+
+// Legacy dashboard - keeping for reference
+function LegacyDashboard() {
   const [user, setUser] = useState<any>(null);
   const [balance, setBalance] = useState({ NGN: 0, KES: 0, BTC: 0, ETH: 0, USDT: 0 });
   const [rates, setRates] = useState({ BTC: { NGN: 0, KES: 0 }, ETH: { NGN: 0, KES: 0 }, USDT: { NGN: 0, KES: 0 } });
@@ -12,6 +36,12 @@ export default function Dashboard() {
   const [showSellModal, setShowSellModal] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showKYCModal, setShowKYCModal] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [selectedCrypto, setSelectedCrypto] = useState('BTC');
+  const [tradeAmount, setTradeAmount] = useState('');
+  const [tradeCurrency, setTradeCurrency] = useState('NGN');
+  const [priceHistory, setPriceHistory] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
