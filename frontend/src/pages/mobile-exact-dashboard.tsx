@@ -2155,14 +2155,20 @@ export default function MobileExactDashboard() {
                     <span className="text-xs text-slate-900 font-semibold">Sell</span>
                   </button>
                   <button 
-                    onClick={() => setShowWalletScreen(true)}
+                    onClick={() => {
+                      setShowWalletScreen(true);
+                      setActiveTab('wallet');
+                    }}
                     className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"
                   >
                     <span className="text-xl text-orange-500 mb-1">+</span>
                     <span className="text-xs text-slate-900 font-semibold">Deposit</span>
                   </button>
                   <button 
-                    onClick={() => setShowWalletScreen(true)}
+                    onClick={() => {
+                      setShowWalletScreen(true);
+                      setActiveTab('wallet');
+                    }}
                     className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"
                   >
                     <span className="text-xl text-orange-500 mb-1">₿</span>
@@ -2189,7 +2195,10 @@ export default function MobileExactDashboard() {
                     <span className="text-xs text-slate-900 font-semibold">Buy Crypto</span>
                   </button>
                   <button 
-                    onClick={() => setShowDepositScreen(true)}
+                    onClick={() => {
+                      setShowDepositScreen(true);
+                      setActiveTab('deposit');
+                    }}
                     className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"
                   >
                     <span className="text-xl text-orange-500 mb-1">+</span>
