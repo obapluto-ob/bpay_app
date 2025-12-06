@@ -1143,7 +1143,7 @@ const ConvertScreenWeb = ({ balance, usdRates, onClose, onSuccess }: any) => {
 };
 
 // Profile Screen Component
-const ProfileScreenWeb = ({ fullName, email, user, onUpdateProfile, onLogout, onNotification }: any) => {
+const ProfileScreenWeb = ({ fullName, email, user, userAvatar, setUserAvatar, onUpdateProfile, onLogout, onNotification }: any) => {
   const [showKYC, setShowKYC] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showUpdateEmail, setShowUpdateEmail] = useState(false);
@@ -1995,6 +1995,8 @@ export default function MobileExactDashboard() {
               fullName={fullName}
               email={email}
               user={user}
+              userAvatar={userAvatar}
+              setUserAvatar={setUserAvatar}
               onUpdateProfile={(newName: string, newEmail: string) => {
                 setFullName(newName);
                 setEmail(newEmail);
