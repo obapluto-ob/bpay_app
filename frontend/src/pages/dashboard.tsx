@@ -60,9 +60,7 @@ export default function Dashboard() {
   }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userFullName');
+    localStorage.clear();
     router.push('/auth');
   };
 
