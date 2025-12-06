@@ -507,6 +507,178 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
   );
 };
 
+// Convert Screen Component
+const ConvertScreenWeb = ({ balance, usdRates, onClose, onSuccess }: any) => {
+  const [fromCrypto, setFromCrypto] = useState<'BTC' | 'ETH' | 'USDT'>('BTC');
+  const [toCrypto, setToCrypto] = useState<'BTC' | 'ETH' | 'USDT'>('ETH');
+  const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const getConversionRate = () => {
+    const fromRate = usdRates[fromCrypto] || 0;
+    const toRate = usdRates[toCrypto] || 0;
+    return fromRate / toRate;
+  };
+
+  const getConvertedAmount = () => {
+    const inputAmount = parseFloat(amount || '0');
+    const rate = getConversionRate();
+    return inputAmount * rate;
+  };
+
+  const handleConvert = async () => {
+    if (!amount || parseFloat(amount) <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+
+    const inputAmount = parseFloat(amount);
+    const availableBalance = balance[fromCrypto] || 0;
+
+    if (inputAmount > availableBalance) {
+      alert(`Insufficient balance. You have ${availableBalance.toFixed(8)} ${fromCrypto}`);
+      return;
+    }
+
+    if (fromCrypto === toCrypto) {
+      alert('Cannot convert to the same cryptocurrency');
+      return;
+    }
+
+    const convertedAmount = getConvertedAmount();
+    const rate = getConversionRate();
+
+    if (confirm(`Convert ${amount} ${fromCrypto} to ${convertedAmount.toFixed(8)} ${toCrypto}?\n\nRate: 1 ${fromCrypto} = ${rate.toFixed(8)} ${toCrypto}`)) {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/crypto/convert`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            fromCrypto,
+            toCrypto,
+            amount: inputAmount,
+            rate: getConversionRate(),
+            convertedAmount
+          })
+        });
+
+        if (response.ok) {
+          alert(`Conversion successful! ${amount} ${fromCrypto} converted to ${convertedAmount.toFixed(8)} ${toCrypto}`);
+          onSuccess();
+        } else {
+          alert('Conversion failed. Please try again.');
+        }
+      } catch (error) {
+        alert('Network error');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  return (
+    <div className="p-6 max-h-[70vh] overflow-y-auto">
+      <p className="text-center text-slate-600 mb-6">Swap between cryptocurrencies at live market rates</p>
+      
+      {/* From Section */}
+      <div className="mb-4">
+        <h4 className="font-bold text-slate-900 mb-3">From</h4>
+        <div className="flex space-x-2 mb-3">
+          {(['BTC', 'ETH', 'USDT'] as const).map(crypto => (
+            <button
+              key={crypto}
+              onClick={() => setFromCrypto(crypto)}
+              className={`flex-1 p-3 rounded-lg flex flex-col items-center space-y-1 ${
+                fromCrypto === crypto ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
+              }`}
+            >
+              <span className="text-lg">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
+              <span className="text-xs font-semibold">{crypto}</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm text-slate-600">Available:</span>
+          <span className="text-sm font-bold">{(balance[fromCrypto] || 0).toFixed(8)} {fromCrypto}</span>
+        </div>
+        <input
+          type="number"
+          placeholder={`Enter ${fromCrypto} amount`}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="w-full p-3 border border-slate-300 rounded-lg"
+        />
+      </div>
+
+      {/* Swap Button */}
+      <div className="flex justify-center mb-4">
+        <button
+          onClick={() => {
+            const temp = fromCrypto;
+            setFromCrypto(toCrypto);
+            setToCrypto(temp);
+          }}
+          className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white text-xl font-bold"
+        >
+          ⇅
+        </button>
+      </div>
+
+      {/* To Section */}
+      <div className="mb-4">
+        <h4 className="font-bold text-slate-900 mb-3">To</h4>
+        <div className="flex space-x-2 mb-3">
+          {(['BTC', 'ETH', 'USDT'] as const).map(crypto => (
+            <button
+              key={crypto}
+              onClick={() => setToCrypto(crypto)}
+              className={`flex-1 p-3 rounded-lg flex flex-col items-center space-y-1 ${
+                toCrypto === crypto ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
+              }`}
+            >
+              <span className="text-lg">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
+              <span className="text-xs font-semibold">{crypto}</span>
+            </button>
+          ))}
+        </div>
+        <div className="bg-green-50 p-3 rounded-lg text-center">
+          <p className="text-sm text-green-600">You will receive:</p>
+          <p className="text-lg font-bold text-green-600">{getConvertedAmount().toFixed(8)} {toCrypto}</p>
+        </div>
+      </div>
+
+      {/* Rate Info */}
+      <div className="bg-slate-50 p-4 rounded-lg mb-4 text-center">
+        <p className="text-sm text-slate-600 mb-1">Exchange Rate</p>
+        <p className="text-lg font-bold text-orange-500">1 {fromCrypto} = {getConversionRate().toFixed(8)} {toCrypto}</p>
+        <p className="text-xs text-slate-500">Based on live market prices</p>
+      </div>
+
+      {/* Convert Button */}
+      <button
+        onClick={handleConvert}
+        disabled={loading}
+        className="w-full bg-green-500 text-white py-3 rounded-lg font-bold disabled:opacity-50"
+      >
+        {loading ? 'Converting...' : `Convert ${fromCrypto} to ${toCrypto}`}
+      </button>
+
+      {/* Info */}
+      <div className="bg-blue-50 p-3 rounded-lg mt-4 border-l-4 border-blue-500">
+        <p className="text-xs text-blue-800 mb-1">🔄 How Conversion Works</p>
+        <p className="text-xs text-blue-700">• Conversions use real-time market rates</p>
+        <p className="text-xs text-blue-700">• No additional fees - only market spread</p>
+        <p className="text-xs text-blue-700">• Instant conversion within your wallet</p>
+      </div>
+    </div>
+  );
+};
+
 export default function MobileExactDashboard() {
   const [user, setUser] = useState<any>(null);
   const [balance, setBalance] = useState({ NGN: 0, KES: 0, BTC: 0, ETH: 0, USDT: 0 });
@@ -518,6 +690,7 @@ export default function MobileExactDashboard() {
   const [activeCountry, setActiveCountry] = useState<'NG' | 'KE'>('NG');
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showConvertScreen, setShowConvertScreen] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string>('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -575,6 +748,22 @@ export default function MobileExactDashboard() {
           ETH: data.ethereum?.usd || 3400,
           USDT: data.tether?.usd || 1,
         };
+        // Check for price changes and notify
+        Object.entries(newRates).forEach(([crypto, newPrice]) => {
+          const oldPrice = usdRates[crypto];
+          if (oldPrice && oldPrice > 0) {
+            const changePercent = ((newPrice - oldPrice) / oldPrice) * 100;
+            if (Math.abs(changePercent) >= 5) {
+              const direction = changePercent > 0 ? '📈' : '📉';
+              const sign = changePercent > 0 ? '+' : '';
+              addNotification(
+                `${direction} ${crypto} ${sign}${changePercent.toFixed(1)}% - Now $${newPrice.toLocaleString()}`,
+                changePercent > 0 ? 'success' : 'warning'
+              );
+            }
+          }
+        });
+        
         setUsdRates(newRates);
         setLastUpdate(new Date().toLocaleTimeString());
       } catch (error) {
@@ -603,10 +792,57 @@ export default function MobileExactDashboard() {
     fetchData();
     fetchUsdRates();
     fetchExchangeRates();
+    
+    // Add welcome notification
+    setTimeout(() => {
+      addNotification('Welcome to BPay! Start trading crypto with ease.', 'success');
+    }, 1000);
 
-    const interval = setInterval(fetchUsdRates, 60000);
+    const interval = setInterval(() => {
+      fetchUsdRates();
+      checkPriceAlerts();
+    }, 60000);
     return () => clearInterval(interval);
   }, [router]);
+
+  const addNotification = (message: string, type: 'success' | 'warning' | 'info' = 'info') => {
+    const newNotification = {
+      id: `${Date.now()}-${Math.random()}`,
+      message,
+      timestamp: new Date().toLocaleTimeString(),
+      type,
+      read: false
+    };
+    setNotifications(prev => [newNotification, ...prev.slice(0, 9)]);
+  };
+
+  const markNotificationsAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const checkPriceAlerts = () => {
+    const btcPrice = usdRates.BTC || 0;
+    const usdtKesRate = (usdRates.USDT || 1) * exchangeRates.USDKES;
+    
+    if (btcPrice >= 100000) {
+      addNotification(
+        `MILESTONE ALERT: Bitcoin hits $${btcPrice.toLocaleString()}! Historic $100K breakthrough!`,
+        'success'
+      );
+    }
+    
+    if (usdtKesRate >= 129) {
+      addNotification(
+        `USDT Alert: Rate hits KSh ${usdtKesRate.toFixed(2)} - High end of target range!`,
+        'warning'
+      );
+    } else if (usdtKesRate <= 128) {
+      addNotification(
+        `USDT Alert: Rate drops to KSh ${usdtKesRate.toFixed(2)} - Low end of target range!`,
+        'info'
+      );
+    }
+  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -934,7 +1170,7 @@ export default function MobileExactDashboard() {
                     <span className="text-xs text-slate-900 font-semibold">Wallet</span>
                   </button>
                   <button 
-                    onClick={() => alert('Convert feature - Coming soon!')}
+                    onClick={() => setShowConvertScreen(true)}
                     className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"
                   >
                     <span className="text-xl text-orange-500 mb-1">⇄</span>
@@ -1085,15 +1321,76 @@ export default function MobileExactDashboard() {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-bold text-slate-900">Notifications</h3>
                 <button
-                  onClick={() => setShowNotifications(false)}
+                  onClick={() => {
+                    markNotificationsAsRead();
+                    setShowNotifications(false);
+                  }}
                   className="p-2 bg-slate-100 rounded-full"
                 >
                   <span className="text-slate-600 font-bold">✕</span>
                 </button>
               </div>
-              <div className="text-center py-8">
-                <p className="text-slate-600">No notifications</p>
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-slate-600">No notifications</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {notifications.map((notification) => (
+                      <div 
+                        key={notification.id} 
+                        className={`p-3 rounded-lg border-l-4 ${
+                          notification.type === 'success' ? 'bg-green-50 border-green-500' :
+                          notification.type === 'warning' ? 'bg-yellow-50 border-yellow-500' :
+                          'bg-blue-50 border-blue-500'
+                        } ${!notification.read ? 'bg-opacity-100' : 'bg-opacity-50'}`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className={`text-sm ${
+                              notification.type === 'success' ? 'text-green-800' :
+                              notification.type === 'warning' ? 'text-yellow-800' :
+                              'text-blue-800'
+                            }`}>
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">{notification.timestamp}</p>
+                          </div>
+                          {!notification.read && (
+                            <div className="w-2 h-2 bg-orange-500 rounded-full ml-2 mt-1"></div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {showConvertScreen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl w-11/12 max-w-md max-h-[90vh] overflow-hidden">
+              <div className="flex justify-between items-center p-6 border-b">
+                <h3 className="text-lg font-bold text-slate-900">Convert Crypto</h3>
+                <button
+                  onClick={() => setShowConvertScreen(false)}
+                  className="p-2 bg-slate-100 rounded-full"
+                >
+                  <span className="text-slate-600 font-bold">✕</span>
+                </button>
+              </div>
+              <ConvertScreenWeb 
+                balance={balance}
+                usdRates={usdRates}
+                onClose={() => setShowConvertScreen(false)}
+                onSuccess={() => {
+                  setShowConvertScreen(false);
+                  addNotification('Crypto conversion completed successfully', 'success');
+                }}
+              />
             </div>
           </div>
         )}
