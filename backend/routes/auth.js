@@ -43,8 +43,8 @@ router.post('/register', [
 
     // Create JWT token
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      process.env.JWT_SECRET,
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET || 'fallback-secret',
       { expiresIn: '7d' }
     );
 
@@ -54,8 +54,7 @@ router.post('/register', [
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name
+        fullName: `${user.first_name} ${user.last_name}`
       }
     });
   } catch (error) {
@@ -93,8 +92,8 @@ router.post('/login', [
 
     // Create JWT token
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      process.env.JWT_SECRET,
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET || 'fallback-secret',
       { expiresIn: '7d' }
     );
 
@@ -104,8 +103,7 @@ router.post('/login', [
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name
+        fullName: `${user.first_name} ${user.last_name}`
       }
     });
   } catch (error) {

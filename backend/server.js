@@ -20,7 +20,7 @@ async function initDatabase() {
         ssl: { rejectUnauthorized: false }
       });
       
-      const schemaPath = path.join(__dirname, 'src/database/schema.sql');
+      const schemaPath = path.join(__dirname, 'src/database/simple_schema.sql');
       if (fs.existsSync(schemaPath)) {
         const schema = fs.readFileSync(schemaPath, 'utf8');
         await pool.query(schema);
