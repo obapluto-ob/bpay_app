@@ -22,7 +22,14 @@ async function initDatabase() {
       
       const schemaPath = path.join(__dirname, 'src/database/simple_schema.sql');
       if (fs.existsSync(schemaPath)) {
-        const schema = fs.readFileSync(schemaPath, 'utf8');
+        let schema = fs.readFileSync(schemaPath, 'utf8');
+        // Ensure avatar column is in schema
+        if (!schema.includes('avatar TEXT')) {
+          schema = schema.replace(
+            'created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,',
+            'avatar TEXT,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,'
+          );
+        }
         await pool.query(schema);
         console.log('Database initialized successfully!');
       }
