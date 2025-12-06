@@ -8,6 +8,7 @@ export default function RegisterScreen({ navigation }: any) {
     lastName: '',
     email: '',
     phone: '',
+    country: 'NG',
     password: '',
     confirmPassword: '',
     securityQuestion1: '',
@@ -82,6 +83,24 @@ export default function RegisterScreen({ navigation }: any) {
             style={styles.input}
             keyboardType="phone-pad"
           />
+          
+          <View style={styles.countryContainer}>
+            <Text style={styles.countryLabel}>Country</Text>
+            <View style={styles.countryButtons}>
+              <TouchableOpacity 
+                style={[styles.countryButton, formData.country === 'NG' && styles.selectedCountry]}
+                onPress={() => updateField('country', 'NG')}
+              >
+                <Text style={[styles.countryText, formData.country === 'NG' && styles.selectedCountryText]}>🇳🇬 Nigeria</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.countryButton, formData.country === 'KE' && styles.selectedCountry]}
+                onPress={() => updateField('country', 'KE')}
+              >
+                <Text style={[styles.countryText, formData.country === 'KE' && styles.selectedCountryText]}>🇰🇪 Kenya</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           
           <TextInput
             label="Password"
@@ -252,5 +271,39 @@ const styles = StyleSheet.create({
     color: '#333',
     flexWrap: 'wrap',
     lineHeight: 20,
+  },
+  countryContainer: {
+    marginBottom: 15,
+  },
+  countryLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#333',
+  },
+  countryButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  countryButton: {
+    flex: 1,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+  },
+  selectedCountry: {
+    backgroundColor: '#f97316',
+    borderColor: '#f97316',
+  },
+  countryText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectedCountryText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });

@@ -183,10 +183,19 @@ export default function AuthPage() {
                 setFullName('');
                 setConfirmPassword('');
               }}
-              className="w-full text-[#1a365d] text-center text-sm md:text-base hover:text-[#f59e0b] transition-colors"
+              className="w-full text-[#1a365d] text-center text-sm md:text-base hover:text-[#f59e0b] transition-colors mb-4"
             >
               {isSignup ? 'Already have an account? Login' : "Don't have an account? Sign up"}
             </button>
+            
+            {!isSignup && (
+              <button
+                onClick={() => alert('Forgot password feature coming soon')}
+                className="w-full text-[#64748b] text-center text-xs md:text-sm hover:text-[#f59e0b] transition-colors"
+              >
+                Forgot Password?
+              </button>
+            )}
             
             <div className="mt-6 pt-4 border-t border-gray-200 text-center">
               <p className="text-xs md:text-sm text-gray-500 mb-2">
