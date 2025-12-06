@@ -104,12 +104,12 @@ export default function Dashboard() {
     }
     
     setLoading(true);
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || '';
     const tradeData = {
       type: tradeType,
       crypto: selectedCrypto,
       amount: parseFloat(tradeAmount),
-      rate: rates[selectedCrypto][tradeType]
+      rate: (rates as any)[selectedCrypto][tradeType]
     };
     
     const result = await api.createTrade(tradeData, token);
@@ -118,12 +118,12 @@ export default function Dashboard() {
       alert('Error: ' + result.error);
     } else {
       const cryptoAmount = parseFloat(tradeAmount);
-      const ngnAmount = cryptoAmount * rates[selectedCrypto][tradeType];
+      const ngnAmount = cryptoAmount * (rates as any)[selectedCrypto][tradeType];
       
       if (tradeType === 'buy') {
-        setBalance(prev => ({ ...prev, NGN: prev.NGN - ngnAmount, [selectedCrypto]: prev[selectedCrypto] + cryptoAmount }));
+        setBalance(prev => ({ ...prev, NGN: prev.NGN - ngnAmount, [selectedCrypto]: (prev as any)[selectedCrypto] + cryptoAmount }));
       } else {
-        setBalance(prev => ({ ...prev, NGN: prev.NGN + ngnAmount, [selectedCrypto]: prev[selectedCrypto] - cryptoAmount }));
+        setBalance(prev => ({ ...prev, NGN: prev.NGN + ngnAmount, [selectedCrypto]: (prev as any)[selectedCrypto] - cryptoAmount }));
       }
       
       setShowTradeModal(false);
@@ -292,11 +292,11 @@ export default function Dashboard() {
               
               <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-md">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Rate: ₦{rates[selectedCrypto]?.[tradeType]?.toLocaleString()}
+                  Rate: ₦{(rates as any)[selectedCrypto]?.[tradeType]?.toLocaleString()}
                 </p>
                 {tradeAmount && (
                   <p className="text-lg font-bold text-gray-900 dark:text-white">
-                    Total: ₦{(parseFloat(tradeAmount) * (rates[selectedCrypto]?.[tradeType] || 0)).toLocaleString()}
+                    Total: ₦{(parseFloat(tradeAmount) * ((rates as any)[selectedCrypto]?.[tradeType] || 0)).toLocaleString()}
                   </p>
                 )}
               </div>

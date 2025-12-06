@@ -106,7 +106,7 @@ export default function TradeManagement() {
         ? { 
             ...trade, 
             assignedAdmin: adminId,
-            status: 'processing',
+            status: 'processing' as const,
             chatMessages: [
               ...trade.chatMessages,
               {
@@ -123,7 +123,7 @@ export default function TradeManagement() {
         : trade
     );
     
-    setTrades(updatedTrades);
+    setTrades(updatedTrades as Trade[]);
     localStorage.setItem('bpayTrades', JSON.stringify(updatedTrades));
   };
 
@@ -146,7 +146,7 @@ export default function TradeManagement() {
         : trade
     );
     
-    setTrades(updatedTrades);
+    setTrades(updatedTrades as Trade[]);
     setSelectedTrade({ ...selectedTrade, chatMessages: [...selectedTrade.chatMessages, newMessage] });
     localStorage.setItem('bpayTrades', JSON.stringify(updatedTrades));
     setChatMessage('');
@@ -157,7 +157,7 @@ export default function TradeManagement() {
       trade.id === tradeId 
         ? { 
             ...trade, 
-            status: 'completed',
+            status: 'completed' as const,
             chatMessages: [
               ...trade.chatMessages,
               {
@@ -174,7 +174,7 @@ export default function TradeManagement() {
         : trade
     );
     
-    setTrades(updatedTrades);
+    setTrades(updatedTrades as Trade[]);
     localStorage.setItem('bpayTrades', JSON.stringify(updatedTrades));
   };
 
@@ -183,7 +183,7 @@ export default function TradeManagement() {
       trade.id === tradeId 
         ? { 
             ...trade, 
-            status: 'disputed',
+            status: 'disputed' as const,
             disputeReason: reason,
             chatMessages: [
               ...trade.chatMessages,
@@ -201,7 +201,7 @@ export default function TradeManagement() {
         : trade
     );
     
-    setTrades(updatedTrades);
+    setTrades(updatedTrades as Trade[]);
     localStorage.setItem('bpayTrades', JSON.stringify(updatedTrades));
   };
 
