@@ -1284,15 +1284,31 @@ const ProfileScreenWeb = ({ fullName, email, user, onUpdateProfile, onLogout, on
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => {
+              onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (file) {
                   const reader = new FileReader();
-                  reader.onload = (event) => {
+                  reader.onload = async (event) => {
                     const imageUrl = event.target?.result as string;
-                    localStorage.setItem('userAvatar', imageUrl);
-                    setUserAvatar(imageUrl);
-                    alert('Avatar updated successfully!');
+                    try {
+                      const token = localStorage.getItem('token');
+                      const response = await fetch(`${API_BASE}/avatar/upload`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ avatar: imageUrl })
+                      });
+                      if (response.ok) {
+                        setUserAvatar(imageUrl);
+                        alert('Avatar updated successfully!');
+                      } else {
+                        alert('Failed to update avatar');
+                      }
+                    } catch (error) {
+                      alert('Network error');
+                    }
                   };
                   reader.readAsDataURL(file);
                 }
@@ -1797,6 +1813,16 @@ export default function MobileExactDashboard() {
         if (balanceRes.ok) {
           const balanceData = await balanceRes.json();
           setBalance(balanceData);
+        }
+
+        const avatarRes = await fetch(`${API_BASE}/avatar`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (avatarRes.ok) {
+          const avatarData = await avatarRes.json();
+          if (avatarData.avatar) {
+            setUserAvatar(avatarData.avatar);
+          }
         }
 
         const ratesRes = await fetch(`${API_BASE}/trade/rates`);

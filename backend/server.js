@@ -56,6 +56,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/trade', require('./routes/trade'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/avatar', require('./routes/avatar'));
 
 // Health check
 app.get('/health', (req, res) => {
