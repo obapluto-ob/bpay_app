@@ -7,9 +7,12 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [country, setCountry] = useState('NG');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [securityQuestion, setSecurityQuestion] = useState('');
+  const [securityAnswer, setSecurityAnswer] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const router = useRouter();
 
   const handleAuth = async () => {
@@ -37,7 +40,7 @@ export default function AuthPage() {
         const response = await fetch('https://bpay-app.onrender.com/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, fullName, country })
+          body: JSON.stringify({ email, password, fullName })
         });
         
         if (response.ok) {
@@ -112,23 +115,13 @@ export default function AuthPage() {
             
             <div className="space-y-4">
               {isSignup && (
-                <>
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
-                  />
-                  <select
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
-                  >
-                    <option value="NG">Nigeria</option>
-                    <option value="KE">Kenya</option>
-                  </select>
-                </>
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
+                />
               )}
               
               <input
@@ -190,7 +183,7 @@ export default function AuthPage() {
             
             {!isSignup && (
               <button
-                onClick={() => alert('Forgot password feature coming soon')}
+                onClick={() => setShowForgotPassword(true)}
                 className="w-full text-[#64748b] text-center text-xs md:text-sm hover:text-[#f59e0b] transition-colors"
               >
                 Forgot Password?
@@ -207,6 +200,114 @@ export default function AuthPage() {
                 <span>🌐 Web Platform</span>
               </div>
             </div>
+            
+            {/* Forgot Password Modal */}
+            {showForgotPassword && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                  <h3 className="text-lg font-semibold mb-4">Reset Password</h3>
+                  
+                  {!securityQuestion ? (
+                    <>
+                      <input
+                        type="email"
+                        placeholder="Enter your email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-xl mb-4"
+                      />
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={() => setShowForgotPassword(false)}
+                          className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch('https://bpay-app.onrender.com/api/auth/forgot-password', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ email })
+                              });
+                              const data = await response.json();
+                              if (response.ok) {
+                                setSecurityQuestion(data.securityQuestion);
+                              } else {
+                                alert(data.error || 'This account was created before security questions were added. Please contact support.');
+                              }
+                            } catch (error) {
+                              alert('Network error');
+                            }
+                          }}
+                          className="flex-1 bg-orange-500 text-white py-2 rounded-md"
+                        >
+                          Get Question
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-600 mb-4">{securityQuestion}</p>
+                      <input
+                        type="text"
+                        placeholder="Your answer"
+                        value={securityAnswer}
+                        onChange={(e) => setSecurityAnswer(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-xl mb-4"
+                      />
+                      <input
+                        type="password"
+                        placeholder="New password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-xl mb-4"
+                      />
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={() => {
+                            setShowForgotPassword(false);
+                            setSecurityQuestion('');
+                            setSecurityAnswer('');
+                            setNewPassword('');
+                          }}
+                          className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch('https://bpay-app.onrender.com/api/auth/reset-password', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ email, securityAnswer, newPassword })
+                              });
+                              const data = await response.json();
+                              if (response.ok) {
+                                alert('Password reset successfully!');
+                                setShowForgotPassword(false);
+                                setSecurityQuestion('');
+                                setSecurityAnswer('');
+                                setNewPassword('');
+                              } else {
+                                alert(data.error);
+                              }
+                            } catch (error) {
+                              alert('Network error');
+                            }
+                          }}
+                          className="flex-1 bg-orange-500 text-white py-2 rounded-md"
+                        >
+                          Reset Password
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
