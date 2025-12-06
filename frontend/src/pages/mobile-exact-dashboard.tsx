@@ -7,20 +7,61 @@ const API_BASE = 'https://bpay-app.onrender.com/api';
 const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCurrency, onClose }: any) => {
   const [selectedCrypto, setSelectedCrypto] = useState<'BTC' | 'ETH' | 'USDT'>('BTC');
   const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'bank' | 'mobile'>('bank');
-  const [bankDetails, setBankDetails] = useState({ accountName: '', accountNumber: '', bankName: '' });
+  const [paymentMethod, setPaymentMethod] = useState<'balance' | 'bank'>('balance');
   const [loading, setLoading] = useState(false);
-  const [orderStep, setOrderStep] = useState<'create' | 'payment'>('create');
+  const [orderStep, setOrderStep] = useState<'create' | 'escrow' | 'payment' | 'waiting'>('create');
+  const [lockedRate, setLockedRate] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState(900);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   const baseRate = (usdRates[selectedCrypto] || 0) * (selectedCurrency === 'NGN' ? exchangeRates.USDNGN : exchangeRates.USDKES);
   const buyMargin = 0.02;
-  const currentRate = Math.round(baseRate * (1 + buyMargin));
+  const currentRate = lockedRate || Math.round(baseRate * (1 + buyMargin));
   const cryptoAmount = parseFloat(amount || '0') / currentRate;
+  const availableBalance = selectedCurrency === 'NGN' ? userBalance?.NGN || 0 : userBalance?.KES || 0;
+
+  const limits = {
+    BTC: { minUSD: 10, maxUSD: 50000 },
+    ETH: { minUSD: 5, maxUSD: 30000 },
+    USDT: { minUSD: 1, maxUSD: 100000 }
+  };
+
+  const exchangeRate = selectedCurrency === 'NGN' ? exchangeRates.USDNGN : exchangeRates.USDKES;
+  const minAmount = limits[selectedCrypto].minUSD * exchangeRate;
+  const maxAmount = limits[selectedCrypto].maxUSD * exchangeRate;
 
   const handleCreateOrder = async () => {
     if (!amount) {
       alert('Please enter amount');
       return;
+    }
+
+    const amountNum = parseFloat(amount);
+    
+    if (amountNum < minAmount) {
+      alert(`Minimum ${selectedCrypto} purchase is ${selectedCurrency === 'NGN' ? '₦' : 'KSh'}${minAmount.toLocaleString()}`);
+      return;
+    }
+    
+    if (amountNum > maxAmount) {
+      alert(`Maximum ${selectedCrypto} purchase is ${selectedCurrency === 'NGN' ? '₦' : 'KSh'}${maxAmount.toLocaleString()}`);
+      return;
+    }
+
+    if (paymentMethod === 'balance') {
+      if (availableBalance === 0) {
+        alert('Your wallet is empty. Please use Bank Transfer.');
+        setPaymentMethod('bank');
+        return;
+      }
+      if (amountNum > availableBalance) {
+        alert(`Insufficient funds. You have ${selectedCurrency === 'NGN' ? '₦' : 'KSh'}${availableBalance.toLocaleString()}`);
+        return;
+      }
+    }
+
+    if (!lockedRate) {
+      setLockedRate(currentRate);
     }
 
     setLoading(true);
@@ -35,7 +76,7 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
         body: JSON.stringify({
           type: 'buy',
           crypto: selectedCrypto,
-          fiatAmount: parseFloat(amount),
+          fiatAmount: amountNum,
           cryptoAmount,
           paymentMethod,
           country: selectedCurrency === 'NGN' ? 'NG' : 'KE'
@@ -43,8 +84,21 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
       });
 
       if (response.ok) {
-        setOrderStep('payment');
-        alert('Buy order created! Make payment to complete.');
+        const data = await response.json();
+        setOrderId(data.trade?.id || 'ORDER_' + Date.now());
+        setOrderStep('escrow');
+        
+        const timer = setInterval(() => {
+          setTimeRemaining(prev => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              alert('Order expired');
+              setOrderStep('create');
+              return 900;
+            }
+            return prev - 1;
+          });
+        }, 1000);
       } else {
         alert('Failed to create order');
       }
@@ -72,8 +126,46 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
         ))}
       </div>
 
+      <div className="space-y-2 mb-4">
+        <h3 className="font-bold text-slate-900">Payment Method</h3>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              if (availableBalance === 0) {
+                alert('Your wallet is empty. Please use Bank Transfer.');
+              } else {
+                setPaymentMethod('balance');
+              }
+            }}
+            className={`flex-1 p-3 rounded-xl flex flex-col items-center ${
+              paymentMethod === 'balance' ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
+            } ${availableBalance === 0 ? 'opacity-50' : ''}`}
+          >
+            <span className="text-lg mb-1">{selectedCurrency === 'NGN' ? '🇳🇬' : '🇰🇪'}</span>
+            <span className="font-semibold text-sm">Wallet Balance</span>
+            <span className="text-xs">{selectedCurrency === 'NGN' ? '₦' : 'KSh'}{availableBalance.toLocaleString()}</span>
+          </button>
+          <button
+            onClick={() => setPaymentMethod('bank')}
+            className={`flex-1 p-3 rounded-xl flex flex-col items-center ${
+              paymentMethod === 'bank' ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
+            }`}
+          >
+            <span className="text-lg mb-1">🏦</span>
+            <span className="font-semibold text-sm">Bank Transfer</span>
+            <span className="text-xs">1-24 hours</span>
+          </button>
+        </div>
+      </div>
+
       <div className="text-center p-3 bg-slate-100 rounded-xl">
-        <p className="text-slate-600">Buy Rate: {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{currentRate.toLocaleString()} per {selectedCrypto}</p>
+        <p className="text-slate-600">
+          {lockedRate ? (
+            <>🔒 Locked Rate: {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{lockedRate.toLocaleString()} per {selectedCrypto}</>
+          ) : (
+            <>Live Rate: {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{currentRate.toLocaleString()} per {selectedCrypto}</>
+          )}
+        </p>
       </div>
 
       <input
@@ -83,10 +175,21 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
         onChange={(e) => setAmount(e.target.value)}
         className="w-full p-3 border border-slate-300 rounded-xl"
       />
+      
+      <p className="text-xs text-slate-500 text-center">
+        Min: {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{minAmount.toLocaleString()} | 
+        Max: {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{maxAmount.toLocaleString()}
+      </p>
 
       {amount && parseFloat(amount) > 0 && (
         <div className="text-center p-3 bg-green-50 rounded-xl">
           <p className="text-green-600 font-bold">You'll receive: {cryptoAmount.toFixed(8)} {selectedCrypto}</p>
+        </div>
+      )}
+
+      {paymentMethod === 'balance' && parseFloat(amount || '0') > availableBalance && (
+        <div className="bg-red-50 p-3 rounded-xl border-l-4 border-red-500">
+          <p className="text-red-600 text-sm">⚠️ Insufficient balance. Use Bank Transfer or deposit funds.</p>
         </div>
       )}
 
@@ -98,6 +201,72 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
         >
           {loading ? 'Creating Order...' : 'Create Buy Order'}
         </button>
+      )}
+      
+      {orderStep === 'escrow' && (
+        <div className="bg-green-50 p-4 rounded-xl border-l-4 border-green-500">
+          <h3 className="font-bold text-green-600 mb-2">Order Created Successfully</h3>
+          <p className="text-sm text-slate-600 mb-4">
+            Complete payment within: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+          </p>
+          <div className="space-y-2 mb-4">
+            <p><span className="font-semibold">Order ID:</span> #{orderId}</p>
+            <p><span className="font-semibold">Amount:</span> {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{parseFloat(amount).toLocaleString()}</p>
+            <p><span className="font-semibold">You'll receive:</span> {cryptoAmount.toFixed(8)} {selectedCrypto}</p>
+          </div>
+          <button
+            onClick={() => setOrderStep('payment')}
+            className="w-full bg-green-500 text-white py-3 rounded-xl font-semibold"
+          >
+            Proceed to Payment
+          </button>
+        </div>
+      )}
+      
+      {orderStep === 'payment' && (
+        <div className="bg-orange-50 p-4 rounded-xl border-l-4 border-orange-500">
+          <h3 className="font-bold text-orange-600 mb-2">Complete Payment</h3>
+          {paymentMethod === 'bank' && (
+            <>
+              <p className="text-sm text-slate-600 mb-4">
+                Transfer {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{parseFloat(amount).toLocaleString()} to complete your order.
+              </p>
+              <div className="bg-white p-3 rounded-xl mb-4">
+                <p className="font-bold">Bank Details:</p>
+                <p>GTBank - 0123456789</p>
+                <p>BPay Technologies Ltd</p>
+              </div>
+            </>
+          )}
+          <button
+            onClick={() => {
+              setOrderStep('waiting');
+              alert('Payment submitted - awaiting verification');
+            }}
+            className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold"
+          >
+            {paymentMethod === 'balance' ? 'Confirm Purchase' : 'I Have Made Payment'}
+          </button>
+        </div>
+      )}
+      
+      {orderStep === 'waiting' && (
+        <div className="bg-blue-50 p-4 rounded-xl border-l-4 border-blue-500">
+          <h3 className="font-bold text-blue-600 mb-2">Payment Verification</h3>
+          <p className="text-sm text-slate-600 mb-4">
+            Your payment is being verified. An admin will contact you shortly.
+          </p>
+          <div className="bg-white p-3 rounded-xl mb-4">
+            <p className="font-semibold text-blue-600">Assigned Admin: System Admin</p>
+            <p className="text-sm text-slate-600">⭐ 4.5 rating • Avg response: 8 min</p>
+          </div>
+          <button
+            onClick={() => alert('Chat with admin feature - Coming soon!')}
+            className="w-full bg-blue-500 text-white py-3 rounded-xl font-semibold"
+          >
+            💬 Chat with Admin
+          </button>
+        </div>
       )}
 
       {orderStep === 'payment' && (
@@ -490,8 +659,14 @@ export default function MobileExactDashboard() {
                   <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center text-white text-2xl font-bold">
                     {fullName?.[0] || email?.[0] || 'U'}
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-900">{fullName || 'User'}</h2>
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Full Name"
+                      className="text-xl font-bold text-slate-900 bg-transparent border-b border-slate-300 w-full mb-2"
+                    />
                     <p className="text-slate-600">{email}</p>
                     <p className="text-sm text-slate-500">
                       Country: {user?.kycStatus === 'approved' ? (user?.country === 'NG' ? 'Nigeria' : 'Kenya') : 'Will be set during KYC'}
@@ -499,6 +674,15 @@ export default function MobileExactDashboard() {
                   </div>
                 </div>
                 <div className="space-y-3">
+                  <button 
+                    onClick={() => {
+                      localStorage.setItem('userFullName', fullName);
+                      alert('Profile updated successfully!');
+                    }}
+                    className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold"
+                  >
+                    Update Profile
+                  </button>
                   <button className="w-full bg-slate-100 text-slate-900 py-3 rounded-xl font-semibold">
                     KYC Verification
                   </button>
@@ -760,7 +944,10 @@ export default function MobileExactDashboard() {
               ) : (
                 <>
                   <button 
-                    onClick={() => setShowBuyScreen(true)}
+                    onClick={() => {
+                      setShowBuyScreen(true);
+                      setActiveTab('buy');
+                    }}
                     className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"
                   >
                     <span className="text-xl text-orange-500 mb-1">↑</span>
