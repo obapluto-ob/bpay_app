@@ -1271,14 +1271,41 @@ const ProfileScreenWeb = ({ fullName, email, user, onUpdateProfile, onLogout, on
     <div className="space-y-4">
       <div className="bg-white rounded-2xl p-6">
         <div className="flex items-center space-x-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center text-white text-2xl font-bold relative">
-            {newFullName?.[0] || email?.[0] || 'U'}
-            <button 
-              onClick={() => alert('Avatar upload feature - Coming soon!')}
-              className="absolute -bottom-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs border-2 border-white hover:bg-orange-600"
+          <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center text-white text-2xl font-bold relative overflow-hidden">
+            {localStorage.getItem('userAvatar') ? (
+              <img 
+                src={localStorage.getItem('userAvatar') || ''} 
+                alt="Avatar" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              newFullName?.[0] || email?.[0] || 'U'
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    const imageUrl = event.target?.result as string;
+                    localStorage.setItem('userAvatar', imageUrl);
+                    alert('Avatar updated successfully!');
+                    window.location.reload();
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+              className="hidden"
+              id="avatar-upload"
+            />
+            <label 
+              htmlFor="avatar-upload"
+              className="absolute -bottom-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs border-2 border-white hover:bg-orange-600 cursor-pointer"
             >
               ✎
-            </button>
+            </label>
           </div>
           <div className="flex-1">
             <input
