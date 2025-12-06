@@ -132,14 +132,28 @@ const LoginScreen: React.FC<{
               />
             </View>
             
-            <TextInput 
+            <TouchableOpacity 
               style={styles.input}
-              placeholder="Security Question: What is your mother's maiden name?"
-              placeholderTextColor="#64748b"
-              value="What is your mother's maiden name?"
-              editable={false}
-              accessibilityLabel="Security Question"
-            />
+              onPress={() => {
+                const questions = [
+                  'What is your mother\'s maiden name?',
+                  'What was the name of your first pet?',
+                  'What city were you born in?',
+                  'What was your first car?',
+                  'What is your favorite movie?'
+                ];
+                Alert.alert(
+                  'Choose Security Question',
+                  '',
+                  questions.map(q => ({
+                    text: q,
+                    onPress: () => setSecurityQuestion(q)
+                  }))
+                );
+              }}
+            >
+              <Text style={styles.inputText}>{securityQuestion}</Text>
+            </TouchableOpacity>
             
             <TextInput 
               style={styles.input}
@@ -257,6 +271,7 @@ export default function App() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [securityAnswer, setSecurityAnswer] = useState('');
+  const [securityQuestion, setSecurityQuestion] = useState('What is your mother\'s maiden name?');
   const [loading, setLoading] = useState(false);
   const [userToken, setUserToken] = useState('');
   const [userCountry, setUserCountry] = useState<'NG' | 'KE'>('NG');
@@ -551,7 +566,7 @@ export default function App() {
           email, 
           password, 
           fullName,
-          securityQuestion: "What is your mother's maiden name?",
+          securityQuestion,
           securityAnswer
         });
         Alert.alert('Success', 'Account created! Please login.');
@@ -2141,6 +2156,11 @@ const styles = StyleSheet.create({
   forgotText: {
     color: '#94a3b8',
     fontSize: 14,
+  },
+  inputText: {
+    fontSize: 17,
+    color: '#1e293b',
+    paddingVertical: 18,
   },
 
 });

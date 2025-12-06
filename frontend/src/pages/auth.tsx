@@ -14,7 +14,16 @@ export default function AuthPage() {
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [securityAnswer, setSecurityAnswer] = useState('');
+  const [securityQuestion, setSecurityQuestion] = useState('What is your mother\'s maiden name?');
   const [country, setCountry] = useState('');
+  
+  const securityQuestions = [
+    'What is your mother\'s maiden name?',
+    'What was the name of your first pet?',
+    'What city were you born in?',
+    'What was your first car?',
+    'What is your favorite movie?'
+  ];
   const router = useRouter();
 
   const handleAuth = async () => {
@@ -46,7 +55,7 @@ export default function AuthPage() {
             email, 
             password, 
             fullName,
-            securityQuestion: "What is your mother's maiden name?",
+            securityQuestion,
             securityAnswer
           })
         });
@@ -167,13 +176,15 @@ export default function AuthPage() {
                     className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
                   />
                   
-                  <input
-                    type="text"
-                    placeholder="Security Question: What is your mother's maiden name?"
-                    value="What is your mother's maiden name?"
-                    readOnly
-                    className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg bg-gray-100 text-gray-600"
-                  />
+                  <select
+                    value={securityQuestion}
+                    onChange={(e) => setSecurityQuestion(e.target.value)}
+                    className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
+                  >
+                    {securityQuestions.map(question => (
+                      <option key={question} value={question}>{question}</option>
+                    ))}
+                  </select>
                   
                   <input
                     type="text"
