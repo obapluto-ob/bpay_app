@@ -22,16 +22,15 @@ async function initDatabase() {
       
       const schemaPath = path.join(__dirname, 'src/database/simple_schema.sql');
       if (fs.existsSync(schemaPath)) {
-        let schema = fs.readFileSync(schemaPath, 'utf8');
-        // Ensure avatar column is in schema
-        if (!schema.includes('avatar TEXT')) {
-          schema = schema.replace(
-            'created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,',
-            'avatar TEXT,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,'
-          );
-        }
+        // Force recreate tables with proper schema
+        await pool.query('DROP TABLE IF EXISTS deposits CASCADE;');
+        await pool.query('DROP TABLE IF EXISTS trades CASCADE;');
+        await pool.query('DROP TABLE IF EXISTS users CASCADE;');
+        console.log('Dropped existing tables');
+        
+        const schema = fs.readFileSync(schemaPath, 'utf8');
         await pool.query(schema);
-        console.log('Database initialized successfully!');
+        console.log('Database recreated successfully!');
       }
       
       // Force add avatar column
