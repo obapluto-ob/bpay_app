@@ -674,24 +674,24 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
                 <div className="flex justify-between items-center py-2 border-b border-slate-100">
                   <span className="text-slate-600 font-semibold">Account Name:</span>
                   <button 
-                    onClick={() => copyToClipboard(bankDetails[selectedCurrency].accountName, 'Account name')}
+                    onClick={() => copyToClipboard(bankDetails[selectedCurrency as 'NG' | 'KE'].accountName, 'Account name')}
                     className="font-bold text-slate-900 hover:text-orange-500"
                   >
-                    {bankDetails[selectedCurrency].accountName} 📋
+                    {bankDetails[selectedCurrency as 'NG' | 'KE'].accountName} 📋
                   </button>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-slate-100">
                   <span className="text-slate-600 font-semibold">Account Number:</span>
                   <button 
-                    onClick={() => copyToClipboard(bankDetails[selectedCurrency].accountNumber, 'Account number')}
+                    onClick={() => copyToClipboard(bankDetails[selectedCurrency as 'NG' | 'KE'].accountNumber, 'Account number')}
                     className="font-bold text-slate-900 hover:text-orange-500"
                   >
-                    {bankDetails[selectedCurrency].accountNumber} 📋
+                    {bankDetails[selectedCurrency as 'NG' | 'KE'].accountNumber} 📋
                   </button>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-slate-100">
                   <span className="text-slate-600 font-semibold">Bank Name:</span>
-                  <span className="font-bold text-slate-900">{bankDetails[selectedCurrency].bankName}</span>
+                  <span className="font-bold text-slate-900">{bankDetails[selectedCurrency as 'NG' | 'KE'].bankName}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-slate-600 font-semibold">{selectedCurrency === 'NG' ? 'Sort Code:' : 'Branch Code:'}</span>
