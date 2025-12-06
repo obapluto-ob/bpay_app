@@ -118,18 +118,39 @@ const LoginScreen: React.FC<{
         </View>
         
         {isSignup && (
-          <View style={styles.passwordContainer}>
+          <>
+            <View style={styles.passwordContainer}>
+              <TextInput 
+                style={styles.passwordInput}
+                placeholder="Confirm Password"
+                placeholderTextColor="#64748b"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showPassword}
+                autoCorrect={false}
+                accessibilityLabel="Confirm Password"
+              />
+            </View>
+            
             <TextInput 
-              style={styles.passwordInput}
-              placeholder="Confirm Password"
+              style={styles.input}
+              placeholder="Security Question: What is your mother's maiden name?"
               placeholderTextColor="#64748b"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showPassword}
-              autoCorrect={false}
-              accessibilityLabel="Confirm Password"
+              value="What is your mother's maiden name?"
+              editable={false}
+              accessibilityLabel="Security Question"
             />
-          </View>
+            
+            <TextInput 
+              style={styles.input}
+              placeholder="Security Answer"
+              placeholderTextColor="#64748b"
+              value={securityAnswer}
+              onChangeText={setSecurityAnswer}
+              autoCorrect={false}
+              accessibilityLabel="Security Answer"
+            />
+          </>
         )}
         
         <TouchableOpacity 
@@ -235,6 +256,7 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [securityAnswer, setSecurityAnswer] = useState('');
   const [loading, setLoading] = useState(false);
   const [userToken, setUserToken] = useState('');
   const [userCountry, setUserCountry] = useState<'NG' | 'KE'>('NG');
@@ -528,7 +550,9 @@ export default function App() {
         await apiService.register({ 
           email, 
           password, 
-          fullName
+          fullName,
+          securityQuestion: "What is your mother's maiden name?",
+          securityAnswer
         });
         Alert.alert('Success', 'Account created! Please login.');
         setIsSignup(false);

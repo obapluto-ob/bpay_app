@@ -13,6 +13,7 @@ export default function AuthPage() {
   const [securityQuestion, setSecurityQuestion] = useState('');
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [securityAnswer, setSecurityAnswer] = useState('');
   const [country, setCountry] = useState('');
   const router = useRouter();
 
@@ -23,8 +24,8 @@ export default function AuthPage() {
     }
     
     if (isSignup) {
-      if (!fullName || password !== confirmPassword) {
-        alert('Please check all fields');
+      if (!fullName || !securityAnswer || password !== confirmPassword) {
+        alert('Please fill all fields including security answer');
         return;
       }
       if (password.length < 6) {
@@ -41,7 +42,13 @@ export default function AuthPage() {
         const response = await fetch('https://bpay-app.onrender.com/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, fullName })
+          body: JSON.stringify({ 
+            email, 
+            password, 
+            fullName,
+            securityQuestion: "What is your mother's maiden name?",
+            securityAnswer
+          })
         });
         
         if (response.ok) {
@@ -151,13 +158,31 @@ export default function AuthPage() {
               </div>
               
               {isSignup && (
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Confirm Password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
-                />
+                <>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
+                  />
+                  
+                  <input
+                    type="text"
+                    placeholder="Security Question: What is your mother's maiden name?"
+                    value="What is your mother's maiden name?"
+                    readOnly
+                    className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg bg-gray-100 text-gray-600"
+                  />
+                  
+                  <input
+                    type="text"
+                    placeholder="Security Answer"
+                    value={securityAnswer}
+                    onChange={(e) => setSecurityAnswer(e.target.value)}
+                    className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
+                  />
+                </>
               )}
             </div>
             
