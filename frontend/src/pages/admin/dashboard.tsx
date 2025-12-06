@@ -50,15 +50,15 @@ export default function AdminDashboard() {
     const trades = getStoredTrades();
     const admins = getStoredAdmins();
     
-    const pendingTrades = trades.filter(t => t.status === 'pending').length;
-    const todayTrades = trades.filter(t => {
+    const pendingTrades = trades.filter((t: any) => t.status === 'pending').length;
+    const todayTrades = trades.filter((t: any) => {
       const tradeDate = new Date(t.createdAt).toDateString();
       const today = new Date().toDateString();
       return tradeDate === today;
     });
-    const todayVolume = todayTrades.reduce((sum, trade) => sum + (trade.fiatAmount || 0), 0);
-    const activeUsers = users.filter(u => u.isActive !== false).length;
-    const pendingKYC = users.filter(u => u.kycStatus === 'pending').length;
+    const todayVolume = todayTrades.reduce((sum: number, trade: any) => sum + (trade.fiatAmount || 0), 0);
+    const activeUsers = users.filter((u: any) => u.isActive !== false).length;
+    const pendingKYC = users.filter((u: any) => u.kycStatus === 'pending').length;
     
     return {
       pendingTrades,
@@ -67,7 +67,7 @@ export default function AdminDashboard() {
       pendingKYC,
       alertsTriggered: 0,
       totalAdmins: admins.length,
-      onlineAdmins: admins.filter(a => a.lastActive && new Date(a.lastActive) > new Date(Date.now() - 30 * 60 * 1000)).length
+      onlineAdmins: admins.filter((a: any) => a.lastActive && new Date(a.lastActive) > new Date(Date.now() - 30 * 60 * 1000)).length
     };
   };
   const router = useRouter();
