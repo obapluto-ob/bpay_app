@@ -84,7 +84,7 @@ export default function TradeManagement() {
     const adminStats = admins.map((admin: any) => {
       const adminTrades = trades.filter(t => t.assignedAdmin === admin.id);
       const successful = adminTrades.filter(t => t.status === 'completed').length;
-      const ratings = adminTrades.filter(t => t.adminRating).map(t => t.adminRating);
+      const ratings = adminTrades.filter(t => t.adminRating).map(t => t.adminRating).filter(r => r !== undefined) as number[];
       const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
       
       return {
