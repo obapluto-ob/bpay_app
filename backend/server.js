@@ -22,15 +22,18 @@ async function initDatabase() {
       
       const schemaPath = path.join(__dirname, 'src/database/simple_schema.sql');
       if (fs.existsSync(schemaPath)) {
-        // Force recreate tables with proper schema
-        await pool.query('DROP TABLE IF EXISTS deposits CASCADE;');
-        await pool.query('DROP TABLE IF EXISTS trades CASCADE;');
-        await pool.query('DROP TABLE IF EXISTS users CASCADE;');
-        console.log('Dropped existing tables');
+        // Force complete database reset
+        try {
+          await pool.query('DROP SCHEMA public CASCADE;');
+          await pool.query('CREATE SCHEMA public;');
+          console.log('Schema reset complete');
+        } catch (e) {
+          console.log('Schema reset error (continuing):', e.message);
+        }
         
         const schema = fs.readFileSync(schemaPath, 'utf8');
         await pool.query(schema);
-        console.log('Database recreated successfully!');
+        console.log('Database recreated with new schema!');
       }
       
       // Force add avatar column
