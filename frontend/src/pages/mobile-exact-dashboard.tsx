@@ -1273,7 +1273,10 @@ const ProfileScreenWeb = ({ fullName, email, user, onUpdateProfile, onLogout, on
         <div className="flex items-center space-x-4 mb-6">
           <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center text-white text-2xl font-bold relative">
             {newFullName?.[0] || email?.[0] || 'U'}
-            <button className="absolute -bottom-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs border-2 border-white">
+            <button 
+              onClick={() => alert('Avatar upload feature - Coming soon!')}
+              className="absolute -bottom-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs border-2 border-white hover:bg-orange-600"
+            >
               ✎
             </button>
           </div>
