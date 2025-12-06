@@ -35,14 +35,14 @@
     "@radix-ui/react-switch": "^1.0.3",
     "lucide-react": "^0.294.0",
     "react-intersection-observer": "^9.5.3",
-    "use-sound": "^4.0.1"
-  },
-  "devDependencies": {
+    "use-sound": "^4.0.1",
+    "typescript": "^5.3.3",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
-    "@types/react-dom": "^18.2.18",
+    "@types/react-dom": "^18.2.18"
+  },
+  "devDependencies": {
     "eslint": "^8.56.0",
-    "eslint-config-next": "14.0.4",
-    "typescript": "^5.3.3"
+    "eslint-config-next": "14.0.4"
   }
 }
