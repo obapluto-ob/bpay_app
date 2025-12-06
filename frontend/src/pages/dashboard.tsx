@@ -24,7 +24,7 @@ ChartJS.register(
 
 const API_BASE = 'https://bpay-app.onrender.com/api';
 
-export { default } from './enhanced-dashboard';
+export { default } from './mobile-style-dashboard';
 
 // Legacy dashboard - keeping for reference
 function LegacyDashboard() {
