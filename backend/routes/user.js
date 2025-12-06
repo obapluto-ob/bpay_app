@@ -31,7 +31,7 @@ const authenticateToken = (req, res, next) => {
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const query = 'SELECT id, email, full_name, country, kyc_status, is_verified, created_at FROM users WHERE id = $1';
+    const query = 'SELECT id, email, first_name, last_name, country, kyc_status, is_verified, created_at FROM users WHERE id = $1';
     const result = await pool.query(query, [userId]);
     
     if (result.rows.length === 0) {
@@ -42,7 +42,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
     res.json({
       id: user.id,
       email: user.email,
-      fullName: user.full_name,
+      fullName: `${user.first_name} ${user.last_name}`,
       country: user.country || 'NG',
       kycStatus: user.kyc_status || 'pending',
       isVerified: user.is_verified || false,
@@ -58,20 +58,13 @@ router.get('/profile', authenticateToken, async (req, res) => {
 router.get('/balance', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const query = 'SELECT btc_balance, eth_balance, usdt_balance, ngn_balance, kes_balance FROM users WHERE id = $1';
-    const result = await pool.query(query, [userId]);
-    
-    if (result.rows.length === 0) {
-      return res.json({ BTC: 0, ETH: 0, USDT: 0, NGN: 0, KES: 0 });
-    }
-    
-    const balance = result.rows[0];
+    // Return mock balances since balance columns don't exist yet
     res.json({
-      BTC: parseFloat(balance.btc_balance) || 0,
-      ETH: parseFloat(balance.eth_balance) || 0,
-      USDT: parseFloat(balance.usdt_balance) || 0,
-      NGN: parseFloat(balance.ngn_balance) || 0,
-      KES: parseFloat(balance.kes_balance) || 0
+      BTC: 0,
+      ETH: 0,
+      USDT: 0,
+      NGN: 0,
+      KES: 0
     });
   } catch (error) {
     console.error('Balance error:', error);
