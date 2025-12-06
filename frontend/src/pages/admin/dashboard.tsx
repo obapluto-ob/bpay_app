@@ -17,7 +17,9 @@ export default function AdminDashboard() {
     todayVolume: 0,
     activeUsers: 0,
     pendingKYC: 0,
-    alertsTriggered: 0
+    alertsTriggered: 0,
+    totalAdmins: 0,
+    onlineAdmins: 0
   });
   const [liveRates, setLiveRates] = useState({ BTC: 0, ETH: 0, USDT: 0 });
   const [exchangeRates, setExchangeRates] = useState({ USDNGN: 0, USDKES: 0 });
