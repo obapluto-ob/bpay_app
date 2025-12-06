@@ -17,6 +17,11 @@ export default function ProfessionalDashboard() {
   const [lastUpdate, setLastUpdate] = useState<string>('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [showBuyScreen, setShowBuyScreen] = useState(false);
+  const [showSellScreen, setShowSellScreen] = useState(false);
+  const [showHistoryScreen, setShowHistoryScreen] = useState(false);
+  const [showWalletScreen, setShowWalletScreen] = useState(false);
+  const [activeTab, setActiveTab] = useState('home');
   const router = useRouter();
 
   useEffect(() => {
@@ -265,25 +270,37 @@ export default function ProfessionalDashboard() {
             <div className="flex justify-around px-2">
               {selectedAccount === 'crypto' ? (
                 <>
-                  <button className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]">
+                  <button 
+                    onClick={() => setShowSellScreen(true)}
+                    className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px] hover:bg-orange-50 transition-colors"
+                  >
                     <svg className="w-5 h-5 text-orange-500 mb-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                     </svg>
                     <span className="text-xs text-slate-900 font-semibold">Sell</span>
                   </button>
-                  <button className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]">
+                  <button 
+                    onClick={() => setShowWalletScreen(true)}
+                    className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px] hover:bg-orange-50 transition-colors"
+                  >
                     <svg className="w-5 h-5 text-orange-500 mb-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd"/>
                     </svg>
                     <span className="text-xs text-slate-900 font-semibold">Deposit</span>
                   </button>
-                  <button className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]">
+                  <button 
+                    onClick={() => setShowWalletScreen(true)}
+                    className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px] hover:bg-orange-50 transition-colors"
+                  >
                     <svg className="w-5 h-5 text-orange-500 mb-1" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"/>
                     </svg>
                     <span className="text-xs text-slate-900 font-semibold">Wallet</span>
                   </button>
-                  <button className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]">
+                  <button 
+                    onClick={() => alert('Convert feature - Coming soon!')}
+                    className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px] hover:bg-orange-50 transition-colors"
+                  >
                     <svg className="w-5 h-5 text-orange-500 mb-1" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M8 5a1 1 0 100 2h5.586l-1.293 1.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L13.586 5H8zM12 15a1 1 0 100-2H6.414l1.293-1.293a1 1 0 10-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L6.414 15H12z"/>
                     </svg>
@@ -292,13 +309,19 @@ export default function ProfessionalDashboard() {
                 </>
               ) : (
                 <>
-                  <button className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]">
+                  <button 
+                    onClick={() => setShowBuyScreen(true)}
+                    className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px] hover:bg-orange-50 transition-colors"
+                  >
                     <svg className="w-5 h-5 text-orange-500 mb-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd"/>
                     </svg>
                     <span className="text-xs text-slate-900 font-semibold">Buy Crypto</span>
                   </button>
-                  <button className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]">
+                  <button 
+                    onClick={() => alert('Add Funds - Bank transfer details will be shown')}
+                    className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px] hover:bg-orange-50 transition-colors"
+                  >
                     <svg className="w-5 h-5 text-orange-500 mb-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd"/>
                     </svg>
@@ -353,36 +376,57 @@ export default function ProfessionalDashboard() {
         {/* Bottom Navigation */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-2xl">
           <div className="flex py-3 px-2">
-            <button className="flex-1 flex flex-col items-center py-2 px-1">
-              <svg className="w-5 h-5 text-orange-500 mb-1" fill="currentColor" viewBox="0 0 20 20">
+            <button 
+              onClick={() => setActiveTab('home')}
+              className="flex-1 flex flex-col items-center py-2 px-1"
+            >
+              <svg className={`w-5 h-5 mb-1 ${activeTab === 'home' ? 'text-orange-500' : 'text-slate-500'}`} fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
               </svg>
-              <span className="text-xs font-medium text-orange-500">Home</span>
+              <span className={`text-xs font-medium ${activeTab === 'home' ? 'text-orange-500' : 'text-slate-500'}`}>Home</span>
             </button>
             
             {selectedAccount === 'crypto' && (
-              <button className="flex-1 flex flex-col items-center py-2 px-1">
-                <svg className="w-5 h-5 text-slate-500 mb-1" fill="currentColor" viewBox="0 0 20 20">
+              <button 
+                onClick={() => {
+                  setActiveTab('sell');
+                  setShowSellScreen(true);
+                }}
+                className="flex-1 flex flex-col items-center py-2 px-1"
+              >
+                <svg className={`w-5 h-5 mb-1 ${activeTab === 'sell' ? 'text-orange-500' : 'text-slate-500'}`} fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                 </svg>
-                <span className="text-xs font-medium text-slate-500">Sell</span>
+                <span className={`text-xs font-medium ${activeTab === 'sell' ? 'text-orange-500' : 'text-slate-500'}`}>Sell</span>
               </button>
             )}
             
             {selectedAccount !== 'crypto' && (
-              <button className="flex-1 flex flex-col items-center py-2 px-1">
-                <svg className="w-5 h-5 text-slate-500 mb-1" fill="currentColor" viewBox="0 0 20 20">
+              <button 
+                onClick={() => {
+                  setActiveTab('buy');
+                  setShowBuyScreen(true);
+                }}
+                className="flex-1 flex flex-col items-center py-2 px-1"
+              >
+                <svg className={`w-5 h-5 mb-1 ${activeTab === 'buy' ? 'text-orange-500' : 'text-slate-500'}`} fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd"/>
                 </svg>
-                <span className="text-xs font-medium text-slate-500">Buy</span>
+                <span className={`text-xs font-medium ${activeTab === 'buy' ? 'text-orange-500' : 'text-slate-500'}`}>Buy</span>
               </button>
             )}
             
-            <button className="flex-1 flex flex-col items-center py-2 px-1">
-              <svg className="w-5 h-5 text-slate-500 mb-1" fill="currentColor" viewBox="0 0 20 20">
+            <button 
+              onClick={() => {
+                setActiveTab('history');
+                setShowHistoryScreen(true);
+              }}
+              className="flex-1 flex flex-col items-center py-2 px-1"
+            >
+              <svg className={`w-5 h-5 mb-1 ${activeTab === 'history' ? 'text-orange-500' : 'text-slate-500'}`} fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
               </svg>
-              <span className="text-xs font-medium text-slate-500">History</span>
+              <span className={`text-xs font-medium ${activeTab === 'history' ? 'text-orange-500' : 'text-slate-500'}`}>History</span>
             </button>
             
             <button 
@@ -421,6 +465,157 @@ export default function ProfessionalDashboard() {
 
         <div className="h-20"></div>
       </div>
+
+      {/* Buy Screen Modal */}
+      {showBuyScreen && (
+        <div className="fixed inset-0 bg-slate-800 z-50">
+          <div className="p-5 pt-12">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold text-white">Buy Crypto</h1>
+              <button
+                onClick={() => {
+                  setShowBuyScreen(false);
+                  setActiveTab('home');
+                }}
+                className="p-2 bg-slate-700 rounded-full"
+              >
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
+                </svg>
+              </button>
+            </div>
+            <div className="bg-white rounded-2xl p-6">
+              <p className="text-center text-slate-600 mb-4">Use mobile app for complete buy experience with real-time admin chat and payment verification.</p>
+              <button 
+                onClick={() => window.open('https://expo.dev/@yourusername/bpay-mobile', '_blank')}
+                className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold"
+              >
+                Open Mobile App
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sell Screen Modal */}
+      {showSellScreen && (
+        <div className="fixed inset-0 bg-slate-800 z-50">
+          <div className="p-5 pt-12">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold text-white">Sell Crypto</h1>
+              <button
+                onClick={() => {
+                  setShowSellScreen(false);
+                  setActiveTab('home');
+                }}
+                className="p-2 bg-slate-700 rounded-full"
+              >
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
+                </svg>
+              </button>
+            </div>
+            <div className="bg-white rounded-2xl p-6">
+              <p className="text-center text-slate-600 mb-4">Use mobile app for complete sell experience with escrow protection and admin verification.</p>
+              <button 
+                onClick={() => window.open('https://expo.dev/@yourusername/bpay-mobile', '_blank')}
+                className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold"
+              >
+                Open Mobile App
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Screen Modal */}
+      {showHistoryScreen && (
+        <div className="fixed inset-0 bg-slate-800 z-50">
+          <div className="p-5 pt-12">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold text-white">Trade History</h1>
+              <button
+                onClick={() => {
+                  setShowHistoryScreen(false);
+                  setActiveTab('home');
+                }}
+                className="p-2 bg-slate-700 rounded-full"
+              >
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
+                </svg>
+              </button>
+            </div>
+            <div className="bg-white rounded-2xl p-6">
+              <p className="text-center text-slate-600 mb-4">No trade history found. Start trading to see your transaction history here.</p>
+              <button 
+                onClick={() => {
+                  setShowHistoryScreen(false);
+                  setShowBuyScreen(true);
+                  setActiveTab('buy');
+                }}
+                className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold"
+              >
+                Start Trading
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Wallet Screen Modal */}
+      {showWalletScreen && (
+        <div className="fixed inset-0 bg-slate-800 z-50">
+          <div className="p-5 pt-12">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold text-white">Crypto Wallet</h1>
+              <button
+                onClick={() => setShowWalletScreen(false)}
+                className="p-2 bg-slate-700 rounded-full"
+              >
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-4">
+              {['BTC', 'ETH', 'USDT'].map((crypto) => (
+                <div key={crypto} className="bg-white rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <CryptoIcon crypto={crypto} size={40} />
+                      <div>
+                        <h3 className="font-bold text-slate-900">{crypto}</h3>
+                        <p className="text-sm text-slate-600">
+                          {crypto === 'BTC' ? 'Bitcoin' : crypto === 'ETH' ? 'Ethereum' : 'Tether'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-slate-900">
+                        {crypto === 'BTC' ? balance.BTC?.toFixed(6) : 
+                         crypto === 'ETH' ? balance.ETH?.toFixed(4) : 
+                         balance.USDT?.toFixed(2)} {crypto}
+                      </p>
+                      <p className="text-sm text-slate-600">
+                        ${((crypto === 'BTC' ? balance.BTC : crypto === 'ETH' ? balance.ETH : balance.USDT) * (usdRates[crypto] || 0)).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button className="flex-1 bg-green-500 text-white py-2 rounded-lg font-semibold">
+                      Receive
+                    </button>
+                    <button className="flex-1 bg-orange-500 text-white py-2 rounded-lg font-semibold">
+                      Send
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
