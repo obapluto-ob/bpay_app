@@ -1,64 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { motion } from 'framer-motion';
-import BPayLogo from '../components/BPayLogo';
-import ThemeToggle from '../components/ThemeToggle';
-import CryptoRates from '../components/CryptoRates';
-import TradingChart from '../components/TradingChart';
-import HeroSection from '../components/HeroSection';
-import FeatureCards from '../components/FeatureCards';
-import { useDeviceTheme } from '../components/DeviceTheme';
-import { notifications } from '../utils/notifications';
 
-// API Configuration
 const API_BASE = 'https://bpay-app.onrender.com/api';
-
-const api = {
-  getRates: async () => {
-    try {
-      const response = await fetch(`${API_BASE}/trade/rates`);
-      return await response.json();
-    } catch (error) {
-      return { BTC: { buy: 45250000, sell: 44750000 }, ETH: { buy: 2850000, sell: 2820000 }, USDT: { buy: 1580, sell: 1570 } };
-    }
-  },
-  createTrade: async (tradeData: any, token: string) => {
-    try {
-      const response = await fetch(`${API_BASE}/trade/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(tradeData)
-      });
-      return await response.json();
-    } catch (error) {
-      return { error: 'Network error' };
-    }
-  }
-};
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
-  const [selectedCrypto, setSelectedCrypto] = useState('BTC');
-  const [selectedCurrency, setSelectedCurrency] = useState('NGN');
-  const [rates, setRates] = useState({ BTC: { buy: 0, sell: 0 }, ETH: { buy: 0, sell: 0 }, USDT: { buy: 0, sell: 0 } });
-  const [balance, setBalance] = useState({ NGN: 2450000, BTC: 0.04567890, ETH: 0.12345, USDT: 1500 });
-  const [showTradeModal, setShowTradeModal] = useState(false);
-  const [tradeType, setTradeType] = useState('buy');
-  const [tradeAmount, setTradeAmount] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [balance, setBalance] = useState({ NGN: 0, KES: 0, BTC: 0, ETH: 0, USDT: 0 });
+  const [rates, setRates] = useState({ BTC: { NGN: 0, KES: 0 }, ETH: { NGN: 0, KES: 0 }, USDT: { NGN: 0, KES: 0 } });
+  const [loading, setLoading] = useState(true);
+  const [showBuyModal, setShowBuyModal] = useState(false);
+  const [showSellModal, setShowSellModal] = useState(false);
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showKYCModal, setShowKYCModal] = useState(false);
   const router = useRouter();
-  const { isMobile } = useDeviceTheme();
-  
-  // Fetch real-time rates
-  useEffect(() => {
-    const fetchRates = async () => {
-      const ratesData = await api.getRates();
-      setRates(ratesData);
-    };
-    fetchRates();
-    const interval = setInterval(fetchRates, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -67,280 +21,364 @@ export default function Dashboard() {
       return;
     }
 
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setUser(payload);
-      
-      // Request notification permission
-      notifications.requestPermission();
-      
-      // Welcome notification
-      setTimeout(() => {
-        notifications.showNotification('Welcome to BPay!', {
-          body: 'Your crypto trading dashboard is ready',
-          icon: '/5782897843587714011_120.jpg'
+    const fetchData = async () => {
+      try {
+        // Fetch user profile
+        const profileRes = await fetch(`${API_BASE}/user/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-      }, 2000);
-    } catch (error) {
-      localStorage.removeItem('token');
-      router.push('/auth');
-    }
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          setUser(profileData);
+        }
+
+        // Fetch balance
+        const balanceRes = await fetch(`${API_BASE}/user/balance`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (balanceRes.ok) {
+          const balanceData = await balanceRes.json();
+          setBalance(balanceData);
+        }
+
+        // Fetch rates
+        const ratesRes = await fetch(`${API_BASE}/trade/rates`);
+        if (ratesRes.ok) {
+          const ratesData = await ratesRes.json();
+          setRates(ratesData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userFullName');
     router.push('/auth');
   };
 
-  const handleTradeClick = (type: string) => {
-    setTradeType(type);
-    setShowTradeModal(true);
-  };
-  
-  const executeTrade = async () => {
-    if (!tradeAmount || parseFloat(tradeAmount) <= 0) {
-      alert('Please enter a valid amount');
-      return;
+  const getKYCStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved': return 'text-green-600 bg-green-100';
+      case 'processing': return 'text-yellow-600 bg-yellow-100';
+      case 'rejected': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
     }
-    
-    setLoading(true);
-    const token = localStorage.getItem('token') || '';
-    const tradeData = {
-      type: tradeType,
-      crypto: selectedCrypto,
-      amount: parseFloat(tradeAmount),
-      rate: (rates as any)[selectedCrypto][tradeType]
-    };
-    
-    const result = await api.createTrade(tradeData, token);
-    
-    if (result.error) {
-      alert('Error: ' + result.error);
-    } else {
-      const cryptoAmount = parseFloat(tradeAmount);
-      const ngnAmount = cryptoAmount * (rates as any)[selectedCrypto][tradeType];
-      
-      if (tradeType === 'buy') {
-        setBalance(prev => ({ ...prev, NGN: prev.NGN - ngnAmount, [selectedCrypto]: (prev as any)[selectedCrypto] + cryptoAmount }));
-      } else {
-        setBalance(prev => ({ ...prev, NGN: prev.NGN + ngnAmount, [selectedCrypto]: (prev as any)[selectedCrypto] - cryptoAmount }));
-      }
-      
-      setShowTradeModal(false);
-      setTradeAmount('');
-      notifications.showNotification('Trade Successful!', { body: `${tradeType} ${cryptoAmount} ${selectedCrypto}` });
-    }
-    
-    setLoading(false);
   };
 
-  if (!user) {
+  const getKYCStatusText = (status: string) => {
+    switch (status) {
+      case 'approved': return 'Verified';
+      case 'processing': return 'Processing';
+      case 'rejected': return 'Rejected';
+      default: return 'Pending';
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading BPay...</p>
+          <p className="mt-4 text-gray-600">Loading BPay Dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-      {/* Navigation */}
-      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <BPayLogo size="sm" />
+              <img 
+                src="/5782897843587714011_120.jpg" 
+                alt="BPay" 
+                className="w-10 h-10 rounded-full"
+              />
+              <h1 className="text-xl font-bold text-gray-900">BPay Dashboard</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <ThemeToggle />
-              <span className="text-gray-700 dark:text-gray-300">Welcome, {user.email}</span>
+              <span className="text-sm text-gray-600">
+                Welcome, {user?.fullName || user?.email}
+              </span>
               <button
                 onClick={handleLogout}
-                className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-3 py-2 rounded-md text-sm text-gray-700 dark:text-gray-300 transition-colors"
+                className="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-md text-sm text-gray-700 transition-colors"
               >
                 Logout
               </button>
             </div>
           </div>
         </div>
-      </nav>
+      </header>
 
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {/* Hero Section */}
-        <HeroSection />
-        
-        {/* Feature Cards */}
-        <FeatureCards />
+        {/* User Status Card */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Account Status</h2>
+              <p className="text-sm text-gray-600">{user?.email}</p>
+              <p className="text-sm text-gray-600">Country: {user?.country === 'NG' ? 'Nigeria' : 'Kenya'}</p>
+            </div>
+            <div className="text-right">
+              <div className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getKYCStatusColor(user?.kycStatus)}`}>
+                KYC: {getKYCStatusText(user?.kycStatus)}
+              </div>
+              {user?.kycStatus === 'pending' && (
+                <button
+                  onClick={() => setShowKYCModal(true)}
+                  className="block mt-2 text-sm text-orange-600 hover:text-orange-700"
+                >
+                  Complete KYC
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
-        {/* Quick Stats */}
-        {!showTradeModal && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            {[
-              { label: 'Total Balance', value: `₦${balance.NGN.toLocaleString()}`, change: '+2.5%', color: 'orange' },
-              { label: 'BTC Holdings', value: balance.BTC.toString(), change: '+5.2%', color: 'yellow' },
-              { label: 'ETH Holdings', value: balance.ETH.toString(), change: '+3.1%', color: 'green' },
-              { label: 'USDT Holdings', value: balance.USDT.toString(), change: '+0.1%', color: 'blue' }
-            ].map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
-                <p className={`text-sm text-${stat.color}-500`}>{stat.change}</p>
-              </motion.div>
+        {/* Balance Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">NGN Balance</h3>
+            <p className="text-2xl font-bold text-gray-900">₦{balance.NGN.toLocaleString()}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">KES Balance</h3>
+            <p className="text-2xl font-bold text-gray-900">KSh{balance.KES.toLocaleString()}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">Bitcoin</h3>
+            <p className="text-2xl font-bold text-gray-900">{balance.BTC.toFixed(8)}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">Ethereum</h3>
+            <p className="text-2xl font-bold text-gray-900">{balance.ETH.toFixed(6)}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">USDT</h3>
+            <p className="text-2xl font-bold text-gray-900">{balance.USDT.toFixed(2)}</p>
+          </div>
+        </div>
+
+        {/* Live Rates */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Live Crypto Rates</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Object.entries(rates).map(([crypto, rate]) => (
+              <div key={crypto} className="border rounded-lg p-4">
+                <h4 className="font-medium text-gray-900">{crypto}</h4>
+                <p className="text-sm text-gray-600">NGN: ₦{rate.NGN.toLocaleString()}</p>
+                <p className="text-sm text-gray-600">KES: KSh{rate.KES.toLocaleString()}</p>
+              </div>
             ))}
           </div>
-        )}
-
-        {!showTradeModal && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Trading Chart */}
-            <div className="lg:col-span-2">
-              <TradingChart symbol={selectedCrypto} currency={selectedCurrency} />
-            </div>
-
-            {/* Live Rates */}
-            <div>
-              <CryptoRates />
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* Quick Actions */}
-        <motion.div 
-          className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 rounded-lg text-white">
-            <h3 className="text-lg font-medium mb-2">Quick Trade</h3>
-            <p className="mb-4 opacity-90">Buy or sell crypto instantly</p>
-            <button 
-              onClick={() => handleTradeClick('buy')}
-              className="bg-white text-orange-600 px-4 py-2 rounded-md hover:bg-gray-100 transition-colors font-medium mr-2"
-            >
-              Buy Crypto
-            </button>
-            <button 
-              onClick={() => handleTradeClick('sell')}
-              className="bg-orange-100 text-orange-600 px-4 py-2 rounded-md hover:bg-orange-200 transition-colors font-medium"
-            >
-              Sell Crypto
-            </button>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <button
+            onClick={() => setShowBuyModal(true)}
+            className="bg-green-500 hover:bg-green-600 text-white p-6 rounded-lg text-center transition-colors"
+          >
+            <h3 className="text-lg font-semibold mb-2">Buy Crypto</h3>
+            <p className="text-sm opacity-90">Purchase Bitcoin, Ethereum, or USDT</p>
+          </button>
+          
+          <button
+            onClick={() => setShowSellModal(true)}
+            className="bg-red-500 hover:bg-red-600 text-white p-6 rounded-lg text-center transition-colors"
+          >
+            <h3 className="text-lg font-semibold mb-2">Sell Crypto</h3>
+            <p className="text-sm opacity-90">Convert crypto to cash</p>
+          </button>
+          
+          <button
+            onClick={() => setShowDepositModal(true)}
+            className="bg-blue-500 hover:bg-blue-600 text-white p-6 rounded-lg text-center transition-colors"
+          >
+            <h3 className="text-lg font-semibold mb-2">Deposit</h3>
+            <p className="text-sm opacity-90">Add funds to your wallet</p>
+          </button>
+          
+          <button
+            onClick={() => router.push('/trade-history')}
+            className="bg-gray-500 hover:bg-gray-600 text-white p-6 rounded-lg text-center transition-colors"
+          >
+            <h3 className="text-lg font-semibold mb-2">Trade History</h3>
+            <p className="text-sm opacity-90">View all transactions</p>
+          </button>
+        </div>
 
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-lg text-white">
-            <h3 className="text-lg font-medium mb-2">Wallet</h3>
-            <p className="mb-4 opacity-90">Manage your crypto & fiat</p>
-            <button className="bg-white text-blue-600 px-4 py-2 rounded-md hover:bg-gray-100 transition-colors font-medium">
-              View Wallet
-            </button>
-          </div>
-
-          <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-lg text-white">
-            <h3 className="text-lg font-medium mb-2">History</h3>
-            <p className="mb-4 opacity-90">Track all transactions</p>
-            <button className="bg-white text-green-600 px-4 py-2 rounded-md hover:bg-gray-100 transition-colors font-medium">
-              View History
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Trading Modal */}
-        {showTradeModal && (
+        {/* KYC Modal */}
+        {showKYCModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-96 max-w-90vw">
-              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-                {tradeType === 'buy' ? 'Buy' : 'Sell'} {selectedCrypto}
-              </h3>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Select Cryptocurrency
-                </label>
-                <select 
-                  value={selectedCrypto}
-                  onChange={(e) => setSelectedCrypto(e.target.value)}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value="BTC">Bitcoin (BTC)</option>
-                  <option value="ETH">Ethereum (ETH)</option>
-                  <option value="USDT">Tether (USDT)</option>
-                </select>
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Complete KYC Verification</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                To use BPay services, please complete your KYC verification. This helps us comply with regulations and keep your account secure.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+                  <select className="w-full border border-gray-300 rounded-md px-3 py-2">
+                    <option>National ID</option>
+                    <option>Passport</option>
+                    <option>Driver's License</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Document Number</label>
+                  <input 
+                    type="text" 
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="Enter document number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Upload Document</label>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
               </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Amount ({selectedCrypto})
-                </label>
-                <input
-                  type="number"
-                  value={tradeAmount}
-                  onChange={(e) => setTradeAmount(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-              
-              <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-md">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Rate: ₦{(rates as any)[selectedCrypto]?.[tradeType]?.toLocaleString()}
-                </p>
-                {tradeAmount && (
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">
-                    Total: ₦{(parseFloat(tradeAmount) * ((rates as any)[selectedCrypto]?.[tradeType] || 0)).toLocaleString()}
-                  </p>
-                )}
-              </div>
-              
-              <div className="flex space-x-3">
+              <div className="flex space-x-3 mt-6">
                 <button
-                  onClick={() => setShowTradeModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500"
+                  onClick={() => setShowKYCModal(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={executeTrade}
-                  disabled={loading}
-                  className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50"
+                  onClick={() => {
+                    alert('KYC submitted for review');
+                    setShowKYCModal(false);
+                  }}
+                  className="flex-1 bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600"
                 >
-                  {loading ? 'Processing...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${selectedCrypto}`}
+                  Submit KYC
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Currency Selector */}
-        <div className="mt-8 flex justify-center space-x-4">
-          <select 
-            value={selectedCurrency}
-            onChange={(e) => setSelectedCurrency(e.target.value)}
-            className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white"
-          >
-            <option value="NGN">Nigerian Naira (₦)</option>
-            <option value="KES">Kenyan Shillings (KSh)</option>
-          </select>
-          
-          <select 
-            value={selectedCrypto}
-            onChange={(e) => setSelectedCrypto(e.target.value)}
-            className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white"
-          >
-            <option value="BTC">Bitcoin (BTC)</option>
-            <option value="ETH">Ethereum (ETH)</option>
-            <option value="USDT">Tether (USDT)</option>
-          </select>
-        </div>
+        {/* Buy Modal */}
+        {showBuyModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Buy Crypto</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Use the mobile app for the complete buy experience with real-time admin chat and payment verification.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowBuyModal(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => window.open('https://expo.dev/@yourusername/bpay-mobile', '_blank')}
+                  className="flex-1 bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600"
+                >
+                  Open Mobile App
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sell Modal */}
+        {showSellModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Sell Crypto</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Use the mobile app for the complete sell experience with escrow protection and admin verification.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowSellModal(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => window.open('https://expo.dev/@yourusername/bpay-mobile', '_blank')}
+                  className="flex-1 bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600"
+                >
+                  Open Mobile App
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Deposit Modal */}
+        {showDepositModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Deposit Funds</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                  <input 
+                    type="number" 
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="Enter amount"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                  <select className="w-full border border-gray-300 rounded-md px-3 py-2">
+                    <option value="NGN">Nigerian Naira (NGN)</option>
+                    <option value="KES">Kenyan Shillings (KES)</option>
+                  </select>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <h4 className="font-medium text-gray-900 mb-2">Bank Details</h4>
+                  <p className="text-sm text-gray-600">
+                    GTBank<br/>
+                    Account: 0123456789<br/>
+                    BPay Technologies Ltd
+                  </p>
+                </div>
+              </div>
+              <div className="flex space-x-3 mt-6">
+                <button
+                  onClick={() => setShowDepositModal(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    alert('Deposit request submitted');
+                    setShowDepositModal(false);
+                  }}
+                  className="flex-1 bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600"
+                >
+                  Submit Deposit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
