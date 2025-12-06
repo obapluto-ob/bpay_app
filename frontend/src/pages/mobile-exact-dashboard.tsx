@@ -519,18 +519,48 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
 
   const depositMethods = [
     {
-      id: 'bank',
+      id: 'ng_bank',
+      type: 'bank_transfer',
       name: 'Bank Transfer',
-      details: `Transfer to our ${selectedCurrency === 'NG' ? 'Nigerian' : 'Kenyan'} bank account`,
-      icon: '🏦'
+      details: 'Transfer to our Nigerian bank account',
+      country: 'NG',
+      instructions: [
+        'Transfer money to the account details below',
+        'Use your email as the transfer reference',
+        'Upload proof of payment',
+        'Funds will be credited within 30 minutes after verification'
+      ]
     },
-    ...(selectedCurrency === 'KE' ? [{
-      id: 'mpesa',
+    {
+      id: 'ke_bank',
+      type: 'bank_transfer', 
+      name: 'Bank Transfer',
+      details: 'Transfer to our Kenyan bank account',
+      country: 'KE',
+      instructions: [
+        'Transfer money to the account details below',
+        'Use your email as the transfer reference', 
+        'Upload proof of payment',
+        'Funds will be credited within 30 minutes after verification'
+      ]
+    },
+    {
+      id: 'ke_mpesa',
+      type: 'mobile_money',
       name: 'M-Pesa',
       details: 'Send money via M-Pesa',
-      icon: '📱'
-    }] : [])
+      country: 'KE',
+      instructions: [
+        'Go to M-Pesa menu on your phone',
+        'Select Send Money (Lipa na M-Pesa)',
+        'Enter the Paybill number below',
+        'Use your email as the account number',
+        'Upload M-Pesa confirmation message'
+      ]
+    }
   ];
+
+  const availableMethods = depositMethods.filter(method => method.country === selectedCurrency);
 
   const bankDetails = {
     NG: {
@@ -552,6 +582,11 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
     businessName: 'BPay Kenya'
   };
 
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    alert(`${label} copied to clipboard`);
+  };
+
   const handleSubmitProof = () => {
     if (!amount || !paymentProof) {
       alert('Please fill all fields and upload payment proof');
@@ -568,24 +603,33 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
         <p className="text-center text-slate-600 mb-6">Choose your preferred deposit method:</p>
         
         <div className="space-y-3 mb-6">
-          {depositMethods.map((method) => (
+          {availableMethods.map((method) => (
             <button
               key={method.id}
               onClick={() => setSelectedMethod(method)}
-              className="w-full bg-slate-50 p-4 rounded-xl flex items-center space-x-4 hover:bg-slate-100 transition-colors"
+              className="w-full bg-white p-4 rounded-xl flex items-center space-x-4 hover:bg-slate-50 transition-colors shadow-md border border-slate-200"
             >
-              <span className="text-2xl">{method.icon}</span>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                method.type === 'bank_transfer' ? 'bg-blue-100' : 'bg-green-100'
+              }`}>
+                <span className="text-2xl">
+                  {method.type === 'bank_transfer' ? '🏦' : '📱'}
+                </span>
+              </div>
               <div className="flex-1 text-left">
                 <h4 className="font-bold text-slate-900">{method.name}</h4>
                 <p className="text-sm text-slate-600">{method.details}</p>
               </div>
-              <span className="text-slate-400">›</span>
+              <span className="text-slate-400 text-xl">›</span>
             </button>
           ))}
         </div>
         
         <div className="bg-yellow-50 p-4 rounded-xl border-l-4 border-yellow-500">
-          <h4 className="font-bold text-yellow-800 mb-2">💡 Important Notes</h4>
+          <div className="flex items-center mb-2">
+            <span className="text-yellow-600 mr-2">💡</span>
+            <h4 className="font-bold text-yellow-800">Important Notes</h4>
+          </div>
           <div className="text-sm text-yellow-700 space-y-1">
             <p>• Minimum deposit: {currency}1,000</p>
             <p>• Processing time: 30 minutes - 2 hours</p>
@@ -602,58 +646,55 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
       <div className="flex items-center mb-4">
         <button
           onClick={() => setSelectedMethod(null)}
-          className="mr-3 p-2 bg-slate-100 rounded-full"
+          className="mr-3 p-2 bg-slate-600 text-white rounded-full hover:bg-slate-700"
         >
-          <span className="text-slate-600">←</span>
+          <span className="text-white font-bold">←</span>
         </button>
         <h3 className="text-lg font-bold text-slate-900">{selectedMethod.name}</h3>
       </div>
 
       {!showUpload ? (
         <div className="space-y-4">
-          <div className="bg-blue-50 p-4 rounded-xl border-l-4 border-blue-500">
-            <h4 className="font-bold text-blue-800 mb-3">Instructions</h4>
-            <div className="text-sm text-blue-700 space-y-2">
-              {selectedMethod.id === 'bank' ? (
-                <>
-                  <p>1. Transfer money to the account details below</p>
-                  <p>2. Use your email as the transfer reference</p>
-                  <p>3. Upload proof of payment</p>
-                  <p>4. Funds will be credited within 30 minutes after verification</p>
-                </>
-              ) : (
-                <>
-                  <p>1. Go to M-Pesa menu on your phone</p>
-                  <p>2. Select Send Money (Lipa na M-Pesa)</p>
-                  <p>3. Enter the Paybill number below</p>
-                  <p>4. Use your email as the account number</p>
-                  <p>5. Upload M-Pesa confirmation message</p>
-                </>
-              )}
+          <div className="bg-white border border-slate-200 p-4 rounded-xl">
+            <h4 className="font-bold text-slate-900 mb-3">Instructions</h4>
+            <div className="text-sm text-slate-700 space-y-2">
+              {selectedMethod.instructions.map((instruction: string, index: number) => (
+                <p key={index}>{index + 1}. {instruction}</p>
+              ))}
             </div>
           </div>
 
           <div className="bg-white border border-slate-200 p-4 rounded-xl">
             <h4 className="font-bold text-slate-900 mb-3">
-              {selectedMethod.id === 'bank' ? 'Bank Account Details' : 'M-Pesa Details'}
+              {selectedMethod.type === 'bank_transfer' ? 'Bank Account Details' : 'M-Pesa Details'}
             </h4>
             
-            {selectedMethod.id === 'bank' ? (
+            {selectedMethod.type === 'bank_transfer' ? (
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Account Name:</span>
-                  <span className="font-bold text-slate-900">{bankDetails[selectedCurrency].accountName}</span>
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <span className="text-slate-600 font-semibold">Account Name:</span>
+                  <button 
+                    onClick={() => copyToClipboard(bankDetails[selectedCurrency].accountName, 'Account name')}
+                    className="font-bold text-slate-900 hover:text-orange-500"
+                  >
+                    {bankDetails[selectedCurrency].accountName} 📋
+                  </button>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Account Number:</span>
-                  <span className="font-bold text-slate-900">{bankDetails[selectedCurrency].accountNumber}</span>
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <span className="text-slate-600 font-semibold">Account Number:</span>
+                  <button 
+                    onClick={() => copyToClipboard(bankDetails[selectedCurrency].accountNumber, 'Account number')}
+                    className="font-bold text-slate-900 hover:text-orange-500"
+                  >
+                    {bankDetails[selectedCurrency].accountNumber} 📋
+                  </button>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Bank Name:</span>
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <span className="text-slate-600 font-semibold">Bank Name:</span>
                   <span className="font-bold text-slate-900">{bankDetails[selectedCurrency].bankName}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">{selectedCurrency === 'NG' ? 'Sort Code:' : 'Branch Code:'}</span>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-slate-600 font-semibold">{selectedCurrency === 'NG' ? 'Sort Code:' : 'Branch Code:'}</span>
                   <span className="font-bold text-slate-900">
                     {selectedCurrency === 'NG' ? bankDetails.NG.sortCode : bankDetails.KE.branchCode}
                   </span>
@@ -661,16 +702,21 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Paybill Number:</span>
-                  <span className="font-bold text-slate-900">{mpesaDetails.paybill}</span>
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <span className="text-slate-600 font-semibold">Paybill Number:</span>
+                  <button 
+                    onClick={() => copyToClipboard(mpesaDetails.paybill, 'Paybill number')}
+                    className="font-bold text-slate-900 hover:text-orange-500"
+                  >
+                    {mpesaDetails.paybill} 📋
+                  </button>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Business Name:</span>
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <span className="text-slate-600 font-semibold">Business Name:</span>
                   <span className="font-bold text-slate-900">{mpesaDetails.businessName}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Account Number:</span>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-slate-600 font-semibold">Account Number:</span>
                   <span className="font-bold text-slate-900">Your registered email</span>
                 </div>
               </div>
@@ -679,7 +725,7 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
 
           <button
             onClick={() => setShowUpload(true)}
-            className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold"
+            className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors"
           >
             I've Made the Payment
           </button>
@@ -697,7 +743,7 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
                   placeholder={`Enter amount in ${currencyName}`}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg"
+                  className="w-full p-3 border border-slate-300 rounded-lg focus:border-orange-500 focus:outline-none"
                 />
               </div>
               
@@ -708,15 +754,15 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
                   value={paymentProof}
                   onChange={(e) => setPaymentProof(e.target.value)}
                   rows={4}
-                  className="w-full p-3 border border-slate-300 rounded-lg"
+                  className="w-full p-3 border border-slate-300 rounded-lg focus:border-orange-500 focus:outline-none"
                 />
               </div>
               
               <div className="flex space-x-2">
-                <button className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-lg font-semibold border-2 border-dashed border-slate-300">
+                <button className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-lg font-semibold border-2 border-dashed border-slate-300 hover:bg-slate-200 transition-colors">
                   📷 Take Photo
                 </button>
-                <button className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-lg font-semibold border-2 border-dashed border-slate-300">
+                <button className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-lg font-semibold border-2 border-dashed border-slate-300 hover:bg-slate-200 transition-colors">
                   📁 Choose File
                 </button>
               </div>
@@ -725,7 +771,7 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
 
           <button
             onClick={handleSubmitProof}
-            className="w-full bg-green-500 text-white py-3 rounded-xl font-semibold"
+            className="w-full bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition-colors"
           >
             Submit for Verification
           </button>
@@ -746,6 +792,11 @@ const CryptoWalletScreenWeb = ({ onClose, onSuccess }: any) => {
     BTC: '',
     ETH: '',
     USDT: ''
+  };
+
+  const copyAddress = (address: string, crypto: string) => {
+    navigator.clipboard.writeText(address);
+    alert(`${crypto} address copied to clipboard`);
   };
 
   const handleDepositVerification = async () => {
@@ -797,53 +848,63 @@ const CryptoWalletScreenWeb = ({ onClose, onSuccess }: any) => {
           <button
             key={crypto}
             onClick={() => setSelectedCrypto(crypto)}
-            className={`w-full p-4 rounded-xl flex items-center space-x-4 border-2 transition-all ${
+            className={`w-full p-5 rounded-xl flex items-center space-x-4 border-2 transition-all shadow-md ${
               selectedCrypto === crypto 
                 ? 'border-orange-500 bg-orange-50' 
                 : 'border-slate-200 bg-white hover:bg-slate-50'
             }`}
           >
-            <span className="text-2xl">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
+            <div className="w-10 h-10 flex items-center justify-center">
+              <span className="text-3xl">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
+            </div>
             <div className="flex-1 text-left">
-              <h4 className="font-bold text-slate-900">{crypto} Wallet</h4>
+              <h4 className="font-bold text-slate-900 text-lg">{crypto} Wallet</h4>
               <p className="text-sm text-slate-600">
                 {crypto === 'BTC' ? 'Bitcoin Network' : crypto === 'ETH' ? 'Ethereum Network' : 'ERC-20 Network'}
               </p>
             </div>
             {selectedCrypto === crypto && (
               <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs">✓</span>
+                <span className="text-white text-xs font-bold">✓</span>
               </div>
             )}
           </button>
         ))}
       </div>
 
-      <div className="bg-white border border-slate-200 p-4 rounded-xl mb-4">
-        <h4 className="font-bold text-slate-900 mb-3">{selectedCrypto} Deposit Address</h4>
+      <div className="bg-white border border-slate-200 p-5 rounded-xl mb-4 shadow-md">
+        <h4 className="font-bold text-slate-900 mb-4 text-lg">{selectedCrypto} Deposit Address</h4>
         {wallets[selectedCrypto] ? (
-          <div className="bg-slate-50 p-3 rounded-lg mb-3">
-            <p className="font-mono text-sm text-slate-900 mb-2">{wallets[selectedCrypto]}</p>
-            <button className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+          <div className="bg-slate-50 p-4 rounded-lg mb-4">
+            <p className="font-mono text-sm text-slate-900 mb-3 break-all">{wallets[selectedCrypto]}</p>
+            <button 
+              onClick={() => copyAddress(wallets[selectedCrypto], selectedCrypto)}
+              className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors"
+            >
               📋 Copy Address
             </button>
           </div>
         ) : (
-          <div className="text-center py-8 border-2 border-dashed border-slate-300 rounded-lg">
-            <div className="text-4xl mb-3">🚀</div>
-            <h5 className="font-bold text-slate-900 mb-2">Wallet Integration</h5>
-            <p className="text-sm text-slate-600 mb-4">
+          <div className="text-center py-8 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50">
+            <div className="w-12 h-12 mx-auto mb-4 relative">
+              <div className="w-5 h-8 bg-orange-500 rounded-lg absolute left-3.5 top-2"></div>
+              <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[12px] border-l-transparent border-r-transparent border-b-red-600 absolute left-3.5 top-0"></div>
+              <div className="w-2 h-3 bg-slate-600 rounded absolute left-2 bottom-1"></div>
+              <div className="w-2 h-3 bg-slate-600 rounded absolute right-2 bottom-1"></div>
+            </div>
+            <h5 className="font-bold text-slate-900 mb-2 text-xl">Wallet Integration</h5>
+            <p className="text-sm text-slate-600 mb-5 leading-5">
               {selectedCrypto} deposits are being integrated with our secure infrastructure.
             </p>
-            <div className="bg-slate-200 h-2 rounded-full mb-2">
+            <div className="bg-slate-200 h-2 rounded-full mb-2 w-full">
               <div className="bg-orange-500 h-2 rounded-full" style={{width: '92%'}}></div>
             </div>
             <p className="text-xs text-orange-600 font-bold">92% Complete • Expected: 2-3 days</p>
           </div>
         )}
         
-        <div className="bg-yellow-50 p-3 rounded-lg border-l-4 border-yellow-500">
-          <h5 className="font-bold text-yellow-800 mb-2">⚠️ Important Instructions</h5>
+        <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500">
+          <h5 className="font-bold text-yellow-800 mb-3">⚠️ Important Instructions</h5>
           <div className="text-sm text-yellow-700 space-y-1">
             <p>• Only send {selectedCrypto} to this address</p>
             <p>• Minimum deposit: {selectedCrypto === 'BTC' ? '0.001 BTC' : selectedCrypto === 'ETH' ? '0.01 ETH' : '10 USDT'}</p>
@@ -853,9 +914,9 @@ const CryptoWalletScreenWeb = ({ onClose, onSuccess }: any) => {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 p-4 rounded-xl mb-4">
-        <h4 className="font-bold text-slate-900 mb-3">Verify Your Deposit</h4>
-        <p className="text-sm text-slate-600 mb-4">
+      <div className="bg-white border border-slate-200 p-5 rounded-xl mb-4 shadow-md">
+        <h4 className="font-bold text-slate-900 mb-2 text-lg">Verify Your Deposit</h4>
+        <p className="text-sm text-slate-600 mb-5">
           After sending crypto, paste your transaction details below for instant verification:
         </p>
         
@@ -867,7 +928,7 @@ const CryptoWalletScreenWeb = ({ onClose, onSuccess }: any) => {
               placeholder="Paste transaction hash here"
               value={txHash}
               onChange={(e) => setTxHash(e.target.value)}
-              className="w-full p-3 border border-slate-300 rounded-lg"
+              className="w-full p-3 border border-slate-300 rounded-lg focus:border-orange-500 focus:outline-none"
             />
           </div>
           
@@ -878,14 +939,14 @@ const CryptoWalletScreenWeb = ({ onClose, onSuccess }: any) => {
               placeholder={`Enter ${selectedCrypto} amount`}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full p-3 border border-slate-300 rounded-lg"
+              className="w-full p-3 border border-slate-300 rounded-lg focus:border-orange-500 focus:outline-none"
             />
           </div>
           
           <button
             onClick={handleDepositVerification}
             disabled={loading}
-            className="w-full bg-green-500 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
+            className="w-full bg-green-500 text-white py-3 rounded-lg font-semibold disabled:opacity-50 hover:bg-green-600 transition-colors"
           >
             {loading ? 'Verifying...' : 'Verify Deposit'}
           </button>
@@ -893,7 +954,7 @@ const CryptoWalletScreenWeb = ({ onClose, onSuccess }: any) => {
       </div>
 
       <div className="bg-green-50 p-4 rounded-xl border-l-4 border-green-500">
-        <h5 className="font-bold text-green-800 mb-2">💡 How It Works</h5>
+        <h5 className="font-bold text-green-800 mb-3">💡 How It Works</h5>
         <div className="text-sm text-green-700 space-y-1">
           <p>1. Copy the {selectedCrypto} address above</p>
           <p>2. Send crypto from your external wallet</p>
@@ -901,7 +962,7 @@ const CryptoWalletScreenWeb = ({ onClose, onSuccess }: any) => {
           <p>4. Paste it here for instant verification</p>
           <p>5. Your balance updates automatically</p>
         </div>
-        <p className="text-xs text-green-600 mt-3 italic">
+        <p className="text-xs text-green-600 mt-3 italic leading-4">
           🔒 Our system uses blockchain APIs to verify transactions in real-time, preventing fake or duplicate deposits.
         </p>
       </div>
@@ -1628,12 +1689,18 @@ const ProfileScreenWeb = ({ fullName, email, user, onUpdateProfile, onLogout, on
             </p>
             
             <div className="space-y-3">
-              <button className="w-full bg-slate-50 p-4 rounded-lg text-left">
+              <button 
+                onClick={() => alert('Nigeria Bank Account\n\nGTBank - 0123456789\nBPay Technologies Ltd\n\nUse this for NGN deposits and withdrawals.')}
+                className="w-full bg-slate-50 p-4 rounded-lg text-left hover:bg-slate-100"
+              >
                 <h4 className="font-bold text-slate-900">Nigeria Bank Account</h4>
                 <p className="text-sm text-slate-600">Add or update Nigerian bank details</p>
               </button>
               
-              <button className="w-full bg-slate-50 p-4 rounded-lg text-left">
+              <button 
+                onClick={() => alert('Kenya M-Pesa\n\nPaybill: 522522\nBusiness: BPay Kenya\nAccount: Your email\n\nUse this for KES deposits and withdrawals.')}
+                className="w-full bg-slate-50 p-4 rounded-lg text-left hover:bg-slate-100"
+              >
                 <h4 className="font-bold text-slate-900">Kenya M-Pesa</h4>
                 <p className="text-sm text-slate-600">Add or update M-Pesa details</p>
               </button>
