@@ -5,6 +5,12 @@ const API_BASE = 'https://bpay-app.onrender.com/api';
 
 export { default } from './mobile-exact-dashboard';
 
+// Full mobile functionality with proper sell screen
+function FullMobileDashboard() {
+  // Implementation moved to mobile-exact-dashboard.tsx
+  return null;
+}
+
 // Legacy dashboard - keeping for reference
 function LegacyDashboard() {
   const [user, setUser] = useState<any>(null);

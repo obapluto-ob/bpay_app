@@ -3,6 +3,229 @@ import { useRouter } from 'next/router';
 
 const API_BASE = 'https://bpay-app.onrender.com/api';
 
+// Full Sell Crypto Component
+const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }: any) => {
+  const [selectedCrypto, setSelectedCrypto] = useState<'BTC' | 'ETH' | 'USDT'>('BTC');
+  const [amount, setAmount] = useState('');
+  const [selectedCurrency, setSelectedCurrency] = useState<'NGN' | 'KES'>('NGN');
+  const [paymentMethod, setPaymentMethod] = useState<'bank' | 'mobile'>('bank');
+  const [bankDetails, setBankDetails] = useState({ accountName: '', accountNumber: '', bankName: '' });
+  const [loading, setLoading] = useState(false);
+  const [orderStep, setOrderStep] = useState<'create' | 'escrow' | 'transfer'>('create');
+
+  const baseRate = (usdRates[selectedCrypto] || 0) * (selectedCurrency === 'NGN' ? exchangeRates.USDNGN : exchangeRates.USDKES);
+  const sellMargin = 0.02;
+  const currentRate = Math.round(baseRate * (1 - sellMargin));
+  const fiatAmount = parseFloat(amount || '0') * currentRate;
+
+  const handleCreateOrder = async () => {
+    if (!amount || !bankDetails.accountName || !bankDetails.accountNumber || !bankDetails.bankName) {
+      alert('Please fill all fields');
+      return;
+    }
+
+    const cryptoAmount = parseFloat(amount);
+    const availableBalance = userBalance[selectedCrypto] || 0;
+    
+    if (cryptoAmount > availableBalance) {
+      alert(`Insufficient balance. You have ${availableBalance.toFixed(8)} ${selectedCrypto}`);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/trade/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          type: 'sell',
+          crypto: selectedCrypto,
+          cryptoAmount,
+          fiatAmount,
+          paymentMethod,
+          country: selectedCurrency === 'NGN' ? 'NG' : 'KE',
+          bankDetails
+        })
+      });
+
+      if (response.ok) {
+        setOrderStep('escrow');
+        alert('Sell order created successfully!');
+      } else {
+        alert('Failed to create order');
+      }
+    } catch (error) {
+      alert('Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Crypto Selector */}
+      <div className="flex space-x-2">
+        {(['BTC', 'ETH', 'USDT'] as const).map(crypto => (
+          <button
+            key={crypto}
+            onClick={() => setSelectedCrypto(crypto)}
+            className={`flex-1 p-3 rounded-xl flex flex-col items-center space-y-2 ${
+              selectedCrypto === crypto ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
+            }`}
+          >
+            <CryptoIcon crypto={crypto} size={24} />
+            <span className="font-semibold">{crypto}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Rate Display */}
+      <div className="text-center p-3 bg-slate-100 rounded-xl">
+        <p className="text-slate-600">Sell Rate: {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{currentRate.toLocaleString()} per {selectedCrypto}</p>
+      </div>
+
+      {/* Amount Input */}
+      <div className="flex space-x-2">
+        <input
+          type="number"
+          placeholder={`${selectedCrypto} amount to sell`}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="flex-1 p-3 border border-slate-300 rounded-xl"
+        />
+        <button
+          onClick={() => setAmount((userBalance[selectedCrypto] || 0).toString())}
+          className="bg-green-500 text-white px-4 py-3 rounded-xl font-semibold"
+        >
+          MAX
+        </button>
+      </div>
+
+      {/* Balance Info */}
+      <div className="bg-green-50 p-3 rounded-xl border-l-4 border-green-500">
+        <p className="text-sm text-slate-600">Available Balance:</p>
+        <p className="font-bold text-green-600">{(userBalance[selectedCrypto] || 0).toFixed(8)} {selectedCrypto}</p>
+      </div>
+
+      {/* Preview */}
+      {amount && parseFloat(amount) > 0 && (
+        <div className="text-center p-3 bg-orange-50 rounded-xl">
+          <p className="text-orange-600 font-bold">You'll receive: {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{fiatAmount.toLocaleString()}</p>
+        </div>
+      )}
+
+      {/* Currency Selector */}
+      <div className="space-y-2">
+        <h3 className="font-bold text-slate-900">Select Currency</h3>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setSelectedCurrency('NGN')}
+            className={`flex-1 p-3 rounded-xl flex items-center justify-center space-x-2 ${
+              selectedCurrency === 'NGN' ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-900'
+            }`}
+          >
+            <span>🇳🇬</span>
+            <span>Nigerian Naira</span>
+          </button>
+          <button
+            onClick={() => setSelectedCurrency('KES')}
+            className={`flex-1 p-3 rounded-xl flex items-center justify-center space-x-2 ${
+              selectedCurrency === 'KES' ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-900'
+            }`}
+          >
+            <span>🇰🇪</span>
+            <span>Kenyan Shilling</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Payment Method */}
+      <div className="space-y-2">
+        <h3 className="font-bold text-slate-900">Payment Method</h3>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setPaymentMethod('bank')}
+            className={`flex-1 p-3 rounded-xl ${
+              paymentMethod === 'bank' ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
+            }`}
+          >
+            Bank Account
+          </button>
+          <button
+            onClick={() => setPaymentMethod('mobile')}
+            className={`flex-1 p-3 rounded-xl ${
+              paymentMethod === 'mobile' ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
+            }`}
+          >
+            {selectedCurrency === 'NGN' ? 'Mobile Wallet' : 'Mobile Money'}
+          </button>
+        </div>
+      </div>
+
+      {/* Bank Details */}
+      <div className="space-y-3">
+        <h3 className="font-bold text-slate-900">
+          {paymentMethod === 'bank' ? 'Bank Details' : (selectedCurrency === 'NGN' ? 'Mobile Wallet Details' : 'Mobile Money Details')}
+        </h3>
+        <input
+          type="text"
+          placeholder={paymentMethod === 'bank' ? 'Account Name' : 'Full Name'}
+          value={bankDetails.accountName}
+          onChange={(e) => setBankDetails(prev => ({ ...prev, accountName: e.target.value }))}
+          className="w-full p-3 border border-slate-300 rounded-xl"
+        />
+        <input
+          type="text"
+          placeholder={paymentMethod === 'bank' ? 'Account Number' : 'Phone Number'}
+          value={bankDetails.accountNumber}
+          onChange={(e) => setBankDetails(prev => ({ ...prev, accountNumber: e.target.value }))}
+          className="w-full p-3 border border-slate-300 rounded-xl"
+        />
+        <input
+          type="text"
+          placeholder={paymentMethod === 'bank' ? 'Bank Name' : (selectedCurrency === 'NGN' ? 'Wallet Provider (OPay, PalmPay, etc.)' : 'Provider (M-Pesa, Airtel, etc.)')}
+          value={bankDetails.bankName}
+          onChange={(e) => setBankDetails(prev => ({ ...prev, bankName: e.target.value }))}
+          className="w-full p-3 border border-slate-300 rounded-xl"
+        />
+      </div>
+
+      {orderStep === 'create' && (
+        <button
+          onClick={handleCreateOrder}
+          disabled={loading}
+          className="w-full bg-red-500 text-white py-4 rounded-xl font-bold disabled:opacity-50"
+        >
+          {loading ? 'Creating Order...' : 'Create Sell Order'}
+        </button>
+      )}
+
+      {orderStep === 'escrow' && (
+        <div className="bg-green-50 p-4 rounded-xl border-l-4 border-green-500">
+          <h3 className="font-bold text-green-600 mb-2">Order Created Successfully!</h3>
+          <p className="text-sm text-slate-600 mb-4">
+            Your sell order has been created. An admin will contact you shortly to verify the transaction.
+          </p>
+          <button
+            onClick={() => alert('Chat with admin feature - Coming soon!')}
+            className="w-full bg-green-500 text-white py-3 rounded-xl font-semibold"
+          >
+            💬 Chat with Admin
+          </button>
+        </div>
+      )}
+
+      <p className="text-xs text-slate-500 text-center">
+        Your crypto will be held in escrow until payment is processed. Funds are released to your account within 1-24 hours.
+      </p>
+    </div>
+  );
+};
+
 export default function MobileExactDashboard() {
   const [user, setUser] = useState<any>(null);
   const [balance, setBalance] = useState({ NGN: 0, KES: 0, BTC: 0, ETH: 0, USDT: 0 });
@@ -262,10 +485,10 @@ export default function MobileExactDashboard() {
             </div>
           )}
 
-          {(showBuyScreen || showSellScreen) && (
+          {showBuyScreen && (
             <div className="bg-white rounded-2xl p-6">
               <p className="text-center text-slate-600 mb-4">
-                Use mobile app for complete {showBuyScreen ? 'buy' : 'sell'} experience with real-time admin chat and {showBuyScreen ? 'payment verification' : 'escrow protection'}.
+                Use mobile app for complete buy experience with real-time admin chat and payment verification.
               </p>
               <button 
                 onClick={() => window.open('https://expo.dev/@yourusername/bpay-mobile', '_blank')}
@@ -274,6 +497,19 @@ export default function MobileExactDashboard() {
                 Open Mobile App
               </button>
             </div>
+          )}
+
+          {showSellScreen && (
+            <SellCryptoWeb 
+              rates={rates}
+              usdRates={usdRates}
+              exchangeRates={exchangeRates}
+              userBalance={balance}
+              onClose={() => {
+                setShowSellScreen(false);
+                setActiveTab('home');
+              }}
+            />
           )}
 
           {showHistoryScreen && (
@@ -523,7 +759,10 @@ export default function MobileExactDashboard() {
               onClick={() => setActiveTab('home')}
               className={`flex-1 flex flex-col items-center py-2 px-1 ${activeTab === 'home' ? 'bg-orange-50 rounded-lg' : ''}`}
             >
-              <span className={`text-xl mb-1 ${activeTab === 'home' ? 'text-orange-500' : 'text-slate-500'}`}>🏠</span>
+              <svg className={`w-5 h-5 mb-1 ${activeTab === 'home' ? 'text-orange-500' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 22V12h6v10" />
+              </svg>
               <span className={`text-xs font-medium ${activeTab === 'home' ? 'text-orange-500' : 'text-slate-500'}`}>Home</span>
             </button>
             
@@ -535,7 +774,9 @@ export default function MobileExactDashboard() {
                 }}
                 className={`flex-1 flex flex-col items-center py-2 px-1 ${activeTab === 'sell' ? 'bg-orange-50 rounded-lg' : ''}`}
               >
-                <span className={`text-xl mb-1 ${activeTab === 'sell' ? 'text-orange-500' : 'text-slate-500'}`}>📉</span>
+                <svg className={`w-5 h-5 mb-1 ${activeTab === 'sell' ? 'text-orange-500' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M19 12l-7 7-7-7" />
+                </svg>
                 <span className={`text-xs font-medium ${activeTab === 'sell' ? 'text-orange-500' : 'text-slate-500'}`}>Sell</span>
               </button>
             )}
@@ -548,7 +789,9 @@ export default function MobileExactDashboard() {
                 }}
                 className={`flex-1 flex flex-col items-center py-2 px-1 ${activeTab === 'buy' ? 'bg-orange-50 rounded-lg' : ''}`}
               >
-                <span className={`text-xl mb-1 ${activeTab === 'buy' ? 'text-orange-500' : 'text-slate-500'}`}>📈</span>
+                <svg className={`w-5 h-5 mb-1 ${activeTab === 'buy' ? 'text-orange-500' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V5M5 12l7-7 7 7" />
+                </svg>
                 <span className={`text-xs font-medium ${activeTab === 'buy' ? 'text-orange-500' : 'text-slate-500'}`}>Buy</span>
               </button>
             )}
@@ -560,7 +803,9 @@ export default function MobileExactDashboard() {
               }}
               className={`flex-1 flex flex-col items-center py-2 px-1 ${activeTab === 'history' ? 'bg-orange-50 rounded-lg' : ''}`}
             >
-              <span className={`text-xl mb-1 ${activeTab === 'history' ? 'text-orange-500' : 'text-slate-500'}`}>📊</span>
+              <svg className={`w-5 h-5 mb-1 ${activeTab === 'history' ? 'text-orange-500' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v5h5M3.05 13a9 9 0 102.5-9.5" />
+              </svg>
               <span className={`text-xs font-medium ${activeTab === 'history' ? 'text-orange-500' : 'text-slate-500'}`}>History</span>
             </button>
             
@@ -571,7 +816,10 @@ export default function MobileExactDashboard() {
               }}
               className={`flex-1 flex flex-col items-center py-2 px-1 ${activeTab === 'profile' ? 'bg-orange-50 rounded-lg' : ''}`}
             >
-              <span className={`text-xl mb-1 ${activeTab === 'profile' ? 'text-orange-500' : 'text-slate-500'}`}>👤</span>
+              <svg className={`w-5 h-5 mb-1 ${activeTab === 'profile' ? 'text-orange-500' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11a4 4 0 100-8 4 4 0 000 8z" />
+              </svg>
               <span className={`text-xs font-medium ${activeTab === 'profile' ? 'text-orange-500' : 'text-slate-500'}`}>Profile</span>
             </button>
           </div>
