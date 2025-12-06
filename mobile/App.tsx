@@ -157,6 +157,70 @@ const LoginScreen: React.FC<{
             {isSignup ? 'Already have an account? Login' : "Don't have an account? Sign up"}
           </Text>
         </TouchableOpacity>
+        
+        {!isSignup && (
+          <TouchableOpacity 
+            style={styles.forgotButton}
+            onPress={() => {
+              Alert.prompt(
+                'Reset Password',
+                'Enter your email address:',
+                async (email) => {
+                  if (email) {
+                    try {
+                      const response = await fetch('https://bpay-app.onrender.com/api/auth/forgot-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                      });
+                      const data = await response.json();
+                      if (response.ok) {
+                        Alert.prompt(
+                          'Security Question',
+                          data.securityQuestion,
+                          async (answer) => {
+                            if (answer) {
+                              Alert.prompt(
+                                'New Password',
+                                'Enter your new password:',
+                                async (newPassword) => {
+                                  if (newPassword) {
+                                    try {
+                                      const resetResponse = await fetch('https://bpay-app.onrender.com/api/auth/reset-password', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ email, securityAnswer: answer, newPassword })
+                                      });
+                                      const resetData = await resetResponse.json();
+                                      if (resetResponse.ok) {
+                                        Alert.alert('Success', 'Password reset successfully!');
+                                      } else {
+                                        Alert.alert('Error', resetData.error);
+                                      }
+                                    } catch (error) {
+                                      Alert.alert('Error', 'Network error');
+                                    }
+                                  }
+                                },
+                                'secure-text'
+                              );
+                            }
+                          }
+                        );
+                      } else {
+                        Alert.alert('Error', data.error || 'This account was created before security questions were added. Please contact support.');
+                      }
+                    } catch (error) {
+                      Alert.alert('Error', 'Network error');
+                    }
+                  }
+                }
+              );
+            }}
+          >
+            <Text style={styles.forgotText}>Forgot Password?</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   </View>
@@ -2045,6 +2109,14 @@ const styles = StyleSheet.create({
   },
   negativeChange: {
     color: '#ef4444',
+  },
+  forgotButton: {
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  forgotText: {
+    color: '#94a3b8',
+    fontSize: 14,
   },
 
 });
