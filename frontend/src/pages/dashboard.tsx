@@ -176,38 +176,42 @@ export default function Dashboard() {
         <FeatureCards />
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {[
-            { label: 'Total Balance', value: `₦${balance.NGN.toLocaleString()}`, change: '+2.5%', color: 'orange' },
-            { label: 'BTC Holdings', value: balance.BTC.toString(), change: '+5.2%', color: 'yellow' },
-            { label: 'ETH Holdings', value: balance.ETH.toString(), change: '+3.1%', color: 'green' },
-            { label: 'USDT Holdings', value: balance.USDT.toString(), change: '+0.1%', color: 'blue' }
-          ].map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
-              <p className={`text-sm text-${stat.color}-500`}>{stat.change}</p>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Trading Chart */}
-          <div className="lg:col-span-2">
-            <TradingChart symbol={selectedCrypto} currency={selectedCurrency} />
+        {!showTradeModal && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {[
+              { label: 'Total Balance', value: `₦${balance.NGN.toLocaleString()}`, change: '+2.5%', color: 'orange' },
+              { label: 'BTC Holdings', value: balance.BTC.toString(), change: '+5.2%', color: 'yellow' },
+              { label: 'ETH Holdings', value: balance.ETH.toString(), change: '+3.1%', color: 'green' },
+              { label: 'USDT Holdings', value: balance.USDT.toString(), change: '+0.1%', color: 'blue' }
+            ].map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                <p className={`text-sm text-${stat.color}-500`}>{stat.change}</p>
+              </motion.div>
+            ))}
           </div>
+        )}
 
-          {/* Live Rates */}
-          <div>
-            <CryptoRates />
+        {!showTradeModal && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Trading Chart */}
+            <div className="lg:col-span-2">
+              <TradingChart symbol={selectedCrypto} currency={selectedCurrency} />
+            </div>
+
+            {/* Live Rates */}
+            <div>
+              <CryptoRates />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Quick Actions */}
         <motion.div 

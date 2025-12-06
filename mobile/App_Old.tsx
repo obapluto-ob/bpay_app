@@ -1,0 +1,1682 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, TextInput, Alert, Image, Modal, Platform } from 'react-native';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { LoadingSpinner } from './src/components/LoadingSpinner';
+import { SellCryptoScreen } from './src/screens/SellCryptoScreen';
+import { BuyRequestScreen } from './src/screens/BuyRequestScreen';
+import { TradeHistoryScreen } from './src/screens/TradeHistoryScreen';
+import { apiService } from './src/services/api';
+import { storage } from './src/utils/storage';
+import { User, Balance, CryptoRate, Notification } from './src/types';
+
+const LoginScreen: React.FC<{
+  isSignup: boolean;
+  email: string;
+  setEmail: (email: string) => void;
+  password: string;
+  setPassword: (password: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (password: string) => void;
+  fullName: string;
+  setFullName: (name: string) => void;
+  showPassword: boolean;
+  setShowPassword: (show: boolean) => void;
+  loading: boolean;
+  handleAuth: () => void;
+  setIsSignup: (signup: boolean) => void;
+  userCountry: 'NG' | 'KE';
+  setUserCountry: (country: 'NG' | 'KE') => void;
+}> = ({ isSignup, email, setEmail, password, setPassword, confirmPassword, setConfirmPassword, fullName, setFullName, showPassword, setShowPassword, loading, handleAuth, setIsSignup, userCountry, setUserCountry }) => (
+  <View style={styles.safeArea}>
+    <StatusBar barStyle="light-content" backgroundColor="#1a365d" />
+    <ScrollView 
+      style={styles.loginContainer}
+      contentContainerStyle={styles.loginContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.logoContainer}>
+        <View style={styles.logo}>
+          <Image 
+            source={require('./assets/images/5782897843587714011_120.jpg')} 
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+        </View>
+        <Text style={styles.title}>BPay</Text>
+        <Text style={styles.subtitle}>Crypto to Cash Trading</Text>
+        
+        <View style={styles.flagsContainer}>
+          <TouchableOpacity 
+            style={[styles.flagItem, userCountry === 'NG' && styles.selectedFlag]}
+            onPress={() => setUserCountry('NG')}
+          >
+            <Text style={styles.flag}>🇳🇬</Text>
+            <Text style={styles.flagText}>Nigeria</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.flagItem, userCountry === 'KE' && styles.selectedFlag]}
+            onPress={() => setUserCountry('KE')}
+          >
+            <Text style={styles.flag}>🇰🇪</Text>
+            <Text style={styles.flagText}>Kenya</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      
+      <View style={styles.loginForm}>
+        <Text style={styles.formTitle}>
+          {isSignup ? 'Create Account' : 'Welcome Back'}
+        </Text>
+        
+        {isSignup && (
+          <TextInput 
+            style={styles.input}
+            placeholder="Full Name"
+            placeholderTextColor="#64748b"
+            value={fullName}
+            onChangeText={setFullName}
+            autoCorrect={false}
+            accessibilityLabel="Full Name"
+          />
+        )}
+        
+        <TextInput 
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#64748b"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          accessibilityLabel="Email Address"
+        />
+        
+        <View style={styles.passwordContainer}>
+          <TextInput 
+            style={styles.passwordInput}
+            placeholder="Password"
+            placeholderTextColor="#64748b"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            autoCorrect={false}
+            accessibilityLabel="Password"
+          />
+          <TouchableOpacity 
+            style={styles.eyeButton}
+            onPress={() => setShowPassword(!showPassword)}
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+          >
+            <Text style={styles.eyeIcon}>{showPassword ? 'Hide' : 'Show'}</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {isSignup && (
+          <View style={styles.passwordContainer}>
+            <TextInput 
+              style={styles.passwordInput}
+              placeholder="Confirm Password"
+              placeholderTextColor="#64748b"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showPassword}
+              autoCorrect={false}
+              accessibilityLabel="Confirm Password"
+            />
+          </View>
+        )}
+        
+        <TouchableOpacity 
+          style={[styles.loginButton, loading && styles.disabledButton]} 
+          onPress={handleAuth}
+          disabled={loading}
+          accessibilityLabel={isSignup ? 'Create Account' : 'Login'}
+        >
+          <Text style={styles.loginButtonText}>
+            {loading ? 'Please wait...' : (isSignup ? 'Create Account' : 'Login')}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.linkButton}
+          onPress={() => {
+            setIsSignup(!isSignup);
+            setEmail('');
+            setPassword('');
+            setConfirmPassword('');
+            setFullName('');
+          }}
+        >
+          <Text style={styles.linkText}>
+            {isSignup ? 'Already have an account? Login' : "Don't have an account? Sign up"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  </View>
+);
+
+export default function App() {
+  // Auth state
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isSignup, setIsSignup] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [userToken, setUserToken] = useState('');
+  const [userCountry, setUserCountry] = useState<'NG' | 'KE'>('NG');
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // App state
+  const [rates, setRates] = useState<Record<string, CryptoRate>>({});
+  const [balance, setBalance] = useState<Balance>({ NGN: 0, KES: 0 });
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  
+  // Screen state
+  const [showSellScreen, setShowSellScreen] = useState(false);
+  const [showBuyScreen, setShowBuyScreen] = useState(false);
+  const [showHistoryScreen, setShowHistoryScreen] = useState(false);
+  
+  // Check for saved login on app start
+  useEffect(() => {
+    const checkSavedLogin = async () => {
+      try {
+        const savedToken = await storage.getItem('userToken');
+        const savedEmail = await storage.getItem('userEmail');
+        const savedCountry = await storage.getItem('userCountry') as 'NG' | 'KE';
+        
+        if (savedToken && savedEmail) {
+          setUserToken(savedToken);
+          setEmail(savedEmail);
+          setUserCountry(savedCountry || 'NG');
+          setIsLoggedIn(true);
+          addNotification('Welcome back!', 'success');
+          loadBalance(savedToken);
+        }
+      } catch (error) {
+        console.log('No saved login found');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkSavedLogin();
+  }, []);
+  
+  // Fetch real-time rates
+  useEffect(() => {
+    const fetchRates = async () => {
+      try {
+        const ratesData = await apiService.getRates();
+        setRates(ratesData);
+      } catch (error) {
+        console.log('Failed to fetch rates');
+      }
+    };
+    
+    fetchRates();
+    const interval = setInterval(fetchRates, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, []);
+  
+  const loadBalance = async (token: string) => {
+    try {
+      const balanceData = await apiService.getBalance(token);
+      setBalance(balanceData);
+    } catch (error) {
+      console.log('Failed to load balance');
+    }
+  };
+
+  const handleAuth = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+    
+    if (isSignup) {
+      if (!fullName) {
+        Alert.alert('Error', 'Please enter your full name');
+        return;
+      }
+      if (password !== confirmPassword) {
+        Alert.alert('Error', 'Passwords do not match');
+        return;
+      }
+      if (password.length < 6) {
+        Alert.alert('Error', 'Password must be at least 6 characters');
+        return;
+      }
+    }
+    
+    setLoading(true);
+    
+    try {
+      if (isSignup) {
+        const result = await apiService.register({ 
+          email, 
+          password, 
+          fullName,
+          country: userCountry
+        });
+        Alert.alert('Success', 'Account created! Please login.');
+        setIsSignup(false);
+        setPassword('');
+        setConfirmPassword('');
+        setFullName('');
+      } else {
+        const result = await apiService.login(email, password);
+        setUserToken(result.token);
+        await storage.setItem('userToken', result.token);
+        await storage.setItem('userEmail', email);
+        await storage.setItem('userCountry', userCountry);
+        setIsLoggedIn(true);
+        addNotification('Welcome to BPay!', 'success');
+        loadBalance(result.token);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Login failed. Please try again.');
+    }
+    
+    setLoading(false);
+  };
+  
+  const handleForgotPassword = async () => {
+    if (forgotStep === 1) {
+      if (!forgotEmail) {
+        Alert.alert('Error', 'Please enter your email');
+        return;
+      }
+      
+      setLoading(true);
+      const result = await api.forgotPassword(forgotEmail);
+      
+      if (result.error) {
+        Alert.alert('Error', result.error);
+      } else {
+        setRetrievedQuestion(result.securityQuestion);
+        setForgotStep(2);
+      }
+      setLoading(false);
+    } else if (forgotStep === 2) {
+      if (!forgotAnswer || !newPassword) {
+        Alert.alert('Error', 'Please fill all fields');
+        return;
+      }
+      
+      setLoading(true);
+      const result = await api.resetPassword(forgotEmail, forgotAnswer, newPassword);
+      
+      if (result.error) {
+        Alert.alert('Error', result.error);
+      } else {
+        Alert.alert('Success', 'Password reset successfully!');
+        setShowForgotPassword(false);
+        setForgotStep(1);
+        setForgotEmail('');
+        setForgotAnswer('');
+        setNewPassword('');
+        setRetrievedQuestion('');
+      }
+      setLoading(false);
+    }
+  };
+  
+  const addNotification = (message: string, type: 'success' | 'warning' | 'info' = 'info') => {
+    const newNotification: Notification = {
+      id: Date.now().toString(),
+      message,
+      timestamp: new Date().toLocaleTimeString(),
+      type
+    };
+    setNotifications(prev => [newNotification, ...prev.slice(0, 4)]);
+  };
+  
+  const handleTrade = async () => {
+    if (!tradeAmount || parseFloat(tradeAmount) <= 0) {
+      Alert.alert('Error', 'Please enter a valid amount');
+      return;
+    }
+    
+    setLoading(true);
+    
+    const tradeData = {
+      type: tradeType,
+      crypto: selectedCrypto,
+      amount: parseFloat(tradeAmount),
+      rate: rates[selectedCrypto][tradeType]
+    };
+    
+    const result = await api.createTrade(tradeData, userToken);
+    
+    if (result.error) {
+      Alert.alert('Error', result.error);
+    } else {
+      // Update balance locally
+      const cryptoAmount = parseFloat(tradeAmount);
+      const ngnAmount = cryptoAmount * rates[selectedCrypto][tradeType];
+      
+      if (tradeType === 'buy') {
+        setBalance(prev => ({
+          ...prev,
+          NGN: prev.NGN - ngnAmount,
+          [selectedCrypto]: prev[selectedCrypto] + cryptoAmount
+        }));
+        addNotification(`Bought ${cryptoAmount} ${selectedCrypto} for ₦${ngnAmount.toLocaleString()}`);
+      } else {
+        setBalance(prev => ({
+          ...prev,
+          NGN: prev.NGN + ngnAmount,
+          [selectedCrypto]: prev[selectedCrypto] - cryptoAmount
+        }));
+        addNotification(`Sold ${cryptoAmount} ${selectedCrypto} for ₦${ngnAmount.toLocaleString()}`);
+      }
+      
+      setShowTradeModal(false);
+      setTradeAmount('');
+      loadTradeHistory();
+      Alert.alert('Success', `Trade completed successfully!`);
+    }
+    
+    setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await storage.removeItem('userToken');
+    await storage.removeItem('userEmail');
+    await storage.removeItem('userCountry');
+    setIsLoggedIn(false);
+    setEmail('');
+    setPassword('');
+    setUserToken('');
+    setBalance({ NGN: 0, KES: 0 });
+    setNotifications([]);
+  };
+
+
+
+  const DashboardScreen = () => (
+    <View style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#1a365d" />
+      <ScrollView style={styles.dashboardContainer}>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity style={styles.profileAvatar}>
+              <Text style={styles.avatarText}>U</Text>
+            </TouchableOpacity>
+            <View>
+              <Text style={styles.greeting}>Good morning</Text>
+              <Text style={styles.headerTitle}>Welcome to Nigeria 🇳🇬</Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {notifications.length > 0 && (
+          <View style={styles.notificationCard}>
+            <Text style={styles.notificationTitle}>Latest Activity</Text>
+            <Text style={styles.notificationText}>{notifications[0].message}</Text>
+            <Text style={styles.notificationText}>{notifications[0].timestamp}</Text>
+          </View>
+        )}
+        
+        <View style={styles.balanceCard}>
+          <View style={styles.balanceHeader}>
+            <Text style={styles.balanceLabel}>Total Balance ({userCountry === 'NG' ? 'NGN' : 'KES'})</Text>
+            <View style={styles.headerRight}>
+              <TouchableOpacity 
+                style={styles.countrySwitch}
+                onPress={() => setUserCountry(userCountry === 'NG' ? 'KE' : 'NG')}
+              >
+                <Text style={styles.countrySwitchText}>
+                  {userCountry === 'NG' ? 'NG' : 'KE'}
+                </Text>
+                <Text style={styles.tapHint}>Tap to switch</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.historyButton}
+                onPress={() => setShowHistory(true)}
+              >
+                <Text style={styles.historyText}>History</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <Text style={styles.balanceAmount}>
+            {userCountry === 'NG' ? '₦' : 'KSh'}{balance[userCountry === 'NG' ? 'NGN' : 'KES']?.toLocaleString() || '0'}
+          </Text>
+          <View style={styles.cryptoBalances}>
+            <Text style={styles.cryptoBalance}>BTC: {balance.BTC}</Text>
+            <Text style={styles.cryptoBalance}>ETH: {balance.ETH}</Text>
+            <Text style={styles.cryptoBalance}>USDT: {balance.USDT}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.depositSection}>
+          <Text style={styles.sectionTitle}>Add Money</Text>
+          <View style={styles.depositActions}>
+            <TouchableOpacity 
+              style={[styles.depositCard, styles.cryptoDeposit]}
+              onPress={() => {
+                setDepositType('crypto');
+                setShowDepositModal(true);
+              }}
+            >
+              <Text style={styles.depositTitle}>Crypto Deposit</Text>
+              <Text style={styles.depositSubtitle}>Send BTC/ETH/USDT</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.depositCard, styles.localDeposit]}
+              onPress={() => {
+                setDepositType('local');
+                setShowDepositModal(true);
+              }}
+            >
+              <Text style={styles.depositTitle}>Local Deposit</Text>
+              <Text style={styles.depositSubtitle}>
+                {userCountry === 'NG' ? 'Bank Transfer' : 'M-Pesa'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        <View style={styles.quickActions}>
+          <TouchableOpacity 
+            style={[styles.actionCard, styles.buyCard]}
+            onPress={() => {
+              setTradeType('buy');
+              setShowTradeModal(true);
+            }}
+          >
+            <Text style={styles.actionTitle}>Buy Crypto</Text>
+            <Text style={styles.actionSubtitle}>BTC, ETH, USDT</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.actionCard, styles.sellCard]}
+            onPress={() => {
+              setTradeType('sell');
+              setShowTradeModal(true);
+            }}
+          >
+            <Text style={styles.actionTitle}>Sell Crypto</Text>
+            <Text style={styles.actionSubtitle}>Get NGN</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.ratesCard}>
+          <Text style={styles.cardTitle}>Live Market Rates</Text>
+          <View style={styles.ratesList}>
+            {Object.entries(rates).map(([crypto, rate]) => (
+              <View key={crypto} style={styles.rateItem}>
+                <View style={styles.rateLeft}>
+                  <View style={styles.cryptoIcon}>
+                    <Text style={styles.cryptoIconText}>{crypto[0]}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.cryptoName}>{crypto}</Text>
+                    <Text style={styles.rateSubtext}>Buy/Sell</Text>
+                  </View>
+                </View>
+                <View style={styles.rateRight}>
+                  <Text style={styles.ratePrice}>₦{rate.buy?.toLocaleString()}</Text>
+                  <Text style={styles.rateSubtext}>₦{rate.sell?.toLocaleString()}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+        
+        <View style={styles.cryptoSection}>
+          <Text style={styles.sectionTitle}>Your Crypto Portfolio</Text>
+          <View style={styles.cryptoGrid}>
+            <View style={styles.cryptoItem}>
+              <View style={styles.cryptoIcon}>
+                <Text style={styles.cryptoIconText}>B</Text>
+              </View>
+              <Text style={styles.cryptoName}>Bitcoin</Text>
+              <Text style={styles.cryptoAmount}>{balance.BTC} BTC</Text>
+              <Text style={styles.cryptoValue}>≈ ₦{(balance.BTC * (rates.BTC?.buy || 0)).toLocaleString()}</Text>
+            </View>
+            
+            <View style={styles.cryptoItem}>
+              <View style={styles.cryptoIcon}>
+                <Text style={styles.cryptoIconText}>E</Text>
+              </View>
+              <Text style={styles.cryptoName}>Ethereum</Text>
+              <Text style={styles.cryptoAmount}>{balance.ETH} ETH</Text>
+              <Text style={styles.cryptoValue}>≈ ₦{(balance.ETH * (rates.ETH?.buy || 0)).toLocaleString()}</Text>
+            </View>
+            
+            <View style={styles.cryptoItem}>
+              <View style={styles.cryptoIcon}>
+                <Text style={styles.cryptoIconText}>T</Text>
+              </View>
+              <Text style={styles.cryptoName}>Tether</Text>
+              <Text style={styles.cryptoAmount}>{balance.USDT} USDT</Text>
+              <Text style={styles.cryptoValue}>≈ ₦{(balance.USDT * (rates.USDT?.buy || 0)).toLocaleString()}</Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+      
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity 
+          style={[styles.navItem, activeTab === 'home' && styles.activeNavItem]}
+          onPress={() => setActiveTab('home')}
+        >
+          <Text style={[styles.navIcon, activeTab === 'home' && styles.activeNavIcon]}>H</Text>
+          <Text style={[styles.navText, activeTab === 'home' && styles.activeNavText]}>Home</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.navItem, activeTab === 'trade' && styles.activeNavItem]}
+          onPress={() => {
+            setActiveTab('trade');
+            setShowTradeModal(true);
+          }}
+        >
+          <Text style={[styles.navIcon, activeTab === 'trade' && styles.activeNavIcon]}>T</Text>
+          <Text style={[styles.navText, activeTab === 'trade' && styles.activeNavText]}>Trade</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.navItem, activeTab === 'deposit' && styles.activeNavItem]}
+          onPress={() => {
+            setActiveTab('deposit');
+            setShowDepositModal(true);
+          }}
+        >
+          <Text style={[styles.navIcon, activeTab === 'deposit' && styles.activeNavIcon]}>+</Text>
+          <Text style={[styles.navText, activeTab === 'deposit' && styles.activeNavText]}>Deposit</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.navItem, activeTab === 'history' && styles.activeNavItem]}
+          onPress={() => {
+            setActiveTab('history');
+            setShowHistory(true);
+          }}
+        >
+          <Text style={[styles.navIcon, activeTab === 'history' && styles.activeNavIcon]}>≡</Text>
+          <Text style={[styles.navText, activeTab === 'history' && styles.activeNavText]}>History</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.navItem, activeTab === 'profile' && styles.activeNavItem]}
+          onPress={() => setActiveTab('profile')}
+        >
+          <Text style={[styles.navIcon, activeTab === 'profile' && styles.activeNavIcon]}>P</Text>
+          <Text style={[styles.navText, activeTab === 'profile' && styles.activeNavText]}>Profile</Text>
+        </TouchableOpacity>
+      </View>
+      
+      {/* Trade Modal */}
+      <Modal visible={showTradeModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{tradeType === 'buy' ? 'Buy' : 'Sell'} Crypto</Text>
+            
+            <View style={styles.cryptoSelector}>
+              {['BTC', 'ETH', 'USDT'].map(crypto => (
+                <TouchableOpacity
+                  key={crypto}
+                  style={[styles.cryptoOption, selectedCrypto === crypto && styles.selectedCrypto]}
+                  onPress={() => setSelectedCrypto(crypto)}
+                >
+                  <Text style={[styles.cryptoOptionText, selectedCrypto === crypto && { color: 'white' }]}>
+                    {crypto}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            <Text style={styles.rateDisplay}>
+              Rate: ₦{rates[selectedCrypto]?.[tradeType]?.toLocaleString()} per {selectedCrypto}
+            </Text>
+            
+            <TextInput
+              style={styles.tradeInput}
+              placeholder={`Enter ${selectedCrypto} amount`}
+              value={tradeAmount}
+              onChangeText={setTradeAmount}
+              keyboardType="numeric"
+            />
+            
+            {tradeAmount && (
+              <Text style={styles.tradePreview}>
+                Total: ₦{(parseFloat(tradeAmount) * (rates[selectedCrypto]?.[tradeType] || 0)).toLocaleString()}
+              </Text>
+            )}
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowTradeModal(false);
+                  setTradeAmount('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.confirmButton, loading && styles.disabledButton]}
+                onPress={handleTrade}
+                disabled={loading}
+              >
+                <Text style={styles.confirmButtonText}>
+                  {loading ? 'Processing...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${selectedCrypto}`}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Trade History Modal */}
+      <Modal visible={showHistory} animationType="slide">
+        <View style={styles.historyModal}>
+          <View style={styles.historyHeader}>
+            <Text style={styles.historyTitle}>Trade History</Text>
+            <TouchableOpacity onPress={() => setShowHistory(false)}>
+              <Text style={styles.closeButton}>Close</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.historyList}>
+            {!trades || trades.length === 0 ? (
+              <Text style={styles.noTrades}>No trades yet</Text>
+            ) : (
+              trades.map((trade, index) => (
+                <View key={index} style={styles.tradeItem}>
+                  <Text style={styles.tradeType}>
+                    {trade.type?.toUpperCase()} {trade.crypto}
+                  </Text>
+                  <Text style={styles.tradeAmount}>
+                    Amount: {trade.amount} {trade.crypto}
+                  </Text>
+                  <Text style={styles.tradeValue}>
+                    Value: ₦{(trade.amount * trade.rate)?.toLocaleString()}
+                  </Text>
+                  <Text style={styles.tradeDate}>
+                    {new Date(trade.created_at).toLocaleDateString()}
+                  </Text>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+      
+      {/* Deposit Modal */}
+      <Modal visible={showDepositModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              {depositType === 'crypto' ? 'Crypto Deposit' : `${userCountry === 'NG' ? 'Bank Transfer' : 'M-Pesa'} Deposit`}
+            </Text>
+            
+            {depositType === 'crypto' ? (
+              <>
+                <Text style={styles.depositInstructions}>
+                  Send crypto to the address below and upload proof of payment
+                </Text>
+                <View style={styles.addressContainer}>
+                  <Text style={styles.addressLabel}>BTC Address:</Text>
+                  <Text style={styles.address}>1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</Text>
+                </View>
+                <TextInput
+                  style={styles.tradeInput}
+                  placeholder="Transaction Hash"
+                  value={depositAmount}
+                  onChangeText={setDepositAmount}
+                />
+              </>
+            ) : (
+              <>
+                <Text style={styles.depositInstructions}>
+                  {userCountry === 'NG' 
+                    ? 'Transfer to our bank account and upload proof'
+                    : 'Send money via M-Pesa and upload proof'
+                  }
+                </Text>
+                <View style={styles.addressContainer}>
+                  <Text style={styles.addressLabel}>
+                    {userCountry === 'NG' ? 'Account Details:' : 'M-Pesa Details:'}
+                  </Text>
+                  <Text style={styles.address}>
+                    {userCountry === 'NG' 
+                      ? 'GTBank: 0123456789\nBPay Technologies Ltd'
+                      : 'Paybill: 123456\nAccount: BPAY001'
+                    }
+                  </Text>
+                </View>
+                <TextInput
+                  style={styles.tradeInput}
+                  placeholder={`Amount in ${userCountry === 'NG' ? 'NGN' : 'KES'}`}
+                  value={depositAmount}
+                  onChangeText={setDepositAmount}
+                  keyboardType="numeric"
+                />
+              </>
+            )}
+            
+            <TouchableOpacity style={styles.uploadButton}>
+              <Text style={styles.uploadButtonText}>Upload Proof of Payment</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowDepositModal(false);
+                  setDepositAmount('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.confirmButton}
+                onPress={() => {
+                  Alert.alert('Success', 'Deposit request submitted! We will verify and credit your account within 24 hours.');
+                  setShowDepositModal(false);
+                  setDepositAmount('');
+                }}
+              >
+                <Text style={styles.confirmButtonText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+
+  if (isLoading) {
+    return (
+      <View style={[styles.app, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#f59e0b" />
+        <Text style={styles.loadingText}>Loading BPay...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.app}>
+      {!isLoggedIn ? <LoginScreen 
+        isSignup={isSignup}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        confirmPassword={confirmPassword}
+        setConfirmPassword={setConfirmPassword}
+        fullName={fullName}
+        setFullName={setFullName}
+        showPassword={showPassword}
+        setShowPassword={setShowPassword}
+        loading={loading}
+        handleAuth={handleAuth}
+        setIsSignup={setIsSignup}
+        securityQuestion={securityQuestion}
+        setSecurityQuestion={setSecurityQuestion}
+        securityAnswer={securityAnswer}
+        setSecurityAnswer={setSecurityAnswer}
+        securityAnswer2={securityAnswer2}
+        setSecurityAnswer2={setSecurityAnswer2}
+        setShowForgotPassword={setShowForgotPassword}
+      /> : <DashboardScreen />}
+      
+      {/* Forgot Password Modal */}
+      <Modal visible={showForgotPassword} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.forgotModal}>
+            <Text style={styles.forgotTitle}>Reset Password</Text>
+            
+            {forgotStep === 1 ? (
+              <>
+                <Text style={styles.forgotStep}>Enter your email</Text>
+                <TextInput
+                  style={styles.tradeInput}
+                  placeholder="Email Address"
+                  value={forgotEmail}
+                  onChangeText={setForgotEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </>
+            ) : (
+              <>
+                <Text style={styles.forgotStep}>Answer security question</Text>
+                <Text style={styles.forgotQuestion}>{retrievedQuestion}</Text>
+                <TextInput
+                  style={styles.tradeInput}
+                  placeholder="Your Answer"
+                  value={forgotAnswer}
+                  onChangeText={setForgotAnswer}
+                />
+                <TextInput
+                  style={styles.tradeInput}
+                  placeholder="New Password"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry
+                />
+              </>
+            )}
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowForgotPassword(false);
+                  setForgotStep(1);
+                  setForgotEmail('');
+                  setForgotAnswer('');
+                  setNewPassword('');
+                  setRetrievedQuestion('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.confirmButton, loading && styles.disabledButton]}
+                onPress={handleForgotPassword}
+                disabled={loading}
+              >
+                <Text style={styles.confirmButtonText}>
+                  {loading ? 'Processing...' : (forgotStep === 1 ? 'Get Question' : 'Reset Password')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  app: {
+    flex: 1,
+    backgroundColor: '#1a365d',
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#1a365d',
+    paddingTop: Platform.OS === 'ios' ? 44 : 25,
+  },
+  
+  // Crypto Ticker
+  cryptoTicker: {
+    backgroundColor: 'rgba(245, 158, 11, 0.9)',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  tickerText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  
+  // Login Screen
+  loginContainer: {
+    flex: 1,
+  },
+  loginContent: {
+    flexGrow: 1,
+    padding: 20,
+    paddingTop: 50,
+    paddingBottom: 30,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 60,
+  },
+  logo: {
+    width: 140,
+    height: 140,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+  },
+  title: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#cbd5e1',
+    marginBottom: 20,
+  },
+  flagsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  flagItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  flag: {
+    fontSize: 24,
+  },
+  flagText: {
+    color: '#94a3b8',
+    fontSize: 12,
+  },
+  flagSeparator: {
+    color: '#94a3b8',
+    fontSize: 16,
+  },
+  
+  loginForm: {
+    width: '100%',
+  },
+  formTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  input: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    padding: 18,
+    borderRadius: 16,
+    fontSize: 17,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 18,
+    fontSize: 17,
+  },
+  eyeButton: {
+    padding: 18,
+  },
+  eyeIcon: {
+    fontSize: 16,
+    color: '#64748b',
+  },
+  loginButton: {
+    backgroundColor: '#f59e0b',
+    padding: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  loginButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  forgotPasswordButton: {
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  forgotPasswordText: {
+    color: '#f59e0b',
+    fontSize: 14,
+    textDecorationLine: 'underline',
+  },
+  linkButton: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  linkText: {
+    color: '#cbd5e1',
+    fontSize: 16,
+  },
+  
+  // Dashboard Screen
+  dashboardContainer: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#1a365d',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  profileAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f59e0b',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  greeting: {
+    fontSize: 16,
+    color: '#cbd5e1',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  logoutButton: {
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  logoutText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  
+  balanceCard: {
+    backgroundColor: 'white',
+    margin: 20,
+    padding: 24,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  balanceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  balanceLabel: {
+    fontSize: 16,
+    color: '#64748b',
+  },
+  countrySwitch: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  countrySwitchText: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  balanceAmount: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginBottom: 4,
+  },
+  btcBalance: {
+    fontSize: 16,
+    color: '#f59e0b',
+  },
+  
+  quickActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    gap: 10,
+  },
+  actionCard: {
+    flex: 1,
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  buyCard: {
+    backgroundColor: '#10b981',
+  },
+  sellCard: {
+    backgroundColor: '#ef4444',
+  },
+  actionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 4,
+  },
+  actionSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  
+  ratesCard: {
+    backgroundColor: 'white',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginBottom: 16,
+  },
+  ratesList: {
+    gap: 8,
+  },
+  rateItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+  },
+  rateLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  cryptoIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f59e0b',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cryptoIconText: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  cryptoName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a365d',
+  },
+  ratePrice: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a365d',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  historyButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  historyText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  notificationCard: {
+    backgroundColor: '#fef3c7',
+    margin: 20,
+    marginBottom: 10,
+    padding: 15,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#f59e0b',
+  },
+  notificationTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#92400e',
+    marginBottom: 5,
+  },
+  notificationText: {
+    fontSize: 12,
+    color: '#92400e',
+    marginBottom: 2,
+  },
+  cryptoBalances: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  cryptoBalance: {
+    fontSize: 14,
+    color: '#64748b',
+  },
+  rateSubtext: {
+    fontSize: 12,
+    color: '#94a3b8',
+  },
+  rateRight: {
+    alignItems: 'flex-end',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    margin: 20,
+    padding: 20,
+    borderRadius: 16,
+    width: '90%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  cryptoSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  cryptoOption: {
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+  },
+  selectedCrypto: {
+    backgroundColor: '#f59e0b',
+  },
+  cryptoOptionText: {
+    fontWeight: 'bold',
+  },
+  rateDisplay: {
+    textAlign: 'center',
+    fontSize: 16,
+    marginBottom: 20,
+    color: '#64748b',
+  },
+  tradeInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    padding: 15,
+    borderRadius: 8,
+    fontSize: 16,
+    marginBottom: 15,
+  },
+  tradePreview: {
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#f59e0b',
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  cancelButton: {
+    flex: 1,
+    padding: 15,
+    borderRadius: 8,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  confirmButton: {
+    flex: 1,
+    padding: 15,
+    borderRadius: 8,
+    backgroundColor: '#10b981',
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  historyModal: {
+    flex: 1,
+    backgroundColor: 'white',
+    paddingTop: Platform.OS === 'ios' ? 44 : 25,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  historyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    color: '#f59e0b',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  historyList: {
+    flex: 1,
+    padding: 20,
+  },
+  noTrades: {
+    textAlign: 'center',
+    color: '#64748b',
+    fontSize: 16,
+    marginTop: 50,
+  },
+  tradeItem: {
+    backgroundColor: '#f8fafc',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  tradeType: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a365d',
+  },
+  tradeAmount: {
+    fontSize: 14,
+    color: '#64748b',
+  },
+  tradeValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#f59e0b',
+  },
+  tradeDate: {
+    fontSize: 12,
+    color: '#94a3b8',
+  },
+  stepText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 15,
+    color: '#1a365d',
+  },
+  securityQuestionText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 15,
+    padding: 15,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    color: '#1a365d',
+    fontWeight: '500',
+  },
+  forgotModal: {
+    backgroundColor: 'white',
+    margin: 30,
+    padding: 20,
+    borderRadius: 12,
+    width: '85%',
+  },
+  forgotTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 15,
+    color: '#1a365d',
+  },
+  forgotStep: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 15,
+    color: '#64748b',
+  },
+  forgotQuestion: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 15,
+    padding: 10,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    color: '#1a365d',
+  },
+  questionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  questionPicker: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  questionPickerText: {
+    fontSize: 17,
+    color: '#1a365d',
+  },
+  depositSection: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginBottom: 15,
+  },
+  depositActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  depositCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cryptoDeposit: {
+    backgroundColor: '#3b82f6',
+  },
+  localDeposit: {
+    backgroundColor: '#8b5cf6',
+  },
+  depositTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 4,
+  },
+  depositSubtitle: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  depositInstructions: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  addressContainer: {
+    backgroundColor: '#f1f5f9',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  addressLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginBottom: 5,
+  },
+  address: {
+    fontSize: 14,
+    color: '#64748b',
+    fontFamily: 'monospace',
+  },
+  uploadButton: {
+    backgroundColor: '#f59e0b',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  uploadButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  tapHint: {
+    fontSize: 10,
+    color: '#94a3b8',
+    marginTop: 2,
+  },
+  cryptoSection: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  cryptoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  cryptoItem: {
+    flex: 1,
+    minWidth: '30%',
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cryptoName: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 8,
+  },
+  cryptoAmount: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginTop: 4,
+  },
+  cryptoValue: {
+    fontSize: 12,
+    color: '#f59e0b',
+    marginTop: 2,
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+  },
+  activeNavItem: {
+    backgroundColor: '#fef3c7',
+  },
+  navIcon: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  activeNavIcon: {
+    fontSize: 22,
+  },
+  navText: {
+    fontSize: 10,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  activeNavText: {
+    color: '#f59e0b',
+    fontWeight: 'bold',
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: 16,
+    marginTop: 10,
+  },
+});
