@@ -465,7 +465,7 @@ export default function AdminDashboard() {
                   <h4 className="font-bold text-gray-800">Recent Activity</h4>
                 </div>
                 <div className="p-4 space-y-3">
-                  {getStoredAdmins().slice(0, 3).map((adminUser, index) => (
+                  {getStoredAdmins().slice(0, 3).map((adminUser: any, index: number) => (
                     <div key={adminUser.id} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div className={`w-2 h-2 rounded-full mr-2 ${
