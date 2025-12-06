@@ -1272,9 +1272,9 @@ const ProfileScreenWeb = ({ fullName, email, user, onUpdateProfile, onLogout, on
       <div className="bg-white rounded-2xl p-6">
         <div className="flex items-center space-x-4 mb-6">
           <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center text-white text-2xl font-bold relative overflow-hidden">
-            {localStorage.getItem('userAvatar') ? (
+            {userAvatar ? (
               <img 
-                src={localStorage.getItem('userAvatar') || ''} 
+                src={userAvatar} 
                 alt="Avatar" 
                 className="w-full h-full object-cover"
               />
@@ -1291,8 +1291,8 @@ const ProfileScreenWeb = ({ fullName, email, user, onUpdateProfile, onLogout, on
                   reader.onload = (event) => {
                     const imageUrl = event.target?.result as string;
                     localStorage.setItem('userAvatar', imageUrl);
+                    setUserAvatar(imageUrl);
                     alert('Avatar updated successfully!');
-                    window.location.reload();
                   };
                   reader.readAsDataURL(file);
                 }
@@ -1771,6 +1771,7 @@ export default function MobileExactDashboard() {
   const [showWalletScreen, setShowWalletScreen] = useState(false);
   const [showProfileScreen, setShowProfileScreen] = useState(false);
   const [showDepositScreen, setShowDepositScreen] = useState(false);
+  const [userAvatar, setUserAvatar] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -1857,8 +1858,10 @@ export default function MobileExactDashboard() {
 
     const savedEmail = localStorage.getItem('userEmail');
     const savedName = localStorage.getItem('userFullName');
+    const savedAvatar = localStorage.getItem('userAvatar');
     if (savedEmail) setEmail(savedEmail);
     if (savedName) setFullName(savedName);
+    if (savedAvatar) setUserAvatar(savedAvatar);
 
     fetchData();
     fetchUsdRates();
@@ -2058,8 +2061,16 @@ export default function MobileExactDashboard() {
       <div className="bg-slate-800 pt-12 pb-5 px-5 rounded-b-3xl shadow-xl">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
-              {fullName?.[0] || email?.[0] || 'U'}
+            <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl font-bold shadow-lg overflow-hidden">
+              {userAvatar ? (
+                <img 
+                  src={userAvatar} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                fullName?.[0] || email?.[0] || 'U'
+              )}
             </div>
             <div>
               <p className="text-slate-400 text-sm">Welcome back</p>
