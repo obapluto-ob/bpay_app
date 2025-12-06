@@ -1,5 +1,5 @@
 [build]
-  publish = "out"
+  publish = ".next"
   command = "npm run build"
 
 [[redirects]]
@@ -8,4 +8,4 @@
   status = 200
 
 [build.environment]
-  NEXT_PUBLIC_API_URL = "https://bpay-app.onrender.com/api"
+  NEXT_PUBLIC_API_URL = "https://bpay-app.onrender.com"
