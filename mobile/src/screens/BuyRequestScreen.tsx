@@ -278,7 +278,9 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
       }, 1000);
       
     } catch (error) {
-      Alert.alert('Error', 'Failed to create escrow order');
+      console.error('Trade creation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert('Error', `Failed to create escrow order: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
