@@ -31,9 +31,9 @@ const authenticateToken = (req, res, next) => {
 router.get('/rates', async (req, res) => {
   // Return fallback rates directly for now
   res.json({
-    BTC: { NGN: 45000000, KES: 6500000 },
-    ETH: { NGN: 2800000, KES: 400000 },
-    USDT: { NGN: 1580, KES: 155 }
+    BTC: { NGN: 130012175, KES: 11592860 },
+    ETH: { NGN: 4407045, KES: 392965 },
+    USDT: { NGN: 1450, KES: 129 }
   });
 });
 

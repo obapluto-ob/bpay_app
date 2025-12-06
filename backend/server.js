@@ -36,7 +36,7 @@ async function initDatabase() {
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: ['http://localhost:3000', 'https://bpay-app-frontend.vercel.app', 'https://bpay-app.vercel.app'],
   credentials: true
 }));
 
