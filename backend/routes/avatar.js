@@ -1,13 +1,9 @@
 const express = require('express');
-const { Pool } = require('pg');
+const db = require('../config/database');
 const auth = require('../middleware/auth');
 const router = express.Router();
 
-// Database connection
-const db = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+console.log('Avatar routes loaded, JWT_SECRET exists:', !!process.env.JWT_SECRET);
 
 // Upload avatar (base64)
 router.post('/upload', auth, async (req, res) => {
