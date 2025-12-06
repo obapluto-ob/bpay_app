@@ -17,7 +17,7 @@ router.post('/register', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password, fullName, securityQuestion, securityAnswer } = req.body;
+    const { email, password, fullName, country, securityQuestion, securityAnswer } = req.body;
     const [firstName, ...lastNameParts] = fullName.split(' ');
     const lastName = lastNameParts.join(' ') || firstName;
 
@@ -36,7 +36,7 @@ router.post('/register', [
     // Create user
     const result = await db.query(
       'INSERT INTO users (email, password, first_name, last_name, phone_number, country, preferred_currency, security_question, security_answer, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()) RETURNING id, email, first_name, last_name',
-      [email, hashedPassword, firstName, lastName, '', 'NG', 'NGN', securityQuestion, hashedAnswer]
+      [email, hashedPassword, firstName, lastName, '', country || 'NG', country === 'KE' ? 'KES' : 'NGN', securityQuestion, hashedAnswer]
     );
 
     const user = result.rows[0];

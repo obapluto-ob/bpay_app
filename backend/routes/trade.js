@@ -44,8 +44,12 @@ router.post('/create', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     // Validate required fields
-    if (!type || !crypto || !fiatAmount || !cryptoAmount) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!type || !crypto || (!fiatAmount && fiatAmount !== 0) || (!cryptoAmount && cryptoAmount !== 0)) {
+      return res.status(400).json({ 
+        error: 'Missing required fields', 
+        received: { type, crypto, fiatAmount, cryptoAmount },
+        required: ['type', 'crypto', 'fiatAmount', 'cryptoAmount']
+      });
     }
     
     // Create trade record
