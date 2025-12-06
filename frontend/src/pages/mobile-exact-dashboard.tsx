@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import CryptoIcon from '../components/CryptoIcon';
 
 const API_BASE = 'https://bpay-app.onrender.com/api';
 
-
-
-// Full Buy Crypto Component
+// Full Buy Crypto Component  
 const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCurrency, onClose }: any) => {
   const [selectedCrypto, setSelectedCrypto] = useState<'BTC' | 'ETH' | 'USDT'>('BTC');
   const [amount, setAmount] = useState('');
@@ -69,7 +66,7 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
               selectedCrypto === crypto ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
             }`}
           >
-            <CryptoIcon crypto={crypto} size={24} />
+            <span className="text-2xl">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
             <span className="font-semibold">{crypto}</span>
           </button>
         ))}
@@ -190,7 +187,6 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
 
   return (
     <div className="space-y-4">
-      {/* Crypto Selector */}
       <div className="flex space-x-2">
         {(['BTC', 'ETH', 'USDT'] as const).map(crypto => (
           <button
@@ -200,18 +196,16 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
               selectedCrypto === crypto ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
             }`}
           >
-            <CryptoIcon crypto={crypto} size={24} />
+            <span className="text-2xl">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
             <span className="font-semibold">{crypto}</span>
           </button>
         ))}
       </div>
 
-      {/* Rate Display */}
       <div className="text-center p-3 bg-slate-100 rounded-xl">
         <p className="text-slate-600">Sell Rate: {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{currentRate.toLocaleString()} per {selectedCrypto}</p>
       </div>
 
-      {/* Amount Input */}
       <div className="flex space-x-2">
         <input
           type="number"
@@ -228,20 +222,17 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
         </button>
       </div>
 
-      {/* Balance Info */}
       <div className="bg-green-50 p-3 rounded-xl border-l-4 border-green-500">
         <p className="text-sm text-slate-600">Available Balance:</p>
         <p className="font-bold text-green-600">{(userBalance[selectedCrypto] || 0).toFixed(8)} {selectedCrypto}</p>
       </div>
 
-      {/* Preview */}
       {amount && parseFloat(amount) > 0 && (
         <div className="text-center p-3 bg-orange-50 rounded-xl">
           <p className="text-orange-600 font-bold">You'll receive: {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{fiatAmount.toLocaleString()}</p>
         </div>
       )}
 
-      {/* Currency Selector */}
       <div className="space-y-2">
         <h3 className="font-bold text-slate-900">Select Currency</h3>
         <div className="flex space-x-2">
@@ -266,7 +257,6 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
         </div>
       </div>
 
-      {/* Payment Method */}
       <div className="space-y-2">
         <h3 className="font-bold text-slate-900">Payment Method</h3>
         <div className="flex space-x-2">
@@ -289,7 +279,6 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
         </div>
       </div>
 
-      {/* Bank Details */}
       <div className="space-y-3">
         <h3 className="font-bold text-slate-900">
           {paymentMethod === 'bank' ? 'Bank Details' : (selectedCurrency === 'NGN' ? 'Mobile Wallet Details' : 'Mobile Money Details')}
@@ -455,8 +444,6 @@ export default function MobileExactDashboard() {
     router.push('/auth');
   };
 
-
-
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-800 flex items-center justify-center">
@@ -538,7 +525,7 @@ export default function MobileExactDashboard() {
                 <div key={crypto} className="bg-white rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <CryptoIcon crypto={crypto} size={40} />
+                      <span className="text-3xl">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
                       <div>
                         <h3 className="font-bold text-slate-900">{crypto}</h3>
                         <p className="text-sm text-slate-600">
@@ -619,7 +606,6 @@ export default function MobileExactDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-800">
-      {/* Header - Exact mobile style */}
       <div className="bg-slate-800 pt-12 pb-5 px-5 rounded-b-3xl shadow-xl">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-3">
@@ -649,11 +635,9 @@ export default function MobileExactDashboard() {
 
       <div className="bg-slate-100 flex-1 rounded-t-3xl -mt-3 min-h-screen">
         <div className="p-5 pt-6">
-          {/* Balance Section - Exact mobile style */}
           <div className="mb-6">
             <h2 className="text-xl font-bold text-slate-900 mb-4">Your Balances</h2>
             
-            {/* Account Tabs - Exact mobile style */}
             <div className="flex bg-slate-200 rounded-xl p-1 mb-4">
               <button
                 onClick={() => setSelectedAccount('crypto')}
@@ -693,7 +677,6 @@ export default function MobileExactDashboard() {
               </button>
             </div>
 
-            {/* Balance Card - Exact mobile style */}
             <div className="bg-white rounded-2xl p-5 shadow-lg border-2 border-transparent">
               {selectedAccount === 'crypto' && (
                 <>
@@ -703,15 +686,15 @@ export default function MobileExactDashboard() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
-                      <CryptoIcon crypto="BTC" size={16} />
+                      <span className="text-lg">₿</span>
                       <span className="text-slate-900 font-semibold">{balance.BTC?.toFixed(6) || '0.000000'} BTC</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <CryptoIcon crypto="ETH" size={16} />
+                      <span className="text-lg">Ξ</span>
                       <span className="text-slate-900 font-semibold">{balance.ETH?.toFixed(4) || '0.0000'} ETH</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <CryptoIcon crypto="USDT" size={16} />
+                      <span className="text-lg">₮</span>
                       <span className="text-slate-900 font-semibold">{balance.USDT?.toFixed(2) || '0.00'} USDT</span>
                     </div>
                   </div>
@@ -740,7 +723,6 @@ export default function MobileExactDashboard() {
             </div>
           </div>
 
-          {/* Quick Actions - Exact mobile style */}
           <div className="mb-6">
             <h2 className="text-xl font-bold text-slate-900 mb-4">Quick Actions</h2>
             <div className="flex justify-around px-2">
@@ -798,7 +780,6 @@ export default function MobileExactDashboard() {
             </div>
           </div>
 
-          {/* Live Rates - Exact mobile style */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-slate-900">Live Rates</h2>
@@ -813,7 +794,7 @@ export default function MobileExactDashboard() {
               {Object.entries(rates).map(([crypto, rate]) => (
                 <div key={crypto} className="bg-white p-4 rounded-xl shadow-md flex justify-between items-center">
                   <div className="flex items-center space-x-3">
-                    <CryptoIcon crypto={crypto} size={32} />
+                    <span className="text-2xl">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
                     <div>
                       <p className="font-bold text-slate-900">{crypto}</p>
                       <p className="text-xs text-slate-600">
@@ -839,7 +820,6 @@ export default function MobileExactDashboard() {
           </div>
         </div>
 
-        {/* Bottom Navigation - Exact mobile style */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-2xl">
           <div className="flex py-3 px-2">
             <button 
@@ -912,7 +892,6 @@ export default function MobileExactDashboard() {
           </div>
         </div>
 
-        {/* Notifications Modal */}
         {showNotifications && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 w-11/12 max-w-md max-h-96">
