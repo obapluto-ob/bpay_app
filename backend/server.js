@@ -27,15 +27,27 @@ async function initDatabase() {
         console.log('Database initialized successfully!');
       }
       
-      // Add avatar column if it doesn't exist
+      // Force add avatar column
       try {
-        await pool.query('ALTER TABLE users ADD COLUMN avatar TEXT;');
-        console.log('Avatar column added successfully!');
-      } catch (error) {
-        if (error.message.includes('already exists')) {
-          console.log('Avatar column already exists');
+        const checkColumn = await pool.query(`
+          SELECT column_name FROM information_schema.columns 
+          WHERE table_name = 'users' AND column_name = 'avatar'
+        `);
+        
+        if (checkColumn.rows.length === 0) {
+          await pool.query('ALTER TABLE users ADD COLUMN avatar TEXT;');
+          console.log('Avatar column added successfully!');
         } else {
-          console.log('Avatar column error (likely already exists):', error.message);
+          console.log('Avatar column already exists');
+        }
+      } catch (error) {
+        console.log('Avatar column migration error:', error.message);
+        // Try to add it anyway
+        try {
+          await pool.query('ALTER TABLE users ADD COLUMN avatar TEXT;');
+          console.log('Avatar column added on retry!');
+        } catch (retryError) {
+          console.log('Avatar column retry failed:', retryError.message);
         }
       }
       await pool.end();
