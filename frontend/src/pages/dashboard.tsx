@@ -129,7 +129,7 @@ export default function Dashboard() {
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Account Status</h2>
               <p className="text-sm text-gray-600">{user?.email}</p>
-              <p className="text-sm text-gray-600">Country: {user?.country === 'NG' ? 'Nigeria' : user?.country === 'KE' ? 'Kenya' : 'Not specified'}</p>
+              <p className="text-sm text-gray-600">Country: {user?.kycStatus === 'approved' ? (user?.country === 'NG' ? 'Nigeria' : 'Kenya') : 'Will be set during KYC'}</p>
             </div>
             <div className="text-right">
               <div className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getKYCStatusColor(user?.kycStatus)}`}>
