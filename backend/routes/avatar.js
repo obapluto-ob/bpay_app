@@ -1,48 +1,73 @@
 const express = require('express');
-const db = require('../config/database');
+const { Pool } = require('pg');
 const auth = require('../middleware/auth');
 const router = express.Router();
+
+// Database connection
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 // Upload avatar (base64)
 router.post('/upload', auth, async (req, res) => {
   try {
+    console.log('Avatar upload request received');
     const { avatar } = req.body;
-    const userId = req.user.id;
+    const userId = req.user?.id;
+
+    console.log('User ID:', userId);
+    console.log('Avatar data length:', avatar?.length);
 
     if (!avatar) {
       return res.status(400).json({ error: 'Avatar data required' });
     }
 
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     // Store base64 avatar in database
-    await db.query(
-      'UPDATE users SET avatar = $1 WHERE id = $2',
+    const result = await db.query(
+      'UPDATE users SET avatar = $1 WHERE id = $2 RETURNING id',
       [avatar, userId]
     );
+
+    console.log('Database update result:', result.rowCount);
 
     res.json({ 
       message: 'Avatar updated successfully',
       avatarUrl: avatar 
     });
   } catch (error) {
-    console.error('Avatar upload error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Avatar upload error:', error.message, error.stack);
+    res.status(500).json({ error: 'Server error: ' + error.message });
   }
 });
 
 // Get avatar
 router.get('/', auth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    console.log('Get avatar request received');
+    const userId = req.user?.id;
+    
+    console.log('User ID:', userId);
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     
     const result = await db.query('SELECT avatar FROM users WHERE id = $1', [userId]);
+    console.log('Database query result:', result.rowCount);
+    
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     res.json({ avatar: result.rows[0].avatar });
   } catch (error) {
-    console.error('Get avatar error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Get avatar error:', error.message, error.stack);
+    res.status(500).json({ error: 'Server error: ' + error.message });
   }
 });
 
