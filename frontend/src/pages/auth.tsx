@@ -10,11 +10,9 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [securityQuestion, setSecurityQuestion] = useState('');
+  const [securityQuestion, setSecurityQuestion] = useState('What is your mother\'s maiden name?');
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [securityAnswer, setSecurityAnswer] = useState('');
-  const [securityQuestion, setSecurityQuestion] = useState('What is your mother\'s maiden name?');
   const [country, setCountry] = useState('');
   
   const securityQuestions = [
