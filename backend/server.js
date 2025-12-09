@@ -94,6 +94,9 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/avatar', require('./routes/avatar'));
 app.use('/api/adminAuth', require('./routes/adminAuth'));
 app.use('/api/deposit', require('./routes/deposit'));
+app.use('/api/price-alerts', require('./routes/priceAlerts'));
+app.use('/api/referrals', require('./routes/referrals'));
+app.use('/api/withdrawals', require('./routes/withdrawals'));
 
 // Health check
 app.get('/health', (req, res) => {

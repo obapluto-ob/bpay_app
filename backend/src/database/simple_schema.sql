@@ -21,6 +21,9 @@ CREATE TABLE IF NOT EXISTS users (
     ngn_balance DECIMAL(20, 2) DEFAULT 0,
     kes_balance DECIMAL(20, 2) DEFAULT 0,
     avatar TEXT,
+    referral_code VARCHAR(20) UNIQUE,
+    referred_by VARCHAR(50),
+    referral_earnings DECIMAL(20, 2) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -109,6 +112,48 @@ CREATE TABLE IF NOT EXISTS admin_chat_messages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Price alerts table
+CREATE TABLE IF NOT EXISTS price_alerts (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    crypto VARCHAR(10) NOT NULL,
+    target_price DECIMAL(20, 2) NOT NULL,
+    condition VARCHAR(10) NOT NULL CHECK (condition IN ('above', 'below')),
+    currency VARCHAR(3) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    triggered BOOLEAN DEFAULT FALSE,
+    triggered_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Referrals table
+CREATE TABLE IF NOT EXISTS referrals (
+    id VARCHAR(50) PRIMARY KEY,
+    referrer_id VARCHAR(50) NOT NULL,
+    referred_id VARCHAR(50) NOT NULL,
+    referral_code VARCHAR(20) NOT NULL,
+    reward_amount DECIMAL(20, 2) DEFAULT 0,
+    reward_paid BOOLEAN DEFAULT FALSE,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(referred_id)
+);
+
+-- Withdrawals table
+CREATE TABLE IF NOT EXISTS withdrawals (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    amount DECIMAL(20, 8) NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    wallet_address VARCHAR(255),
+    bank_details JSONB,
+    status VARCHAR(20) DEFAULT 'pending',
+    admin_notes TEXT,
+    processed_by VARCHAR(50),
+    processed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id);
@@ -117,3 +162,7 @@ CREATE INDEX IF NOT EXISTS idx_deposits_user_id ON deposits(user_id);
 CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);
 CREATE INDEX IF NOT EXISTS idx_disputes_trade_id ON disputes(trade_id);
 CREATE INDEX IF NOT EXISTS idx_admin_chat_receiver ON admin_chat_messages(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_price_alerts_user ON price_alerts(user_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_code ON referrals(referral_code);
+CREATE INDEX IF NOT EXISTS idx_withdrawals_user ON withdrawals(user_id);
