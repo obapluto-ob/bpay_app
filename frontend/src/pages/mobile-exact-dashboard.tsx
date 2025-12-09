@@ -3,6 +3,172 @@ import { useRouter } from 'next/router';
 
 const API_BASE = 'https://bpay-app.onrender.com/api';
 
+// Trade History Component
+const TradeHistoryScreen = () => {
+  const [trades, setTrades] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'pending' | 'completed' | 'cancelled'>('all');
+
+  useEffect(() => {
+    fetchTrades();
+  }, []);
+
+  const fetchTrades = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/trade/history`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setTrades(data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch trades:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredTrades = filter === 'all' ? trades : trades.filter(t => t.status === filter);
+
+  const getStatusColor = (status: string) => {
+    switch(status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-slate-100 text-slate-800';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl p-6 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent mx-auto"></div>
+        <p className="mt-4 text-slate-600">Loading trades...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Filter Buttons */}
+      <div className="flex space-x-2 overflow-x-auto pb-2">
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap ${
+            filter === 'all' ? 'bg-orange-500 text-white' : 'bg-white text-slate-600'
+          }`}
+        >
+          All ({trades.length})
+        </button>
+        <button
+          onClick={() => setFilter('pending')}
+          className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap ${
+            filter === 'pending' ? 'bg-orange-500 text-white' : 'bg-white text-slate-600'
+          }`}
+        >
+          Pending ({trades.filter(t => t.status === 'pending').length})
+        </button>
+        <button
+          onClick={() => setFilter('completed')}
+          className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap ${
+            filter === 'completed' ? 'bg-orange-500 text-white' : 'bg-white text-slate-600'
+          }`}
+        >
+          Completed ({trades.filter(t => t.status === 'completed').length})
+        </button>
+        <button
+          onClick={() => setFilter('cancelled')}
+          className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap ${
+            filter === 'cancelled' ? 'bg-orange-500 text-white' : 'bg-white text-slate-600'
+          }`}
+        >
+          Cancelled ({trades.filter(t => t.status === 'cancelled').length})
+        </button>
+      </div>
+
+      {/* Trade List */}
+      {filteredTrades.length === 0 ? (
+        <div className="bg-white rounded-2xl p-6 text-center">
+          <p className="text-slate-600 mb-4">No {filter !== 'all' ? filter : ''} trades found</p>
+          <button 
+            onClick={() => window.location.href = '/mobile-exact-dashboard'}
+            className="bg-orange-500 text-white px-6 py-2 rounded-lg font-semibold"
+          >
+            Start Trading
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredTrades.map((trade) => (
+            <div key={trade.id} className="bg-white rounded-xl p-4 shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <span className={`text-lg ${
+                    trade.type === 'buy' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {trade.type === 'buy' ? '↑' : '↓'}
+                  </span>
+                  <div>
+                    <p className="font-bold text-slate-900">
+                      {trade.type === 'buy' ? 'BUY' : 'SELL'} {trade.crypto}
+                    </p>
+                    <p className="text-xs text-slate-500">#{trade.id}</p>
+                  </div>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(trade.status)}`}>
+                  {trade.status}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <p className="text-xs text-slate-500">Amount</p>
+                  <p className="font-semibold text-slate-900">
+                    {trade.fiatAmount?.toLocaleString()} {trade.country === 'NG' ? 'NGN' : 'KES'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Crypto</p>
+                  <p className="font-semibold text-slate-900">
+                    {trade.cryptoAmount?.toFixed(6)} {trade.crypto}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
+                <span>{new Date(trade.createdAt).toLocaleDateString()}</span>
+                <span>{new Date(trade.createdAt).toLocaleTimeString()}</span>
+              </div>
+
+              {trade.status === 'pending' && (
+                <button
+                  onClick={() => window.location.href = `/trade-chat?tradeId=${trade.id}`}
+                  className="w-full bg-blue-500 text-white py-2 rounded-lg font-semibold"
+                >
+                  💬 Open Chat
+                </button>
+              )}
+
+              {trade.status === 'completed' && !trade.rated && (
+                <button
+                  onClick={() => window.location.href = `/trade-chat?tradeId=${trade.id}`}
+                  className="w-full bg-orange-500 text-white py-2 rounded-lg font-semibold"
+                >
+                  ⭐ Rate Trade
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Full Buy Crypto Component  
 const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCurrency, onClose }: any) => {
   const [selectedCrypto, setSelectedCrypto] = useState<'BTC' | 'ETH' | 'USDT'>('BTC');
@@ -2158,21 +2324,7 @@ export default function MobileExactDashboard() {
             />
           )}
 
-          {showHistoryScreen && (
-            <div className="bg-white rounded-2xl p-6">
-              <p className="text-center text-slate-600 mb-4">No trade history found. Start trading to see your transaction history here.</p>
-              <button 
-                onClick={() => {
-                  setShowHistoryScreen(false);
-                  setShowBuyScreen(true);
-                  setActiveTab('buy');
-                }}
-                className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold"
-              >
-                Start Trading
-              </button>
-            </div>
-          )}
+          {showHistoryScreen && <TradeHistoryScreen />}
 
           {showDepositScreen && (
             <DepositScreenWeb 
