@@ -350,4 +350,72 @@ router.post('/chat/send', async (req, res) => {
   }
 });
 
+// Get all deposits
+router.get('/deposits', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT d.*, u.email as user_email 
+      FROM deposits d
+      LEFT JOIN users u ON d.user_id = u.id
+      ORDER BY d.created_at DESC
+    `);
+    
+    res.json({ deposits: result.rows });
+  } catch (error) {
+    console.error('Admin deposits error:', error);
+    res.status(500).json({ error: 'Failed to fetch deposits' });
+  }
+});
+
+// Approve deposit
+router.post('/deposits/:id/approve', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get deposit details
+    const depositResult = await pool.query('SELECT * FROM deposits WHERE id = $1', [id]);
+    if (depositResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Deposit not found' });
+    }
+    
+    const deposit = depositResult.rows[0];
+    
+    // Update deposit status
+    await pool.query(
+      'UPDATE deposits SET status = $1 WHERE id = $2',
+      ['approved', id]
+    );
+    
+    // Credit user balance
+    const column = deposit.currency === 'NGN' ? 'ngn_balance' : 'kes_balance';
+    await pool.query(
+      `UPDATE users SET ${column} = ${column} + $1 WHERE id = $2`,
+      [deposit.amount, deposit.user_id]
+    );
+    
+    res.json({ success: true, message: 'Deposit approved and balance credited' });
+  } catch (error) {
+    console.error('Approve deposit error:', error);
+    res.status(500).json({ error: 'Failed to approve deposit' });
+  }
+});
+
+// Reject deposit
+router.post('/deposits/:id/reject', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    
+    await pool.query(
+      'UPDATE deposits SET status = $1 WHERE id = $2',
+      ['rejected', id]
+    );
+    
+    res.json({ success: true, message: 'Deposit rejected' });
+  } catch (error) {
+    console.error('Reject deposit error:', error);
+    res.status(500).json({ error: 'Failed to reject deposit' });
+  }
+});
+
 module.exports = router;
