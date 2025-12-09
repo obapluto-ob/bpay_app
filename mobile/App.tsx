@@ -57,12 +57,10 @@ const LoginScreen: React.FC<{
         
         <View style={styles.flagsContainer}>
           <View style={styles.flagItem}>
-            <Text style={styles.flag}>🇳🇬</Text>
             <Text style={styles.flagText}>Nigeria</Text>
           </View>
           <Text style={styles.flagSeparator}>|</Text>
           <View style={styles.flagItem}>
-            <Text style={styles.flag}>🇰🇪</Text>
             <Text style={styles.flagText}>Kenya</Text>
           </View>
         </View>
@@ -799,7 +797,7 @@ export default function App() {
               style={[styles.tab, selectedAccount === 'crypto' && styles.activeTab]}
               onPress={() => setSelectedAccount('crypto')}
             >
-              <Text style={[styles.tabText, selectedAccount === 'crypto' && styles.activeTabText]}>₿ Crypto</Text>
+              <Text style={[styles.tabText, selectedAccount === 'crypto' && styles.activeTabText]}>Crypto</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.tab, selectedAccount === 'nigeria' && styles.activeTab]}
@@ -808,7 +806,7 @@ export default function App() {
                 setActiveCountry('NG');
               }}
             >
-              <Text style={[styles.tabText, selectedAccount === 'nigeria' && styles.activeTabText]}>🇳🇬 Nigeria</Text>
+              <Text style={[styles.tabText, selectedAccount === 'nigeria' && styles.activeTabText]}>NG Nigeria</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.tab, selectedAccount === 'kenya' && styles.activeTab]}
@@ -817,7 +815,7 @@ export default function App() {
                 setActiveCountry('KE');
               }}
             >
-              <Text style={[styles.tabText, selectedAccount === 'kenya' && styles.activeTabText]}>🇰🇪 Kenya</Text>
+              <Text style={[styles.tabText, selectedAccount === 'kenya' && styles.activeTabText]}>KE Kenya</Text>
             </TouchableOpacity>
           </View>
           
@@ -826,7 +824,6 @@ export default function App() {
             {selectedAccount === 'crypto' && (
               <>
                 <View style={styles.balanceHeader}>
-                  <Text style={styles.balanceFlag}>₿</Text>
                   <Text style={styles.balanceCountry}>Crypto Assets</Text>
                 </View>
                 <View style={styles.cryptoBalances}>
@@ -849,8 +846,7 @@ export default function App() {
             {selectedAccount === 'nigeria' && (
               <>
                 <View style={styles.balanceHeader}>
-                  <Text style={styles.balanceFlag}>🇳🇬</Text>
-                  <Text style={styles.balanceCountry}>Nigeria</Text>
+                  <Text style={styles.balanceCountry}>Nigeria (NGN)</Text>
                 </View>
                 <Text style={styles.balanceAmount}>₦{balance.NGN?.toLocaleString() || '0'}</Text>
               </>
@@ -859,8 +855,7 @@ export default function App() {
             {selectedAccount === 'kenya' && (
               <>
                 <View style={styles.balanceHeader}>
-                  <Text style={styles.balanceFlag}>🇰🇪</Text>
-                  <Text style={styles.balanceCountry}>Kenya</Text>
+                  <Text style={styles.balanceCountry}>Kenya (KES)</Text>
                 </View>
                 <Text style={styles.balanceAmount}>KSh{balance.KES?.toLocaleString() || '0'}</Text>
               </>
@@ -876,22 +871,30 @@ export default function App() {
               // Crypto account actions
               <>
                 <TouchableOpacity style={styles.compactButton} onPress={() => setShowSellScreen(true)}>
-                  <Text style={styles.compactIcon}>↓</Text>
+                  <View style={[styles.compactIconCircle, { backgroundColor: '#fee2e2' }]}>
+                    <Text style={[styles.compactIconText, { color: '#ef4444' }]}>S</Text>
+                  </View>
                   <Text style={styles.compactText}>Sell</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity style={styles.compactButton} onPress={() => setShowCryptoWallet(true)}>
-                  <Text style={styles.compactIcon}>+</Text>
+                  <View style={[styles.compactIconCircle, { backgroundColor: '#dcfce7' }]}>
+                    <Text style={[styles.compactIconText, { color: '#10b981' }]}>D</Text>
+                  </View>
                   <Text style={styles.compactText}>Deposit</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity style={styles.compactButton} onPress={() => setShowCryptoWallet(true)}>
-                  <Text style={styles.compactIcon}>₿</Text>
+                  <View style={[styles.compactIconCircle, { backgroundColor: '#fef3c7' }]}>
+                    <Text style={[styles.compactIconText, { color: '#f59e0b' }]}>W</Text>
+                  </View>
                   <Text style={styles.compactText}>Wallet</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity style={styles.compactButton} onPress={() => setShowConvertScreen(true)}>
-                  <Text style={styles.compactIcon}>⇄</Text>
+                  <View style={[styles.compactIconCircle, { backgroundColor: '#dbeafe' }]}>
+                    <Text style={[styles.compactIconText, { color: '#3b82f6' }]}>C</Text>
+                  </View>
                   <Text style={styles.compactText}>Convert</Text>
                 </TouchableOpacity>
               </>
@@ -899,12 +902,16 @@ export default function App() {
               // Fiat account actions (Nigeria/Kenya)
               <>
                 <TouchableOpacity style={styles.compactButton} onPress={() => setShowBuyScreen(true)}>
-                  <Text style={styles.compactIcon}>↑</Text>
+                  <View style={[styles.compactIconCircle, { backgroundColor: '#dcfce7' }]}>
+                    <Text style={[styles.compactIconText, { color: '#10b981' }]}>B</Text>
+                  </View>
                   <Text style={styles.compactText}>Buy Crypto</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity style={styles.compactButton} onPress={() => setShowDepositScreen(true)}>
-                  <Text style={styles.compactIcon}>+</Text>
+                  <View style={[styles.compactIconCircle, { backgroundColor: '#fef3c7' }]}>
+                    <Text style={[styles.compactIconText, { color: '#f59e0b' }]}>A</Text>
+                  </View>
                   <Text style={styles.compactText}>Add Funds</Text>
                 </TouchableOpacity>
               </>
@@ -2133,13 +2140,20 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  compactIcon: {
-    fontSize: 20,
-    color: '#f59e0b',
-    marginBottom: 4,
+  compactIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  compactIconText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   compactText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#1a365d',
     fontWeight: '600',
   },

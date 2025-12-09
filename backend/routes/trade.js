@@ -37,10 +37,10 @@ router.get('/rates', async (req, res) => {
   });
 });
 
-// Create trade
+// Create trade with auto admin assignment
 router.post('/create', authenticateToken, async (req, res) => {
   try {
-    const { type, crypto, fiatAmount, cryptoAmount, paymentMethod, country } = req.body;
+    const { type, crypto, fiatAmount, cryptoAmount, paymentMethod, country, bankDetails } = req.body;
     const userId = req.user.id;
     
     // Validate required fields
@@ -52,18 +52,28 @@ router.post('/create', authenticateToken, async (req, res) => {
       });
     }
     
-    // Create trade record with unique 9-digit order ID (numbers only)
+    // Auto-assign best available admin
+    const adminQuery = `
+      SELECT id, name, average_rating, response_time, total_trades 
+      FROM admins 
+      WHERE is_online = true 
+      AND (assigned_region = $1 OR assigned_region = 'ALL')
+      ORDER BY average_rating DESC, response_time ASC, total_trades ASC
+      LIMIT 1
+    `;
+    const adminResult = await pool.query(adminQuery, [country || 'NG']);
+    const assignedAdmin = adminResult.rows[0];
+    
+    // Create trade record
     const tradeId = 'trade_' + Date.now();
-    const orderId = Math.floor(100000000 + Math.random() * 900000000).toString(); // 9-digit numbers only
     const query = `
-      INSERT INTO trades (id, order_id, user_id, type, crypto, fiat_amount, crypto_amount, payment_method, country, status, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      INSERT INTO trades (id, user_id, type, crypto, fiat_amount, crypto_amount, payment_method, country, status, assigned_admin, bank_details, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `;
     
     const values = [
       tradeId,
-      orderId,
       userId,
       type,
       crypto,
@@ -72,28 +82,56 @@ router.post('/create', authenticateToken, async (req, res) => {
       paymentMethod || 'bank',
       country || 'NG',
       'pending',
+      assignedAdmin?.id || null,
+      bankDetails ? JSON.stringify(bankDetails) : null,
       new Date().toISOString()
     ];
     
     const result = await pool.query(query, values);
     const trade = result.rows[0];
     
+    // Create initial chat message to admin
+    const msgId = 'msg_' + Date.now();
+    const initialMessage = type === 'buy' 
+      ? `🔔 New BUY order: User wants to buy ${cryptoAmount} ${crypto} for ${fiatAmount} ${country === 'NG' ? 'NGN' : 'KES'}. Payment method: ${paymentMethod}. Please verify payment and release crypto.`
+      : `🔔 New SELL order: User wants to sell ${cryptoAmount} ${crypto} for ${fiatAmount} ${country === 'NG' ? 'NGN' : 'KES'}. Bank: ${bankDetails?.bankName || 'N/A'}. Please verify and process payment.`;
+    
+    await pool.query(
+      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+      [msgId, tradeId, 'system', 'system', initialMessage]
+    );
+    
+    // Send welcome message to user
+    const welcomeMsgId = 'msg_' + (Date.now() + 1);
+    const welcomeMessage = assignedAdmin 
+      ? `✅ Order created! You've been matched with ${assignedAdmin.name} (⭐ ${assignedAdmin.average_rating || 5.0}/5.0). They will assist you with this ${type} order.`
+      : `✅ Order created! An admin will be assigned shortly to assist you.`;
+    
+    await pool.query(
+      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+      [welcomeMsgId, tradeId, 'system', 'system', welcomeMessage]
+    );
+    
     res.json({ 
       success: true,
       trade: {
         id: trade.id,
-        orderId: trade.order_id,
         type: trade.type,
         crypto: trade.crypto,
         fiatAmount: trade.fiat_amount,
         cryptoAmount: trade.crypto_amount,
         status: trade.status,
+        assignedAdmin: assignedAdmin ? {
+          id: assignedAdmin.id,
+          name: assignedAdmin.name,
+          rating: assignedAdmin.average_rating
+        } : null,
         createdAt: trade.created_at
       }
     });
   } catch (error) {
     console.error('Trade creation error:', error);
-    res.status(500).json({ error: 'Failed to create trade' });
+    res.status(500).json({ error: 'Failed to create trade', details: error.message });
   }
 });
 
@@ -259,6 +297,38 @@ router.post('/:id/rate', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Rate trade error:', error);
     res.status(500).json({ error: 'Failed to submit rating' });
+  }
+});
+
+// Complete order
+router.post('/:id/complete', authenticateToken, async (req, res) => {
+  try {
+    const tradeId = req.params.id;
+    const userId = req.user.id;
+    
+    const trade = await pool.query('SELECT * FROM trades WHERE id = $1 AND user_id = $2', [tradeId, userId]);
+    
+    if (trade.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    
+    if (trade.rows[0].status !== 'pending') {
+      return res.status(400).json({ error: 'Only pending trades can be completed' });
+    }
+    
+    await pool.query('UPDATE trades SET status = $1, updated_at = NOW() WHERE id = $2', ['completed', tradeId]);
+    
+    // Add completion message
+    const msgId = 'msg_' + Date.now();
+    await pool.query(
+      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+      [msgId, tradeId, 'system', 'system', '✅ Order completed successfully!']
+    );
+    
+    res.json({ success: true, message: 'Order completed' });
+  } catch (error) {
+    console.error('Complete order error:', error);
+    res.status(500).json({ error: 'Failed to complete order' });
   }
 });
 

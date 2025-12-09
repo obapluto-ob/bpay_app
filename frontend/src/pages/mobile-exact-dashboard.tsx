@@ -134,7 +134,7 @@ const TradeHistoryScreen = () => {
                 <div>
                   <p className="text-xs text-slate-500">Crypto</p>
                   <p className="font-semibold text-slate-900">
-                    {trade.cryptoAmount?.toFixed(6)} {trade.crypto}
+                    {parseFloat(trade.cryptoAmount || 0).toFixed(6)} {trade.crypto}
                   </p>
                 </div>
               </div>
@@ -251,22 +251,14 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
 
       if (response.ok) {
         const data = await response.json();
-        setOrderId(data.trade?.id || 'ORDER_' + Date.now());
-        setOrderStep('escrow');
+        const tradeId = data.trade?.id;
         
-        const timer = setInterval(() => {
-          setTimeRemaining(prev => {
-            if (prev <= 1) {
-              clearInterval(timer);
-              alert('Order expired');
-              setOrderStep('create');
-              return 900;
-            }
-            return prev - 1;
-          });
-        }, 1000);
+        // Immediately redirect to chat with assigned admin
+        alert(`Order created! You've been matched with an admin. Opening chat...`);
+        window.location.href = `/trade-chat?tradeId=${tradeId}`;
       } else {
-        alert('Failed to create order');
+        const errorData = await response.json();
+        alert('Failed to create order: ' + (errorData.error || 'Unknown error'));
       }
     } catch (error) {
       alert('Network error');
@@ -554,10 +546,14 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
 
       if (response.ok) {
         const data = await response.json();
-        setOrderId(data.trade?.id || 'ORDER_' + Date.now());
-        setOrderStep('escrow');
+        const tradeId = data.trade?.id;
+        
+        // Immediately redirect to chat with assigned admin
+        alert(`Sell order created! You've been matched with an admin. Opening chat...`);
+        window.location.href = `/trade-chat?tradeId=${tradeId}`;
       } else {
-        alert('Failed to create order');
+        const errorData = await response.json();
+        alert('Failed to create order: ' + (errorData.error || 'Unknown error'));
       }
     } catch (error) {
       alert('Network error');
