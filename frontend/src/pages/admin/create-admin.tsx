@@ -8,13 +8,12 @@ export default function CreateAdmin() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('admin');
+  const [role, setRole] = useState('trade_admin');
   const [superAdminToken, setSuperAdminToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Protect route
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
     if (!token) {
@@ -38,11 +37,11 @@ export default function CreateAdmin() {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess(`Admin account created successfully! Email: ${email}`);
+        setSuccess(`✅ Admin created! Email: ${email} | Password: ${password}`);
         setName('');
         setEmail('');
         setPassword('');
-        setRole('admin');
+        setSuperAdminToken('');
       } else {
         setError(data.error || 'Failed to create admin');
       }
@@ -54,42 +53,49 @@ export default function CreateAdmin() {
   };
 
   return (
-    <div className="min-h-screen bg-[#1a365d]">
+    <div className="min-h-screen bg-slate-900">
       <div className="flex flex-col min-h-screen">
-        <div className="text-center pt-8 md:pt-16 pb-6 md:pb-8 px-4">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Create Admin Account</h1>
-          <p className="text-base md:text-lg text-slate-300">Super Admin Only</p>
+        <div className="text-center pt-4 md:pt-8 pb-4 md:pb-6 px-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-orange-500 mb-2">🔐 Create Admin Account</h1>
+          <p className="text-sm md:text-base text-slate-300">Super Admin Only - Secret Token Required</p>
         </div>
 
-        <div className="flex-1 bg-[#f8fafc] rounded-t-3xl p-4 md:p-6">
+        <div className="flex-1 bg-slate-800 rounded-t-3xl p-4 md:p-6">
           <div className="max-w-md mx-auto w-full">
             <button
               onClick={() => router.push('/admin/dashboard')}
-              className="mb-6 text-[#1a365d] hover:text-[#f59e0b] flex items-center"
+              className="mb-4 text-orange-500 hover:text-orange-400 flex items-center font-semibold text-sm md:text-base"
             >
               ← Back to Dashboard
             </button>
 
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleCreate} className="space-y-3 md:space-y-4">
               {error && (
-                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl">
-                  <p className="text-red-800 text-sm">{error}</p>
+                <div className="bg-red-900 border-l-4 border-red-500 p-3 md:p-4 rounded-xl">
+                  <p className="text-red-200 text-xs md:text-sm">{error}</p>
                 </div>
               )}
 
               {success && (
-                <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-xl">
-                  <p className="text-green-800 text-sm">{success}</p>
+                <div className="bg-green-900 border-l-4 border-green-500 p-3 md:p-4 rounded-xl">
+                  <p className="text-green-200 text-xs md:text-sm font-semibold whitespace-pre-wrap">{success}</p>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/admin/dashboard')}
+                    className="mt-3 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 w-full md:w-auto"
+                  >
+                    Go to Dashboard
+                  </button>
                 </div>
               )}
 
               <input
                 type="password"
-                placeholder="Super Admin Secret Token"
+                placeholder="🔑 Super Admin Secret Token (peace25)"
                 value={superAdminToken}
                 onChange={(e) => setSuperAdminToken(e.target.value)}
                 required
-                className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none"
+                className="w-full p-3 md:p-4 bg-slate-700 border border-slate-600 rounded-xl text-sm md:text-base text-white placeholder-slate-400 focus:border-orange-500 focus:outline-none"
               />
 
               <input
@@ -98,7 +104,7 @@ export default function CreateAdmin() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none"
+                className="w-full p-3 md:p-4 bg-slate-700 border border-slate-600 rounded-xl text-sm md:text-base text-white placeholder-slate-400 focus:border-orange-500 focus:outline-none"
               />
 
               <input
@@ -107,7 +113,7 @@ export default function CreateAdmin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none"
+                className="w-full p-3 md:p-4 bg-slate-700 border border-slate-600 rounded-xl text-sm md:text-base text-white placeholder-slate-400 focus:border-orange-500 focus:outline-none"
               />
 
               <input
@@ -116,30 +122,32 @@ export default function CreateAdmin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none"
+                className="w-full p-3 md:p-4 bg-slate-700 border border-slate-600 rounded-xl text-sm md:text-base text-white placeholder-slate-400 focus:border-orange-500 focus:outline-none"
               />
 
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none"
+                className="w-full p-3 md:p-4 bg-slate-700 border border-slate-600 rounded-xl text-sm md:text-base text-white focus:border-orange-500 focus:outline-none"
               >
-                <option value="admin">Admin (Worker)</option>
-                <option value="super_admin">Super Admin</option>
+                <option value="trade_admin">Trade Admin (Verify orders)</option>
+                <option value="rate_admin">Rate Admin (Manage rates)</option>
+                <option value="kyc_admin">KYC Admin (Verify users)</option>
+                <option value="super_admin">Super Admin (Full access)</option>
               </select>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#f59e0b] text-white p-3 md:p-4 rounded-xl text-base md:text-lg font-bold hover:bg-[#d97706] disabled:opacity-50 transition-colors shadow-lg"
+                className="w-full bg-orange-500 text-white p-3 md:p-4 rounded-xl text-sm md:text-base font-bold hover:bg-orange-600 disabled:opacity-50 transition-colors shadow-lg"
               >
                 {loading ? 'Creating...' : 'Create Admin Account'}
               </button>
             </form>
 
-            <div className="mt-6 bg-yellow-50 p-4 rounded-xl border-l-4 border-yellow-500">
-              <p className="text-sm text-yellow-800 font-semibold mb-2">Super Admin Only</p>
-              <p className="text-xs text-yellow-700">You need the super admin secret token to create new admin accounts. This token is set in the backend environment variables.</p>
+            <div className="mt-4 md:mt-6 bg-yellow-900 p-3 md:p-4 rounded-xl border-l-4 border-yellow-500">
+              <p className="text-xs md:text-sm text-yellow-200 font-semibold mb-2">🔐 Super Admin Secret Token</p>
+              <p className="text-xs text-yellow-300">Enter the secret token (peace25) to create new admin accounts. Only super admins have access to this token.</p>
             </div>
           </div>
         </div>
