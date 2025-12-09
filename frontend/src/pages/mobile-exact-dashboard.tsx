@@ -740,9 +740,7 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
           </p>
           <div className="space-y-3">
             <button
-              onClick={async () => {
-                try {
-                  const token = localStorage.getItem('token');
+              onClick={() => {
                 window.location.href = `/trade-chat?tradeId=${orderId}`;
               }}
               className="w-full bg-green-500 text-white py-3 rounded-xl font-semibold"
