@@ -21,23 +21,8 @@ export default function SuperAdminDashboard() {
       return;
     }
 
-    // Verify token is valid
-    const verifyToken = async () => {
-      try {
-        const response = await fetch(`${API_BASE}/admin/stats`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!response.ok) {
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminUser');
-          router.push('/admin/login');
-          return;
-        }
-      } catch (error) {
-        router.push('/admin/login');
-      }
-    };
-    verifyToken();
+    // Token exists, proceed with loading data
+    // Don't redirect on stats error, let fetchData handle it
 
     fetchData();
     const interval = setInterval(fetchData, 30000);
@@ -55,6 +40,9 @@ export default function SuperAdminDashboard() {
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
+      } else {
+        console.error('Stats fetch failed:', statsRes.status);
+        setStats({ totalUsers: 0, ngnVolume: 0, kesVolume: 0, pendingTrades: 0, pendingDeposits: 0, recentOrders: [] });
       }
 
       // Fetch admin performance
