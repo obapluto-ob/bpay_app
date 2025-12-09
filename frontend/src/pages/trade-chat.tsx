@@ -181,29 +181,84 @@ export default function TradeChat() {
               ✓ Complete Order
             </button>
             <button
-              onClick={async () => {
-                const reason = prompt('Dispute reason:');
-                const evidence = prompt('Evidence/Details:');
-                if (!reason || !evidence) return;
+              onClick={() => {
+                const modal = document.createElement('div');
+                modal.innerHTML = `
+                  <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999">
+                    <div style="background:white;padding:24px;border-radius:12px;max-width:500px;width:90%">
+                      <h3 style="font-size:18px;font-weight:bold;margin-bottom:16px;color:#1e293b">Raise Dispute</h3>
+                      <p style="font-size:14px;color:#64748b;margin-bottom:16px">Order ID: ${trade?.id}</p>
+                      
+                      <label style="display:block;font-weight:bold;margin-bottom:8px;color:#1e293b">Reason for Dispute *</label>
+                      <select id="disputeReason" style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:16px">
+                        <option value="">Select reason...</option>
+                        <option value="payment_not_received">Payment not received</option>
+                        <option value="crypto_not_received">Crypto not received</option>
+                        <option value="wrong_amount">Wrong amount sent</option>
+                        <option value="admin_unresponsive">Admin not responding</option>
+                        <option value="other">Other issue</option>
+                      </select>
+                      
+                      <label style="display:block;font-weight:bold;margin-bottom:8px;color:#1e293b">Transaction Reference/Proof *</label>
+                      <input id="txRef" type="text" placeholder="Bank reference, TxID, or receipt number" style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:16px" />
+                      
+                      <label style="display:block;font-weight:bold;margin-bottom:8px;color:#1e293b">Detailed Explanation *</label>
+                      <textarea id="disputeDetails" rows="4" placeholder="Explain what happened and provide evidence..." style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:16px"></textarea>
+                      
+                      <div style="background:#fef3c7;padding:12px;border-radius:8px;border-left:4px solid #f59e0b;margin-bottom:16px">
+                        <p style="font-size:12px;color:#92400e">⚠️ False disputes may result in account suspension. Only raise disputes for genuine issues.</p>
+                      </div>
+                      
+                      <div style="display:flex;gap:8px">
+                        <button id="cancelDispute" style="flex:1;padding:12px;background:#f1f5f9;color:#64748b;border:none;border-radius:8px;font-weight:bold;cursor:pointer">Cancel</button>
+                        <button id="submitDispute" style="flex:1;padding:12px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer">Submit Dispute</button>
+                      </div>
+                    </div>
+                  </div>
+                `;
+                document.body.appendChild(modal);
                 
-                try {
-                  const token = localStorage.getItem('token');
-                  const response = await fetch(`${API_BASE}/trade/${tradeId}/dispute`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ reason, evidence })
-                  });
-                  if (response.ok) {
-                    alert('Dispute raised! Admin will review.');
-                    fetchTradeDetails();
-                    fetchMessages();
+                document.getElementById('cancelDispute').onclick = () => modal.remove();
+                document.getElementById('submitDispute').onclick = async () => {
+                  const reason = (document.getElementById('disputeReason') as HTMLSelectElement).value;
+                  const txRef = (document.getElementById('txRef') as HTMLInputElement).value;
+                  const details = (document.getElementById('disputeDetails') as HTMLTextAreaElement).value;
+                  
+                  if (!reason || !txRef || !details) {
+                    alert('Please fill all required fields');
+                    return;
                   }
-                } catch (error) {
-                  alert('Failed to raise dispute');
-                }
+                  
+                  if (details.length < 20) {
+                    alert('Please provide more detailed explanation (minimum 20 characters)');
+                    return;
+                  }
+                  
+                  try {
+                    const token = localStorage.getItem('token');
+                    const evidence = `Transaction Ref: ${txRef}\n\nDetails: ${details}`;
+                    const response = await fetch(`${API_BASE}/trade/${tradeId}/dispute`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
+                      },
+                      body: JSON.stringify({ reason, evidence })
+                    });
+                    
+                    const data = await response.json();
+                    if (response.ok) {
+                      alert('Dispute raised successfully! Admin will review within 24 hours.');
+                      modal.remove();
+                      fetchTradeDetails();
+                      fetchMessages();
+                    } else {
+                      alert(data.error || 'Failed to raise dispute');
+                    }
+                  } catch (error) {
+                    alert('Network error. Please try again.');
+                  }
+                };
               }}
               className="flex-1 bg-red-500 text-white py-2 rounded-lg font-bold text-sm"
             >

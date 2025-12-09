@@ -332,36 +332,81 @@ router.post('/:id/complete', authenticateToken, async (req, res) => {
   }
 });
 
-// Raise dispute
+// Raise dispute with validation
 router.post('/:id/dispute', authenticateToken, async (req, res) => {
   try {
     const { reason, evidence } = req.body;
     const tradeId = req.params.id;
     const userId = req.user.id;
     
+    // Validate inputs
     if (!reason || !evidence) {
       return res.status(400).json({ error: 'Reason and evidence required' });
     }
     
+    if (evidence.length < 20) {
+      return res.status(400).json({ error: 'Evidence must be at least 20 characters' });
+    }
+    
+    // Check if trade exists and belongs to user
+    const tradeResult = await pool.query(
+      'SELECT * FROM trades WHERE id = $1 AND user_id = $2',
+      [tradeId, userId]
+    );
+    
+    if (tradeResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    
+    const trade = tradeResult.rows[0];
+    
+    // Prevent disputes on completed/cancelled trades
+    if (trade.status === 'completed') {
+      return res.status(400).json({ error: 'Cannot dispute completed trades' });
+    }
+    
+    if (trade.status === 'cancelled') {
+      return res.status(400).json({ error: 'Cannot dispute cancelled trades' });
+    }
+    
+    // Check if already disputed
+    if (trade.status === 'disputed') {
+      return res.status(400).json({ error: 'Trade already under dispute' });
+    }
+    
+    // Check for abuse - limit disputes per user
+    const recentDisputes = await pool.query(
+      'SELECT COUNT(*) as count FROM disputes WHERE user_id = $1 AND created_at > NOW() - INTERVAL \'7 days\'',
+      [userId]
+    );
+    
+    if (parseInt(recentDisputes.rows[0].count) >= 3) {
+      return res.status(429).json({ error: 'Too many disputes. Please contact support.' });
+    }
+    
+    // Create dispute
     const disputeId = 'dispute_' + Date.now();
     await pool.query(
       'INSERT INTO disputes (id, trade_id, user_id, reason, evidence, status, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
       [disputeId, tradeId, userId, reason, evidence, 'open']
     );
     
+    // Update trade status
     await pool.query(
       'UPDATE trades SET status = $1 WHERE id = $2',
       ['disputed', tradeId]
     );
     
-    // Add system message
+    // Add system message with order details
     const msgId = 'msg_' + Date.now();
+    const disputeMessage = `⚠️ DISPUTE RAISED\n\nOrder ID: ${tradeId}\nReason: ${reason}\nEvidence: ${evidence}\n\nAdmin will review within 24 hours.`;
+    
     await pool.query(
       'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
-      [msgId, tradeId, 'system', 'system', `⚠️ Dispute raised: ${reason}`]
+      [msgId, tradeId, 'system', 'system', disputeMessage]
     );
     
-    res.json({ success: true, disputeId });
+    res.json({ success: true, disputeId, message: 'Dispute raised successfully' });
   } catch (error) {
     console.error('Dispute error:', error);
     res.status(500).json({ error: 'Failed to raise dispute' });
