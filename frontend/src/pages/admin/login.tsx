@@ -119,13 +119,18 @@ export default function AdminLogin() {
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">BPay Admin Panel</h1>
           <p className="text-slate-400">Secure Admin Access</p>
-
+          <div className="mt-4 bg-slate-700 rounded-lg p-3">
+            <p className="text-xs text-slate-400 mb-1">Admin Panel URL:</p>
+            <p className="text-sm text-amber-400 font-mono break-all">
+              https://bpay-app.netlify.app/admin
+            </p>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-xl p-8">
           <div className="mb-6 text-center">
             <h2 className="text-xl font-bold text-gray-800">
-              {isSignup ? 'Create Admin Account' : 'Admin Login'}
+              {isSignup ? 'Create Admin Account' : 'Sign In'}
             </h2>
           </div>
           

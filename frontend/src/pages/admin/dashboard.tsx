@@ -225,6 +225,9 @@ export default function AdminDashboard() {
             <p className="text-amber-400 text-sm font-medium">
               {admin.role.replace('_', ' ').toUpperCase()} • {getRegionText()}
             </p>
+            <p className="text-xs text-slate-400 mt-2 font-mono">
+              https://bpay-app.netlify.app/admin
+            </p>
           </div>
           <button
             onClick={handleLogout}
