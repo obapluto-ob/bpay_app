@@ -166,6 +166,9 @@ export default function AdminDashboard() {
       router.push('/admin/login');
       return;
     }
+    // Redirect to enhanced dashboard
+    router.push('/admin/enhanced-dashboard');
+    return;
     setAdmin(JSON.parse(adminData));
     
     // Load real stats
