@@ -92,7 +92,7 @@ export default function EnhancedAdminDashboard() {
 
       {/* Stats Cards */}
       <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg">
             <div className="text-3xl font-bold">{stats.totalUsers}</div>
             <div className="text-blue-100">Total Users</div>
@@ -103,7 +103,11 @@ export default function EnhancedAdminDashboard() {
           </div>
           <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-xl shadow-lg">
             <div className="text-3xl font-bold">₦{(stats.todayVolume / 1000).toFixed(0)}K</div>
-            <div className="text-purple-100">Today's Volume</div>
+            <div className="text-purple-100">NGN Volume</div>
+          </div>
+          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-6 rounded-xl shadow-lg">
+            <div className="text-3xl font-bold">KSh{(stats.todayVolume / 1000).toFixed(0)}K</div>
+            <div className="text-indigo-100">KES Volume</div>
           </div>
           <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-6 rounded-xl shadow-lg">
             <div className="text-3xl font-bold">{stats.pendingTrades}</div>
@@ -137,9 +141,9 @@ export default function EnhancedAdminDashboard() {
                     <tr>
                       <th className="p-3 text-left">Name</th>
                       <th className="p-3 text-left">Email</th>
-                      <th className="p-3 text-left">Country</th>
                       <th className="p-3 text-left">KYC</th>
-                      <th className="p-3 text-left">Balances</th>
+                      <th className="p-3 text-left">Crypto Balances</th>
+                      <th className="p-3 text-left">Fiat Balances</th>
                       <th className="p-3 text-left">Joined</th>
                     </tr>
                   </thead>
@@ -148,7 +152,6 @@ export default function EnhancedAdminDashboard() {
                       <tr key={user.id} className="border-b hover:bg-gray-50">
                         <td className="p-3">{user.first_name} {user.last_name}</td>
                         <td className="p-3">{user.email}</td>
-                        <td className="p-3">{user.country}</td>
                         <td className="p-3">
                           <span className={`px-2 py-1 rounded text-xs ${user.kyc_status === 'verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                             {user.kyc_status}
@@ -156,6 +159,9 @@ export default function EnhancedAdminDashboard() {
                         </td>
                         <td className="p-3 text-sm">
                           BTC: {user.btc_balance} | ETH: {user.eth_balance} | USDT: {user.usdt_balance}
+                        </td>
+                        <td className="p-3 text-sm">
+                          ₦{parseFloat(user.ngn_balance || 0).toLocaleString()} | KSh{parseFloat(user.kes_balance || 0).toLocaleString()}
                         </td>
                         <td className="p-3 text-sm">{new Date(user.created_at).toLocaleDateString()}</td>
                       </tr>
@@ -309,7 +315,7 @@ export default function EnhancedAdminDashboard() {
                   {users.slice(0, 5).map(user => (
                     <div key={user.id} className="bg-white p-3 rounded mb-2 flex justify-between">
                       <span>{user.first_name} {user.last_name}</span>
-                      <span className="text-sm text-gray-600">{user.country}</span>
+                      <span className="text-sm text-gray-600">{user.email}</span>
                     </div>
                   ))}
                 </div>
