@@ -78,10 +78,8 @@ export default function SuperAdminDashboard() {
             Trades
             {stats.pendingTrades > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{stats.pendingTrades}</span>}
           </button>
-          <button onClick={() => router.push('/admin/admin-chat')} className="bg-slate-700 text-orange-400 px-2 md:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold relative hover:bg-slate-600">
-            Chat
-            {unreadChats > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{unreadChats}</span>}
-          </button>
+          <button onClick={() => router.push('/admin/kyc-verification')} className="bg-slate-700 text-orange-400 px-2 md:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold hover:bg-slate-600">KYC</button>
+          <button onClick={() => router.push('/admin/analytics')} className="bg-slate-700 text-orange-400 px-2 md:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold hover:bg-slate-600">Analytics</button>
           <button onClick={() => router.push('/admin/create-admin')} className="bg-green-600 text-white px-2 md:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold hover:bg-green-700">+ Admin</button>
         </div>
 
