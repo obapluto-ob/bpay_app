@@ -52,9 +52,9 @@ router.post('/create', authenticateToken, async (req, res) => {
       });
     }
     
-    // Create trade record with unique 9-digit order ID
-    const tradeId = 'trade_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    const orderId = Math.floor(100000000 + Math.random() * 900000000).toString(); // 9-digit unique ID
+    // Create trade record with unique 9-digit order ID (numbers only)
+    const tradeId = 'trade_' + Date.now();
+    const orderId = Math.floor(100000000 + Math.random() * 900000000).toString(); // 9-digit numbers only
     const query = `
       INSERT INTO trades (id, order_id, user_id, type, crypto, fiat_amount, crypto_amount, payment_method, country, status, created_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
