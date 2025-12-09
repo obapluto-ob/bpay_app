@@ -33,7 +33,7 @@ router.get('/stats', async (req, res) => {
     
     console.log('Fetching NGN volume...');
     const ngnVolume = await pool.query(
-      "SELECT COALESCE(SUM(fiat_amount), 0) as sum FROM trades WHERE DATE(created_at) = CURRENT_DATE AND country = 'NG' AND status IN ('completed', 'pending')"
+      "SELECT COALESCE(SUM(fiat_amount), 0) as sum FROM trades WHERE country = 'NG' AND status = 'completed'"
     ).catch((e) => {
       console.error('❌ NGN volume query failed:', e.message);
       return { rows: [{ sum: 0 }] };
@@ -42,7 +42,7 @@ router.get('/stats', async (req, res) => {
     
     console.log('Fetching KES volume...');
     const kesVolume = await pool.query(
-      "SELECT COALESCE(SUM(fiat_amount), 0) as sum FROM trades WHERE DATE(created_at) = CURRENT_DATE AND country = 'KE' AND status IN ('completed', 'pending')"
+      "SELECT COALESCE(SUM(fiat_amount), 0) as sum FROM trades WHERE country = 'KE' AND status = 'completed'"
     ).catch((e) => {
       console.error('❌ KES volume query failed:', e.message);
       return { rows: [{ sum: 0 }] };
@@ -53,9 +53,8 @@ router.get('/stats', async (req, res) => {
     let recentOrders = { rows: [] };
     try {
       recentOrders = await pool.query(`
-        SELECT t.id, t.type, t.from_currency as crypto, t.to_amount as fiat_amount, 
-               t.status, t.created_at, t.payment_method as country,
-               u.first_name, u.last_name, u.email, u.country
+        SELECT t.id, t.type, t.crypto, t.fiat_amount, t.status, t.created_at, t.country,
+               u.first_name, u.last_name, u.email
         FROM trades t
         LEFT JOIN users u ON t.user_id = u.id
         ORDER BY t.created_at DESC
@@ -115,7 +114,12 @@ router.post('/kyc/:userId/rejected', async (req, res) => {
 // Get all users
 router.get('/users', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, email, first_name, last_name, country, kyc_status, phone_number, created_at FROM users ORDER BY created_at DESC');
+    const result = await pool.query(`
+      SELECT id, email, first_name, last_name, country, kyc_status, 
+             btc_balance, eth_balance, usdt_balance, ngn_balance, kes_balance, created_at 
+      FROM users 
+      ORDER BY created_at DESC
+    `);
     res.json({ users: result.rows });
   } catch (error) {
     console.error('Users error:', error);
@@ -144,15 +148,17 @@ router.get('/performance', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
-        id, 
-        username as name, 
-        email,
-        0 as average_rating, 
-        0 as total_trades, 
-        0 as response_time,
-        0 as pending_trades
-      FROM admins
-      ORDER BY created_at DESC
+        a.id, 
+        a.name, 
+        a.email,
+        COALESCE(a.average_rating, 0) as average_rating, 
+        COALESCE(a.total_trades, 0) as total_trades, 
+        COALESCE(a.response_time, 0) as response_time,
+        COUNT(t.id) FILTER (WHERE t.status = 'pending') as pending_trades
+      FROM admins a
+      LEFT JOIN trades t ON t.assigned_admin = a.id
+      GROUP BY a.id, a.name, a.email, a.average_rating, a.total_trades, a.response_time
+      ORDER BY a.average_rating DESC
     `);
     
     res.json({ admins: result.rows || [] });
