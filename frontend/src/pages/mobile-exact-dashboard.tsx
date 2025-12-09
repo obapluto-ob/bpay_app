@@ -252,7 +252,6 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
           <button
             onClick={() => {
               setOrderStep('waiting');
-              alert('Payment submitted - awaiting verification');
             }}
             className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold"
           >
@@ -320,25 +319,6 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
               Cancel Order
             </button>
           </div>
-        </div>
-      )}
-
-      {orderStep === 'payment' && (
-        <div className="bg-orange-50 p-4 rounded-xl border-l-4 border-orange-500">
-          <h3 className="font-bold text-orange-600 mb-2">Make Payment</h3>
-          <p className="text-sm text-slate-600 mb-4">
-            Transfer {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{parseFloat(amount).toLocaleString()} to complete your order.
-          </p>
-          <div className="bg-white p-3 rounded-xl mb-4">
-            <p className="font-bold">Payment Details:</p>
-            <p className="text-sm text-gray-600">Transfer to the account shown in escrow details above</p>
-          </div>
-          <button
-            onClick={() => alert('Payment submitted - awaiting verification')}
-            className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold"
-          >
-            I Have Made Payment
-          </button>
         </div>
       )}
     </div>
