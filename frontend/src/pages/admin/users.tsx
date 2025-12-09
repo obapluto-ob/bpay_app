@@ -91,7 +91,6 @@ export default function Users() {
               <thead className="bg-slate-700">
                 <tr>
                   <th className="text-left p-3 text-slate-300 font-semibold">User</th>
-                  <th className="text-left p-3 text-slate-300 font-semibold">Country</th>
                   <th className="text-left p-3 text-slate-300 font-semibold">KYC Status</th>
                   <th className="text-left p-3 text-slate-300 font-semibold">Balances</th>
                   <th className="text-left p-3 text-slate-300 font-semibold">Joined</th>
@@ -103,10 +102,6 @@ export default function Users() {
                     <td className="p-3">
                       <div className="font-semibold text-white">{user.first_name} {user.last_name}</div>
                       <div className="text-slate-400 text-xs">{user.email}</div>
-                      <div className="text-slate-500 text-xs">{user.phone_number || 'No phone'}</div>
-                    </td>
-                    <td className="p-3">
-                      <span className="text-white">{user.country === 'NG' ? '🇳🇬 Nigeria' : '🇰🇪 Kenya'}</span>
                     </td>
                     <td className="p-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
