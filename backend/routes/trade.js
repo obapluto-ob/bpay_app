@@ -229,4 +229,63 @@ router.post('/:id/chat', authenticateToken, async (req, res) => {
   }
 });
 
+// Rate trade
+router.post('/:id/rate', authenticateToken, async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const tradeId = req.params.id;
+    const userId = req.user.id;
+    
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+    }
+    
+    await pool.query(
+      'UPDATE trades SET rating = $1, rating_comment = $2, rated = true WHERE id = $3 AND user_id = $4',
+      [rating, comment, tradeId, userId]
+    );
+    
+    res.json({ success: true, message: 'Rating submitted' });
+  } catch (error) {
+    console.error('Rate trade error:', error);
+    res.status(500).json({ error: 'Failed to submit rating' });
+  }
+});
+
+// Raise dispute
+router.post('/:id/dispute', authenticateToken, async (req, res) => {
+  try {
+    const { reason, evidence } = req.body;
+    const tradeId = req.params.id;
+    const userId = req.user.id;
+    
+    if (!reason || !evidence) {
+      return res.status(400).json({ error: 'Reason and evidence required' });
+    }
+    
+    const disputeId = 'dispute_' + Date.now();
+    await pool.query(
+      'INSERT INTO disputes (id, trade_id, user_id, reason, evidence, status, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
+      [disputeId, tradeId, userId, reason, evidence, 'open']
+    );
+    
+    await pool.query(
+      'UPDATE trades SET status = $1 WHERE id = $2',
+      ['disputed', tradeId]
+    );
+    
+    // Add system message
+    const msgId = 'msg_' + Date.now();
+    await pool.query(
+      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+      [msgId, tradeId, 'system', 'system', `⚠️ Dispute raised: ${reason}`]
+    );
+    
+    res.json({ success: true, disputeId });
+  } catch (error) {
+    console.error('Dispute error:', error);
+    res.status(500).json({ error: 'Failed to raise dispute' });
+  }
+});
+
 module.exports = router;

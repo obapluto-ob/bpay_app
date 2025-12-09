@@ -39,6 +39,9 @@ CREATE TABLE IF NOT EXISTS trades (
     payment_proof TEXT,
     assigned_admin VARCHAR(50),
     bank_details JSONB,
+    rating INTEGER,
+    rating_comment TEXT,
+    rated BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -76,11 +79,41 @@ CREATE TABLE IF NOT EXISTS admins (
     permissions TEXT[] DEFAULT '{}',
     is_online BOOLEAN DEFAULT FALSE,
     last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    average_rating DECIMAL(3, 2) DEFAULT 0,
+    total_trades INTEGER DEFAULT 0,
+    response_time INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Disputes table
+CREATE TABLE IF NOT EXISTS disputes (
+    id VARCHAR(50) PRIMARY KEY,
+    trade_id VARCHAR(50) NOT NULL,
+    user_id VARCHAR(50) NOT NULL,
+    reason VARCHAR(100) NOT NULL,
+    evidence TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'open',
+    admin_response TEXT,
+    resolved_by VARCHAR(50),
+    resolved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Admin chat messages table
+CREATE TABLE IF NOT EXISTS admin_chat_messages (
+    id VARCHAR(50) PRIMARY KEY,
+    sender_id VARCHAR(50) NOT NULL,
+    receiver_id VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+    read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id);
+CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status);
 CREATE INDEX IF NOT EXISTS idx_deposits_user_id ON deposits(user_id);
 CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);
+CREATE INDEX IF NOT EXISTS idx_disputes_trade_id ON disputes(trade_id);
+CREATE INDEX IF NOT EXISTS idx_admin_chat_receiver ON admin_chat_messages(receiver_id);

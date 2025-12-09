@@ -203,4 +203,139 @@ router.post('/trades/:id/chat', async (req, res) => {
   }
 });
 
+// Get admin list
+router.get('/list', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, name, email, role, is_online, average_rating, total_trades, response_time FROM admins ORDER BY name');
+    res.json({ admins: result.rows });
+  } catch (error) {
+    console.error('Admin list error:', error);
+    res.status(500).json({ error: 'Failed to fetch admins' });
+  }
+});
+
+// Get admin profile
+router.get('/profile', async (req, res) => {
+  try {
+    const adminId = req.user?.id || 'admin_1';
+    const result = await pool.query('SELECT id, name, email, role FROM admins WHERE id = $1', [adminId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Admin profile error:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Get admin-to-admin chat messages
+router.get('/chat/:adminId', async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const currentAdminId = req.user?.id || 'admin_1';
+    
+    const result = await pool.query(
+      'SELECT * FROM admin_chat_messages WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1) ORDER BY created_at ASC',
+      [currentAdminId, adminId]
+    );
+    
+    res.json({ messages: result.rows });
+  } catch (error) {
+    console.error('Admin chat error:', error);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+// Send admin-to-admin message
+router.post('/chat/send', async (req, res) => {
+  try {
+    const { receiverId, message } = req.body;
+    const senderId = req.user?.id || 'admin_1';
+    
+    const msgId = 'admin_msg_' + Date.now();
+    await pool.query(
+      'INSERT INTO admin_chat_messages (id, sender_id, receiver_id, message, created_at) VALUES ($1, $2, $3, $4, NOW())',
+      [msgId, senderId, receiverId, message]
+    );
+    
+    res.json({ success: true, message: { id: msgId, senderId, receiverId, message, timestamp: new Date() } });
+  } catch (error) {
+    console.error('Send admin message error:', error);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+// Get admin performance metrics
+router.get('/performance', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        a.id, 
+        a.name, 
+        a.average_rating, 
+        a.total_trades, 
+        a.response_time,
+        COUNT(t.id) as pending_trades
+      FROM admins a
+      LEFT JOIN trades t ON t.assigned_admin = a.id AND t.status = 'pending'
+      GROUP BY a.id, a.name, a.average_rating, a.total_trades, a.response_time
+      ORDER BY a.average_rating DESC
+    `);
+    
+    res.json({ admins: result.rows });
+  } catch (error) {
+    console.error('Performance error:', error);
+    res.status(500).json({ error: 'Failed to fetch performance' });
+  }
+});
+
+// Get disputes
+router.get('/disputes', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT d.*, t.type, t.crypto, t.fiat_amount, u.email, u.first_name, u.last_name
+      FROM disputes d
+      JOIN trades t ON d.trade_id = t.id
+      JOIN users u ON d.user_id = u.id
+      ORDER BY d.created_at DESC
+    `);
+    
+    res.json({ disputes: result.rows });
+  } catch (error) {
+    console.error('Disputes error:', error);
+    res.status(500).json({ error: 'Failed to fetch disputes' });
+  }
+});
+
+// Resolve dispute
+router.post('/disputes/:id/resolve', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { response, resolution } = req.body;
+    const adminId = req.user?.id || 'admin_1';
+    
+    await pool.query(
+      'UPDATE disputes SET status = $1, admin_response = $2, resolved_by = $3, resolved_at = NOW() WHERE id = $4',
+      ['resolved', response, adminId, id]
+    );
+    
+    // Update trade status
+    const dispute = await pool.query('SELECT trade_id FROM disputes WHERE id = $1', [id]);
+    if (dispute.rows.length > 0) {
+      await pool.query(
+        'UPDATE trades SET status = $1 WHERE id = $2',
+        [resolution === 'approve' ? 'completed' : 'rejected', dispute.rows[0].trade_id]
+      );
+    }
+    
+    res.json({ success: true, message: 'Dispute resolved' });
+  } catch (error) {
+    console.error('Resolve dispute error:', error);
+    res.status(500).json({ error: 'Failed to resolve dispute' });
+  }
+});
+
 module.exports = router;

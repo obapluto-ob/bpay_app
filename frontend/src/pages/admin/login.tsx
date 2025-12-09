@@ -1,246 +1,110 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 
-interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  role: 'super_admin' | 'trade_admin' | 'rate_admin' | 'kyc_admin';
-  permissions: string[];
-  assignedRegion?: 'NG' | 'KE' | 'ALL';
-  password: string;
-  createdAt: string;
-}
+const API_BASE = 'https://bpay-app.onrender.com/api';
 
 export default function AdminLogin() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isSignup, setIsSignup] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [selectedRole, setSelectedRole] = useState<'super_admin' | 'trade_admin' | 'rate_admin' | 'kyc_admin'>('trade_admin');
-  const [selectedRegion, setSelectedRegion] = useState<'NG' | 'KE' | 'ALL'>('NG');
-  const router = useRouter();
+  const [error, setError] = useState('');
 
-  const getStoredAdmins = (): AdminUser[] => {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem('bpayAdmins');
-    return stored ? JSON.parse(stored) : [];
-  };
-
-  const saveAdmin = (admin: AdminUser) => {
-    const admins = getStoredAdmins();
-    admins.push(admin);
-    localStorage.setItem('bpayAdmins', JSON.stringify(admins));
-  };
-
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    
+
     try {
-      if (isSignup) {
-        // Create new admin
-        if (!fullName || !email || !password || !confirmPassword) {
-          alert('Please fill all fields');
-          setLoading(false);
-          return;
-        }
-        
-        if (password !== confirmPassword) {
-          alert('Passwords do not match');
-          setLoading(false);
-          return;
-        }
-        
-        const response = await fetch('https://bpay-app.onrender.com/api/admin/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: fullName,
-            email,
-            password,
-            role: 'super_admin',
-            assignedRegion: 'ALL'
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          alert(data.error || 'Registration failed');
-          setLoading(false);
-          return;
-        }
-        
-        alert('Admin account created successfully! Please login.');
-        setIsSignup(false);
-        setFullName('');
-        setEmail('');
-        setPassword('');
-        setConfirmPassword('');
-      } else {
-        // Login
-        const response = await fetch('https://bpay-app.onrender.com/api/admin/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          alert(data.error || 'Login failed');
-          setLoading(false);
-          return;
-        }
-        
-        // Store token and admin data
+      const response = await fetch(`${API_BASE}/admin-auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
         localStorage.setItem('adminToken', data.token);
         localStorage.setItem('adminUser', JSON.stringify(data.admin));
         router.push('/admin/dashboard');
+      } else {
+        setError(data.error || 'Login failed');
       }
     } catch (error) {
-      console.error('Auth error:', error);
-      alert('Authentication failed. Please try again.');
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-slate-800 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
+    <div className="min-h-screen bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="mb-6">
-            <img 
-              src="/5782897843587714011_120.jpg" 
-              alt="BPay Logo" 
-              className="w-20 h-20 rounded-full mx-auto mb-4"
-            />
+          <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-4xl text-white">🔐</span>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">BPay Admin Panel</h1>
-          <p className="text-slate-400">Secure Admin Access</p>
-          <div className="mt-4 bg-slate-700 rounded-lg p-3">
-            <p className="text-xs text-slate-400 mb-1">Admin Panel URL:</p>
-            <p className="text-sm text-amber-400 font-mono break-all">
-              https://bpay-app.netlify.app/admin
-            </p>
-          </div>
+          <h1 className="text-3xl font-bold text-slate-900">Admin Portal</h1>
+          <p className="text-slate-600 mt-2">BPay Administration System</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-xl p-8">
-          <div className="mb-6 text-center">
-            <h2 className="text-xl font-bold text-gray-800">
-              {isSignup ? 'Create Admin Account' : 'Sign In'}
-            </h2>
+        <form onSubmit={handleLogin} className="space-y-6">
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+              <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-bold text-slate-900 mb-2">
+              Email Address
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@bpay.com"
+              required
+              className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500"
+            />
           </div>
-          
-          <form onSubmit={handleAuth} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
-                required
-              />
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-gray-600 hover:text-gray-800"
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-              </div>
-            </div>
-            
-            {isSignup && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-gray-600 hover:text-gray-800"
-                  >
-                    {showPassword ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-              </div>
-            )}
+          <div>
+            <label className="block text-sm font-bold text-slate-900 mb-2">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              required
+              className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500"
+            />
+          </div>
 
-            {isSignup && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    required
-                  />
-                </div>
-                
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-orange-500 text-white py-3 rounded-lg font-bold disabled:opacity-50 hover:bg-orange-600 transition-colors"
+          >
+            {loading ? 'Logging in...' : 'Login to Dashboard'}
+          </button>
+        </form>
 
-                
+        <div className="mt-6 text-center">
+          <p className="text-sm text-slate-600">
+            Secure admin access only
+          </p>
+        </div>
 
-              </>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-amber-500 text-white py-2 px-4 rounded-md hover:bg-amber-600 disabled:opacity-50 font-medium"
-            >
-              {loading ? 'Processing...' : (isSignup ? 'Create Admin Account' : 'Admin Login')}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                setIsSignup(!isSignup);
-                setEmail('');
-                setPassword('');
-                setConfirmPassword('');
-                setFullName('');
-              }}
-              className="text-amber-600 hover:text-amber-700 font-medium"
-            >
-              {isSignup ? 'Already have admin account? Login' : 'Create new admin account'}
-            </button>
+        <div className="mt-8 bg-blue-50 p-4 rounded-lg">
+          <h3 className="font-bold text-blue-800 mb-2">Demo Credentials</h3>
+          <div className="text-sm text-blue-700 space-y-1">
+            <p><strong>Super Admin:</strong></p>
+            <p>Email: admin@bpay.com</p>
+            <p>Password: admin123</p>
           </div>
         </div>
       </div>

@@ -272,30 +272,13 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
           </div>
           <div className="space-y-3">
             <button
-              onClick={async () => {
-                try {
-                  const token = localStorage.getItem('token');
-                  const response = await fetch(`${API_BASE}/trade/${orderId}/chat`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ message: 'Hello, I have made the payment. Please verify.' })
-                  });
-                  
-                  if (response.ok) {
-                    alert('💬 Message sent to admin. They will respond within 10 minutes.');
-                  } else {
-                    alert('Failed to send message. Please try again.');
-                  }
-                } catch (error) {
-                  alert('Network error. Please check your connection.');
-                }
+              onClick={() => {
+                // Navigate to trade chat screen
+                window.location.href = `/trade-chat?tradeId=${orderId}`;
               }}
               className="w-full bg-blue-500 text-white py-3 rounded-xl font-semibold"
             >
-              💬 Chat with Admin
+              💬 Open Chat with Admin
             </button>
             <button
               onClick={() => {
@@ -594,25 +577,11 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
               onClick={async () => {
                 try {
                   const token = localStorage.getItem('token');
-                  const response = await fetch(`${API_BASE}/trade/${orderId}/chat`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ message: 'Hello, I have submitted my sell order. Please process payment.' })
-                  });
-                  
-                  if (response.ok) {
-                    alert('💬 Message sent to admin. They will respond within 15 minutes.');
-                  }
-                } catch (error) {
-                  alert('Network error');
-                }
+                window.location.href = `/trade-chat?tradeId=${orderId}`;
               }}
               className="w-full bg-green-500 text-white py-3 rounded-xl font-semibold"
             >
-              💬 Chat with Admin
+              💬 Open Chat with Admin
             </button>
             <button
               onClick={() => {
