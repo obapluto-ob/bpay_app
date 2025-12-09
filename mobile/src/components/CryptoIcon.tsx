@@ -1,11 +1,17 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 interface Props {
   crypto: 'BTC' | 'ETH' | 'USDT';
   size?: number;
 }
+
+const CRYPTO_LOGOS = {
+  BTC: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
+  ETH: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+  USDT: 'https://cryptologos.cc/logos/tether-usdt-logo.png'
+};
 
 export const CryptoIcon: React.FC<Props> = ({ crypto, size = 40 }) => {
   const iconSize = size;
@@ -79,7 +85,15 @@ export const CryptoIcon: React.FC<Props> = ({ crypto, size = 40 }) => {
     }
   };
 
-  return <View style={styles.container}>{renderIcon()}</View>;
+  return (
+    <View style={styles.container}>
+      <Image 
+        source={{ uri: CRYPTO_LOGOS[crypto] }} 
+        style={{ width: iconSize, height: iconSize, borderRadius: iconSize / 2 }}
+        resizeMode="contain"
+      />
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
