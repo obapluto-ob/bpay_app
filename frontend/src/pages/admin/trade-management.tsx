@@ -210,7 +210,7 @@ export default function TradeManagement() {
                     </span>
                   </div>
                   <div className="text-sm text-slate-600">
-                    <p>{trade.type === 'buy' ? '🟢 BUY' : '🔴 SELL'} {trade.crypto}</p>
+                    <p>{trade.type === 'buy' ? 'BUY' : 'SELL'} {trade.crypto}</p>
                     <p className="font-semibold">{trade.fiatAmount?.toLocaleString()} {trade.country === 'NG' ? 'NGN' : 'KES'}</p>
                     <p className="text-xs mt-1">{new Date(trade.createdAt).toLocaleString()}</p>
                   </div>
@@ -237,7 +237,7 @@ export default function TradeManagement() {
                   </div>
                   <div>
                     <p className="text-xs text-slate-500">Type</p>
-                    <p className="font-bold">{selectedTrade.type === 'buy' ? '🟢 BUY' : '🔴 SELL'} {selectedTrade.crypto}</p>
+                    <p className="font-bold">{selectedTrade.type === 'buy' ? 'BUY' : 'SELL'} {selectedTrade.crypto}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500">Amount</p>
@@ -329,7 +329,7 @@ export default function TradeManagement() {
                     }}
                     className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold"
                   >
-                    🚫 Cancel Trade
+                    Cancel Trade
                   </button>
                 </div>
               )}

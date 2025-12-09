@@ -243,7 +243,7 @@ export default function TradeChatScreen() {
             </div>
             <div className="flex-1">
               <p className="text-white font-semibold">Admin {trade.assignedAdmin}</p>
-              <p className="text-xs text-white opacity-80">⭐ 4.8 • Avg response: 8 min</p>
+              <p className="text-xs text-white opacity-80">Rating: 4.8 | Avg response: 8 min</p>
             </div>
             <div className="w-2 h-2 bg-green-400 rounded-full"></div>
           </div>
@@ -289,13 +289,13 @@ export default function TradeChatScreen() {
               onClick={uploadPaymentProof}
               className="flex-1 bg-blue-500 text-white py-3 rounded-xl font-semibold"
             >
-              📎 Upload Proof
+              Upload Proof
             </button>
             <button
               onClick={() => setShowDisputeModal(true)}
               className="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold"
             >
-              ⚠️ Dispute
+              Dispute
             </button>
           </div>
         </div>
@@ -307,7 +307,7 @@ export default function TradeChatScreen() {
             onClick={() => setShowRatingModal(true)}
             className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold"
           >
-            ⭐ Rate This Trade
+            Rate This Trade
           </button>
         </div>
       )}
@@ -395,7 +395,7 @@ export default function TradeChatScreen() {
                     onClick={() => setRating(star)}
                     className="text-4xl"
                   >
-                    {star <= rating ? '⭐' : '☆'}
+                    {star <= rating ? '★' : '☆'}
                   </button>
                 ))}
               </div>
