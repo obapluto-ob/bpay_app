@@ -202,7 +202,14 @@ router.get('/:id/chat', authenticateToken, async (req, res) => {
       [tradeId]
     );
     
-    res.json(result.rows);
+    const messages = result.rows.map(msg => ({
+      id: msg.id,
+      sender: msg.sender_type,
+      message: msg.message,
+      timestamp: msg.created_at
+    }));
+    
+    res.json({ messages });
   } catch (error) {
     console.error('Get chat error:', error);
     res.status(500).json({ error: 'Failed to fetch chat' });
