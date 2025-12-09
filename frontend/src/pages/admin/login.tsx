@@ -9,6 +9,9 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showRegister, setShowRegister] = useState(false);
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('admin');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,7 +19,7 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/admin-auth/login`, {
+      const response = await fetch(`${API_BASE}/adminAuth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -62,6 +65,7 @@ export default function AdminLogin() {
               Admin Login
             </h2>
             
+            {!showRegister ? (
             <form onSubmit={handleLogin} className="space-y-4">
               {error && (
                 <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl">
@@ -95,6 +99,94 @@ export default function AdminLogin() {
                 {loading ? 'Logging in...' : 'Login to Dashboard'}
               </button>
             </form>
+            ) : (
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setError('');
+              setLoading(true);
+              try {
+                const response = await fetch(`${API_BASE}/adminAuth/register`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name, email, password, role })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                  alert('Admin account created successfully!');
+                  setShowRegister(false);
+                  setName('');
+                  setEmail('');
+                  setPassword('');
+                } else {
+                  setError(data.error || 'Registration failed');
+                }
+              } catch (error) {
+                setError('Network error. Please try again.');
+              } finally {
+                setLoading(false);
+              }
+            }} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
+
+              <input
+                type="text"
+                placeholder="Admin Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
+              />
+
+              <input
+                type="email"
+                placeholder="Admin Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
+              />
+              
+              <input
+                type="password"
+                placeholder="Admin Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
+              />
+
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
+              >
+                <option value="admin">Admin</option>
+                <option value="super_admin">Super Admin</option>
+              </select>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#f59e0b] text-white p-3 md:p-4 rounded-xl text-base md:text-lg font-bold mt-6 hover:bg-[#d97706] disabled:opacity-50 transition-colors shadow-lg"
+              >
+                {loading ? 'Creating...' : 'Create Admin Account'}
+              </button>
+            </form>
+            )}
+
+            <button
+              onClick={() => {
+                setShowRegister(!showRegister);
+                setError('');
+              }}
+              className="w-full text-[#1a365d] text-center text-sm md:text-base hover:text-[#f59e0b] transition-colors mt-4"
+            >
+              {showRegister ? 'Back to Login' : 'Create Admin Account'}
+            </button>
 
             <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="bg-yellow-50 p-4 rounded-xl border-l-4 border-yellow-500">
