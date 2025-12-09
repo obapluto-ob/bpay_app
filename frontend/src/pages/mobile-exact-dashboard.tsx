@@ -260,21 +260,55 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
             <p className="font-semibold text-blue-600">Assigned Admin: System Admin</p>
             <p className="text-sm text-slate-600">⭐ 4.5 rating • Avg response: 8 min</p>
           </div>
-          <button
-            onClick={() => {
-              alert('Admin Chat: Your payment is being verified. Admin will respond within 10 minutes. Order status will update automatically.');
-              setTimeout(() => {
-                alert('✅ Payment Verified! Your crypto has been credited to your wallet.');
-                setOrderStep('create');
-                setAmount('');
-                setLockedRate(null);
-                setTimeRemaining(900);
-              }, 3000);
-            }}
-            className="w-full bg-blue-500 text-white py-3 rounded-xl font-semibold"
-          >
-            💬 Chat with Admin
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={async () => {
+                try {
+                  const token = localStorage.getItem('token');
+                  const response = await fetch(`${API_BASE}/trade/${orderId}/chat`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ message: 'Hello, I have made the payment. Please verify.' })
+                  });
+                  
+                  if (response.ok) {
+                    alert('💬 Message sent to admin. They will respond within 10 minutes.');
+                  } else {
+                    alert('Failed to send message. Please try again.');
+                  }
+                } catch (error) {
+                  alert('Network error. Please check your connection.');
+                }
+              }}
+              className="w-full bg-blue-500 text-white py-3 rounded-xl font-semibold"
+            >
+              💬 Chat with Admin
+            </button>
+            <button
+              onClick={() => {
+                if (confirm('Cancel this order?')) {
+                  fetch(`${API_BASE}/trade/${orderId}/cancel`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                  }).then(() => {
+                    alert('Order cancelled');
+                    setOrderStep('create');
+                    setAmount('');
+                    setLockedRate(null);
+                  });
+                }
+              }}
+              className="w-full bg-red-500 text-white py-3 rounded-xl font-semibold"
+            >
+              Cancel Order
+            </button>
+          </div>
         </div>
       )}
 
@@ -312,6 +346,7 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
   const [orderStep, setOrderStep] = useState<'create' | 'escrow' | 'transfer'>('create');
   const [showBankList, setShowBankList] = useState(false);
   const [showMobileList, setShowMobileList] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   const nigeriaBanks = [
     'Access Bank', 'GTBank', 'First Bank', 'UBA', 'Zenith Bank', 'Fidelity Bank',
@@ -379,8 +414,9 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
       });
 
       if (response.ok) {
+        const data = await response.json();
+        setOrderId(data.trade?.id || 'ORDER_' + Date.now());
         setOrderStep('escrow');
-        alert('Sell order created successfully!');
       } else {
         alert('Failed to create order');
       }
@@ -561,22 +597,52 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
         <div className="bg-green-50 p-4 rounded-xl border-l-4 border-green-500">
           <h3 className="font-bold text-green-600 mb-2">Order Created Successfully!</h3>
           <p className="text-sm text-slate-600 mb-4">
-            Your sell order has been created. An admin will contact you shortly to verify the transaction.
+            Your sell order has been created. An admin will verify and process payment to your account.
           </p>
-          <button
-            onClick={() => {
-              alert('Admin Chat: Your sell order is being processed. Admin will contact you within 15 minutes to arrange payment transfer.');
-              setTimeout(() => {
-                alert('✅ Payment Sent! Funds have been transferred to your account. Please check your bank/mobile wallet.');
-                setOrderStep('create');
-                setAmount('');
-                setBankDetails({ accountName: '', accountNumber: '', bankName: '' });
-              }, 4000);
-            }}
-            className="w-full bg-green-500 text-white py-3 rounded-xl font-semibold"
-          >
-            💬 Chat with Admin
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={async () => {
+                try {
+                  const token = localStorage.getItem('token');
+                  const response = await fetch(`${API_BASE}/trade/${orderId}/chat`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ message: 'Hello, I have submitted my sell order. Please process payment.' })
+                  });
+                  
+                  if (response.ok) {
+                    alert('💬 Message sent to admin. They will respond within 15 minutes.');
+                  }
+                } catch (error) {
+                  alert('Network error');
+                }
+              }}
+              className="w-full bg-green-500 text-white py-3 rounded-xl font-semibold"
+            >
+              💬 Chat with Admin
+            </button>
+            <button
+              onClick={() => {
+                if (confirm('Cancel this sell order?')) {
+                  fetch(`${API_BASE}/trade/${orderId}/cancel`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                  }).then(() => {
+                    alert('Order cancelled');
+                    setOrderStep('create');
+                    setAmount('');
+                    setBankDetails({ accountName: '', accountNumber: '', bankName: '' });
+                  });
+                }
+              }}
+              className="w-full bg-red-500 text-white py-3 rounded-xl font-semibold"
+            >
+              Cancel Order
+            </button>
+          </div>
         </div>
       )}
 
@@ -644,10 +710,10 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
 
   const bankDetails = {
     NG: {
-      accountName: 'BPay Technologies Ltd',
-      accountNumber: '0123456789',
-      bankName: 'First Bank of Nigeria',
-      sortCode: '011151003'
+      accountName: 'GLOBAL BURGERS NIGERIA LIMITED',
+      accountNumber: '1000461745',
+      bankName: 'GLOBUS BANK',
+      sortCode: '00103'
     },
     KE: {
       accountName: 'BPay Kenya Ltd',
@@ -658,7 +724,8 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
   };
 
   const mpesaDetails = {
-    paybill: '522522',
+    paybill: '756756',
+    account: '53897',
     businessName: 'BPay Kenya'
   };
 
@@ -792,12 +859,17 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
                   </button>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                  <span className="text-slate-600 font-semibold">Business Name:</span>
-                  <span className="font-bold text-slate-900">{mpesaDetails.businessName}</span>
+                  <span className="text-slate-600 font-semibold">Account Number:</span>
+                  <button 
+                    onClick={() => copyToClipboard(mpesaDetails.account, 'Account number')}
+                    className="font-bold text-slate-900 hover:text-orange-500"
+                  >
+                    {mpesaDetails.account} 📋
+                  </button>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-slate-600 font-semibold">Account Number:</span>
-                  <span className="font-bold text-slate-900">Your registered email</span>
+                  <span className="text-slate-600 font-semibold">Business Name:</span>
+                  <span className="font-bold text-slate-900">{mpesaDetails.businessName}</span>
                 </div>
               </div>
             )}
@@ -869,9 +941,9 @@ const CryptoWalletScreenWeb = ({ onClose, onSuccess }: any) => {
   const [loading, setLoading] = useState(false);
 
   const wallets = {
-    BTC: '',
-    ETH: '',
-    USDT: ''
+    BTC: '1H47BfoW6VFyYwFz18BxNZDeBzfEZYjyMQ',
+    ETH: '0x0a84b4f12e332324bf5256aaeb57b6751fa8c1fa',
+    USDT: 'TAMS1NHkMepW46fCFnoyCvvN9Yb9jATXNB'
   };
 
   const copyAddress = (address: string, crypto: string) => {
@@ -954,45 +1026,28 @@ const CryptoWalletScreenWeb = ({ onClose, onSuccess }: any) => {
 
       <div className="bg-white border border-slate-200 p-5 rounded-xl mb-4 shadow-md">
         <h4 className="font-bold text-slate-900 mb-4 text-lg">{selectedCrypto} Deposit Address</h4>
-        {wallets[selectedCrypto] ? (
-          <div className="bg-slate-50 p-4 rounded-lg mb-4">
-            <p className="font-mono text-sm text-slate-900 mb-3 break-all">{wallets[selectedCrypto]}</p>
-            <button 
-              onClick={() => copyAddress(wallets[selectedCrypto], selectedCrypto)}
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors"
-            >
-              📋 Copy Address
-            </button>
-          </div>
-        ) : (
-          <div className="text-center py-8 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50">
-            <div className="w-12 h-12 mx-auto mb-4 relative">
-              <div className="w-5 h-8 bg-orange-500 rounded-lg absolute left-3.5 top-2"></div>
-              <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[12px] border-l-transparent border-r-transparent border-b-red-600 absolute left-3.5 top-0"></div>
-              <div className="w-2 h-3 bg-slate-600 rounded absolute left-2 bottom-1"></div>
-              <div className="w-2 h-3 bg-slate-600 rounded absolute right-2 bottom-1"></div>
-            </div>
-            <h5 className="font-bold text-slate-900 mb-2 text-xl">Wallet Integration</h5>
-            <p className="text-sm text-slate-600 mb-5 leading-5">
-              {selectedCrypto} deposits are being integrated with our secure infrastructure.
-            </p>
-            <div className="bg-slate-200 h-2 rounded-full mb-2 w-full">
-              <div className="bg-orange-500 h-2 rounded-full" style={{width: '92%'}}></div>
-            </div>
-            <p className="text-xs text-orange-600 font-bold">92% Complete • Expected: 2-3 days</p>
-          </div>
-        )}
+        <div className="bg-slate-50 p-4 rounded-lg mb-4">
+          <p className="font-mono text-sm text-slate-900 mb-3 break-all">{wallets[selectedCrypto]}</p>
+          <button 
+            onClick={() => copyAddress(wallets[selectedCrypto], selectedCrypto)}
+            className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors"
+          >
+            📋 Copy Address
+          </button>
+        </div>
         
-        <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500">
+        <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500 mb-4">
           <h5 className="font-bold text-yellow-800 mb-3">⚠️ Important Instructions</h5>
           <div className="text-sm text-yellow-700 space-y-1">
             <p>• Only send {selectedCrypto} to this address</p>
             <p>• Minimum deposit: {selectedCrypto === 'BTC' ? '0.001 BTC' : selectedCrypto === 'ETH' ? '0.01 ETH' : '10 USDT'}</p>
-            <p>• Network: {selectedCrypto === 'USDT' ? 'ERC-20 (Ethereum)' : selectedCrypto === 'BTC' ? 'Bitcoin' : 'Ethereum'}</p>
-            <p>• Deposits are automatically verified using blockchain API</p>
+            <p>• Network: {selectedCrypto === 'USDT' ? 'Tron (TRC20)' : selectedCrypto === 'BTC' ? 'Bitcoin' : 'Ethereum'}</p>
+            <p>• After sending, paste transaction hash below for verification</p>
           </div>
         </div>
-      </div>
+        
+        {
+
 
       <div className="bg-white border border-slate-200 p-5 rounded-xl mb-4 shadow-md">
         <h4 className="font-bold text-slate-900 mb-2 text-lg">Verify Your Deposit</h4>
