@@ -79,6 +79,13 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${req.method} ${req.path}`);
+  next();
+});
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/trade', require('./routes/trade'));
@@ -105,6 +112,14 @@ app.use('*', (req, res) => {
 });
 
 app.listen(PORT, async () => {
-  console.log(`BPay API server running on port ${PORT}`);
+  console.log('\n🚀 ========================================');
+  console.log(`🚀 BPay API Server Started`);
+  console.log(`🚀 Port: ${PORT}`);
+  console.log(`🚀 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🚀 Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
+  console.log('🚀 ========================================\n');
+  
   await initDatabase();
+  
+  console.log('\n✅ Server ready to accept requests\n');
 });

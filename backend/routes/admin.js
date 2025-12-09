@@ -6,29 +6,54 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejec
 
 // Get system stats
 router.get('/stats', async (req, res) => {
+  console.log('📊 Stats endpoint called');
   try {
-    const users = await pool.query('SELECT COUNT(*) FROM users').catch(() => ({ rows: [{ count: 0 }] }));
-    const pendingTrades = await pool.query('SELECT COUNT(*) FROM trades WHERE status = $1', ['pending']).catch(() => ({ rows: [{ count: 0 }] }));
+    console.log('Fetching users count...');
+    const users = await pool.query('SELECT COUNT(*) FROM users').catch((e) => {
+      console.error('❌ Users query failed:', e.message);
+      return { rows: [{ count: 0 }] };
+    });
+    console.log('✅ Users:', users.rows[0].count);
+    
+    console.log('Fetching pending trades...');
+    const pendingTrades = await pool.query('SELECT COUNT(*) FROM trades WHERE status = $1', ['pending']).catch((e) => {
+      console.error('❌ Trades query failed:', e.message);
+      return { rows: [{ count: 0 }] };
+    });
+    console.log('✅ Pending trades:', pendingTrades.rows[0].count);
     
     // Check if deposits table exists
+    console.log('Fetching deposits...');
     let deposits = { rows: [{ count: 0 }] };
     try {
       deposits = await pool.query('SELECT COUNT(*) FROM deposits WHERE status = $1', ['pending']);
+      console.log('✅ Deposits:', deposits.rows[0].count);
     } catch (e) {
-      console.log('Deposits table not found, using 0');
+      console.log('⚠️ Deposits table not found:', e.message);
     }
     
     // Get NGN volume
+    console.log('Fetching NGN volume...');
     const ngnVolume = await pool.query(
       "SELECT COALESCE(SUM(fiat_amount), 0) as sum FROM trades WHERE DATE(created_at) = CURRENT_DATE AND country = 'NG' AND status IN ('completed', 'pending')"
-    ).catch(() => ({ rows: [{ sum: 0 }] }));
+    ).catch((e) => {
+      console.error('❌ NGN volume query failed:', e.message);
+      return { rows: [{ sum: 0 }] };
+    });
+    console.log('✅ NGN volume:', ngnVolume.rows[0].sum);
     
     // Get KES volume
+    console.log('Fetching KES volume...');
     const kesVolume = await pool.query(
       "SELECT COALESCE(SUM(fiat_amount), 0) as sum FROM trades WHERE DATE(created_at) = CURRENT_DATE AND country = 'KE' AND status IN ('completed', 'pending')"
-    ).catch(() => ({ rows: [{ sum: 0 }] }));
+    ).catch((e) => {
+      console.error('❌ KES volume query failed:', e.message);
+      return { rows: [{ sum: 0 }] };
+    });
+    console.log('✅ KES volume:', kesVolume.rows[0].sum);
     
     // Get recent orders
+    console.log('Fetching recent orders...');
     let recentOrders = { rows: [] };
     try {
       recentOrders = await pool.query(`
@@ -41,29 +66,35 @@ router.get('/stats', async (req, res) => {
         ORDER BY t.created_at DESC
         LIMIT 10
       `);
+      console.log('✅ Recent orders:', recentOrders.rows.length);
     } catch (e) {
-      console.log('Error fetching recent orders:', e.message);
+      console.error('❌ Recent orders query failed:', e.message);
     }
     
-    res.json({
+    const response = {
       totalUsers: parseInt(users.rows[0].count || 0),
       ngnVolume: parseFloat(ngnVolume.rows[0].sum || 0),
       kesVolume: parseFloat(kesVolume.rows[0].sum || 0),
       pendingTrades: parseInt(pendingTrades.rows[0].count || 0),
       pendingDeposits: parseInt(deposits.rows[0].count || 0),
       recentOrders: recentOrders.rows || []
-    });
+    };
+    console.log('✅ Stats response:', JSON.stringify(response, null, 2));
+    res.json(response);
   } catch (error) {
-    console.error('Stats error:', error);
+    console.error('❌ STATS ERROR:', error.message);
+    console.error('Stack:', error.stack);
     // Return empty stats instead of error
-    res.json({
+    const emptyResponse = {
       totalUsers: 0,
       ngnVolume: 0,
       kesVolume: 0,
       pendingTrades: 0,
       pendingDeposits: 0,
       recentOrders: []
-    });
+    };
+    console.log('⚠️ Returning empty stats due to error');
+    res.json(emptyResponse);
   }
 });
 
