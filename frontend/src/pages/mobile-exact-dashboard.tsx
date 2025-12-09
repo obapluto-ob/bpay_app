@@ -294,7 +294,7 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
           <button
             onClick={() => {
               if (availableBalance === 0) {
-                alert('Your wallet is empty. Please use Bank Transfer.');
+                alert(`Your wallet is empty. Please use ${selectedCurrency === 'NGN' ? 'Bank Transfer' : 'M-Pesa'}.`);
               } else {
                 setPaymentMethod('balance');
               }
@@ -313,9 +313,9 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
               paymentMethod === 'bank' ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
             }`}
           >
-            <span className="text-lg mb-1">🏦</span>
-            <span className="font-semibold text-sm">Bank Transfer</span>
-            <span className="text-xs">1-24 hours</span>
+            <span className="text-lg mb-1">{selectedCurrency === 'NGN' ? '🏦' : '📱'}</span>
+            <span className="font-semibold text-sm">{selectedCurrency === 'NGN' ? 'Bank Transfer' : 'M-Pesa'}</span>
+            <span className="text-xs">{selectedCurrency === 'NGN' ? '1-24 hours' : 'Instant'}</span>
           </button>
         </div>
       </div>
