@@ -151,20 +151,59 @@ router.get('/performance', async (req, res) => {
         a.id, 
         a.name, 
         a.email,
-        COALESCE(a.average_rating, 0) as average_rating, 
-        COALESCE(a.total_trades, 0) as total_trades, 
-        COALESCE(a.response_time, 0) as response_time,
-        COUNT(t.id) FILTER (WHERE t.status = 'pending') as pending_trades
+        0 as average_rating, 
+        0 as total_trades, 
+        0 as response_time,
+        0 as pending_trades
       FROM admins a
-      LEFT JOIN trades t ON t.assigned_admin = a.id
-      GROUP BY a.id, a.name, a.email, a.average_rating, a.total_trades, a.response_time
-      ORDER BY a.average_rating DESC
+      ORDER BY a.created_at DESC
     `);
     
     res.json({ admins: result.rows || [] });
   } catch (error) {
     console.error('Performance error:', error);
     res.json({ admins: [] });
+  }
+});
+
+// Approve trade
+router.post('/trades/:tradeId/approve', async (req, res) => {
+  try {
+    const { tradeId } = req.params;
+    const trade = await pool.query('SELECT * FROM trades WHERE id = $1', [tradeId]);
+    
+    if (trade.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    
+    const { user_id, crypto, crypto_amount } = trade.rows[0];
+    
+    await pool.query(
+      `UPDATE users SET ${crypto.toLowerCase()}_balance = ${crypto.toLowerCase()}_balance + $1 WHERE id = $2`,
+      [crypto_amount, user_id]
+    );
+    
+    await pool.query('UPDATE trades SET status = $1 WHERE id = $2', ['completed', tradeId]);
+    
+    res.json({ success: true, message: 'Trade approved and crypto credited' });
+  } catch (error) {
+    console.error('Approve trade error:', error);
+    res.status(500).json({ error: 'Failed to approve trade' });
+  }
+});
+
+// Reject trade
+router.post('/trades/:tradeId/reject', async (req, res) => {
+  try {
+    const { tradeId } = req.params;
+    const { reason } = req.body;
+    
+    await pool.query('UPDATE trades SET status = $1, admin_notes = $2 WHERE id = $3', ['rejected', reason, tradeId]);
+    
+    res.json({ success: true, message: 'Trade rejected' });
+  } catch (error) {
+    console.error('Reject trade error:', error);
+    res.status(500).json({ error: 'Failed to reject trade' });
   }
 });
 

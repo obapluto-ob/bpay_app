@@ -96,7 +96,7 @@ export default function TradeManagement() {
   const approveTrade = async () => {
     if (!selectedTrade) return;
     
-    if (!confirm('Approve this trade? User will receive crypto.')) return;
+    if (!confirm(`Approve this trade? User will receive ${selectedTrade.crypto_amount} ${selectedTrade.crypto}`)) return;
 
     try {
       const token = localStorage.getItem('adminToken');
@@ -108,12 +108,14 @@ export default function TradeManagement() {
         }
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        alert('Trade approved successfully');
+        alert(data.message || 'Trade approved and crypto credited!');
         setSelectedTrade(null);
         fetchTrades();
       } else {
-        alert('Failed to approve trade');
+        alert(data.error || 'Failed to approve trade');
       }
     } catch (error) {
       alert('Failed to approve trade');
@@ -123,7 +125,7 @@ export default function TradeManagement() {
   const rejectTrade = async () => {
     if (!selectedTrade) return;
     
-    const reason = prompt('Reason for rejection:');
+    const reason = prompt('Reason for rejection (will be shown to user):');
     if (!reason) return;
 
     try {
@@ -137,12 +139,14 @@ export default function TradeManagement() {
         body: JSON.stringify({ reason })
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        alert('Trade rejected');
+        alert(data.message || 'Trade rejected');
         setSelectedTrade(null);
         fetchTrades();
       } else {
-        alert('Failed to reject trade');
+        alert(data.error || 'Failed to reject trade');
       }
     } catch (error) {
       alert('Failed to reject trade');
@@ -306,12 +310,22 @@ export default function TradeManagement() {
               {/* Action Buttons */}
               {selectedTrade.status === 'pending' && (
                 <div className="bg-slate-800 bg-opacity-50 backdrop-blur-lg border-t border-white border-opacity-10 p-4">
+                  {selectedTrade.payment_proof && (
+                    <div className="bg-purple-500 bg-opacity-20 p-4 rounded-xl mb-3 border border-purple-500 border-opacity-30">
+                      <p className="text-purple-300 text-sm font-bold mb-2">📸 Payment Proof:</p>
+                      {selectedTrade.payment_proof.startsWith('http') ? (
+                        <img src={selectedTrade.payment_proof} alt="Payment proof" className="w-full rounded-lg" />
+                      ) : (
+                        <p className="text-white text-sm">{selectedTrade.payment_proof}</p>
+                      )}
+                    </div>
+                  )}
                   <div className="flex gap-2 mb-3">
                     <button
                       onClick={approveTrade}
                       className="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold hover:bg-green-600 transition-all shadow-lg"
                     >
-                      ✅ Approve Trade
+                      ✅ Approve & Credit Crypto
                     </button>
                     <button
                       onClick={rejectTrade}
