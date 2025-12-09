@@ -103,13 +103,7 @@ export default function AdminLogin() {
               </div>
             </div>
 
-            <div className="mt-6 bg-blue-50 p-4 rounded-xl">
-              <h3 className="font-bold text-blue-800 mb-2 text-sm">Demo Credentials</h3>
-              <div className="text-xs text-blue-700 space-y-1">
-                <p><strong>Email:</strong> admin@bpay.com</p>
-                <p><strong>Password:</strong> admin123</p>
-              </div>
-            </div>
+
           </div>
         </div>
       </div>
