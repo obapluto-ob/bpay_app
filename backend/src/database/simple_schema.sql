@@ -52,7 +52,22 @@ CREATE TABLE IF NOT EXISTS deposits (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Admins table
+CREATE TABLE IF NOT EXISTS admins (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'trade_admin',
+    assigned_region VARCHAR(10) DEFAULT 'ALL',
+    permissions TEXT[] DEFAULT '{}',
+    is_online BOOLEAN DEFAULT FALSE,
+    last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id);
 CREATE INDEX IF NOT EXISTS idx_deposits_user_id ON deposits(user_id);
+CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);

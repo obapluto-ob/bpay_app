@@ -55,32 +55,26 @@ export default function AdminLogin() {
           return;
         }
         
-        const admins = getStoredAdmins();
-        if (admins.find(a => a.email === email)) {
-          alert('Admin with this email already exists');
+        const response = await fetch('https://bpay-app.onrender.com/api/admin/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: fullName,
+            email,
+            password,
+            role: 'super_admin',
+            assignedRegion: 'ALL'
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          alert(data.error || 'Registration failed');
           setLoading(false);
           return;
         }
         
-        const rolePermissions = {
-          super_admin: ['all'],
-          trade_admin: ['approve_trades', 'reject_trades', 'view_users'],
-          rate_admin: ['manage_rates', 'set_alerts', 'view_analytics'],
-          kyc_admin: ['manage_kyc', 'view_users']
-        };
-        
-        const newAdmin: AdminUser = {
-          id: `admin_${Date.now()}`,
-          name: fullName,
-          email,
-          role: 'super_admin',
-          permissions: ['all'],
-          assignedRegion: 'ALL',
-          password,
-          createdAt: new Date().toISOString()
-        };
-        
-        saveAdmin(newAdmin);
         alert('Admin account created successfully! Please login.');
         setIsSignup(false);
         setFullName('');
@@ -89,18 +83,28 @@ export default function AdminLogin() {
         setConfirmPassword('');
       } else {
         // Login
-        const admins = getStoredAdmins();
-        const admin = admins.find(a => a.email === email && a.password === password);
+        const response = await fetch('https://bpay-app.onrender.com/api/admin/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
         
-        if (admin) {
-          localStorage.setItem('adminUser', JSON.stringify(admin));
-          router.push('/admin/dashboard');
-        } else {
-          alert('Invalid credentials');
+        const data = await response.json();
+        
+        if (!response.ok) {
+          alert(data.error || 'Login failed');
+          setLoading(false);
+          return;
         }
+        
+        // Store token and admin data
+        localStorage.setItem('adminToken', data.token);
+        localStorage.setItem('adminUser', JSON.stringify(data.admin));
+        router.push('/admin/dashboard');
       }
     } catch (error) {
-      alert('Authentication failed');
+      console.error('Auth error:', error);
+      alert('Authentication failed. Please try again.');
     }
     
     setLoading(false);
