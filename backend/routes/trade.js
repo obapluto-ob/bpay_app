@@ -93,11 +93,21 @@ router.post('/create', authenticateToken, async (req, res) => {
     const result = await pool.query(query, values);
     const trade = result.rows[0];
     
-    // Create initial chat message to admin
+    // Create initial chat message with payment details
     const msgId = 'msg_' + Date.now();
-    const initialMessage = type === 'buy' 
-      ? `🔔 New BUY order: User wants to buy ${cryptoAmount} ${crypto} for ${fiatAmount} ${country === 'NG' ? 'NGN' : 'KES'}. Payment method: ${paymentMethod}. Please verify payment and release crypto.`
-      : `🔔 New SELL order: User wants to sell ${cryptoAmount} ${crypto} for ${fiatAmount} ${country === 'NG' ? 'NGN' : 'KES'}. Bank: ${bankDetails?.bankName || 'N/A'}. Please verify and process payment.`;
+    let initialMessage = '';
+    
+    if (type === 'buy') {
+      if (paymentMethod === 'bank' && country === 'NG') {
+        initialMessage = `🔔 NEW BUY ORDER\n\nAmount: ${fiatAmount} NGN\nCrypto: ${cryptoAmount} ${crypto}\n\n💳 PAYMENT DETAILS:\nBank: GLOBUS BANK\nAccount: 1000461745\nName: GLOBAL BURGERS NIGERIA LIMITED\n\n⚠️ Transfer ${fiatAmount} NGN to the account above, then upload payment proof here.`;
+      } else if (paymentMethod === 'bank' && country === 'KE') {
+        initialMessage = `🔔 NEW BUY ORDER\n\nAmount: ${fiatAmount} KES\nCrypto: ${cryptoAmount} ${crypto}\n\n📱 M-PESA DETAILS:\nPaybill: 756756\nAccount: 53897\nBusiness: BPay Kenya\n\n⚠️ Send ${fiatAmount} KES via M-Pesa, then share confirmation message here.`;
+      } else {
+        initialMessage = `🔔 NEW BUY ORDER\n\nAmount: ${fiatAmount} ${country === 'NG' ? 'NGN' : 'KES'}\nCrypto: ${cryptoAmount} ${crypto}\nPayment: Wallet Balance\n\n✅ Payment will be deducted from your wallet balance.`;
+      }
+    } else {
+      initialMessage = `🔔 NEW SELL ORDER\n\nAmount: ${cryptoAmount} ${crypto}\nReceive: ${fiatAmount} ${country === 'NG' ? 'NGN' : 'KES'}\n\n💰 PAYOUT DETAILS:\nBank: ${bankDetails?.bankName || 'N/A'}\nAccount: ${bankDetails?.accountNumber || 'N/A'}\nName: ${bankDetails?.accountName || 'N/A'}\n\n⚠️ Admin will verify and send payment to your account.`;
+    }
     
     await pool.query(
       'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
