@@ -168,8 +168,6 @@ export default function AdminDashboard() {
     }
     // Redirect to enhanced dashboard
     router.push('/admin/enhanced-dashboard');
-    return;
-    setAdmin(JSON.parse(adminData));
     
     // Load real stats
     const realStats = calculateRealStats();
@@ -193,11 +191,6 @@ export default function AdminDashboard() {
       fetchExchangeRates();
     }, 300000);
     
-    return () => {
-      clearInterval(statsInterval);
-      clearInterval(ratesInterval);
-      clearInterval(exchangeInterval);
-    };
   }, [router]);
 
   const handleLogout = () => {
