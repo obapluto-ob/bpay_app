@@ -180,6 +180,17 @@ export default function AdminLogin() {
 
 
 
+            {/* Super Admin Link */}
+            <div className="mt-6 text-center">
+              <p className="text-sm text-slate-600 mb-2">Super Admin?</p>
+              <button
+                onClick={() => router.push('/admin/create-admin')}
+                className="text-orange-600 hover:text-orange-700 font-semibold text-sm underline"
+              >
+                Create New Admin Account
+              </button>
+            </div>
+
             <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="bg-yellow-50 p-4 rounded-xl border-l-4 border-yellow-500">
                 <p className="text-sm text-yellow-800 font-semibold mb-2">Admin Access Only</p>
