@@ -91,7 +91,7 @@ export default function CreateAdmin() {
 
               <input
                 type="password"
-                placeholder="🔑 Super Admin Secret Token (peace25)"
+                placeholder="🔑 Super Admin Secret Token"
                 value={superAdminToken}
                 onChange={(e) => setSuperAdminToken(e.target.value)}
                 required
@@ -146,8 +146,8 @@ export default function CreateAdmin() {
             </form>
 
             <div className="mt-4 md:mt-6 bg-yellow-900 p-3 md:p-4 rounded-xl border-l-4 border-yellow-500">
-              <p className="text-xs md:text-sm text-yellow-200 font-semibold mb-2">🔐 Super Admin Secret Token</p>
-              <p className="text-xs text-yellow-300">Enter the secret token (peace25) to create new admin accounts. Only super admins have access to this token.</p>
+              <p className="text-xs md:text-sm text-yellow-200 font-semibold mb-2">🔐 Super Admin Secret Token Required</p>
+              <p className="text-xs text-yellow-300">You must enter the correct secret token to create admin accounts. Only super admins have access to this token.</p>
             </div>
           </div>
         </div>
