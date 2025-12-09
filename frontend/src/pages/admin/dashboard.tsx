@@ -31,9 +31,7 @@ export default function SuperAdminDashboard() {
       if (statsRes.ok) {
         const newStats = await statsRes.json();
         if (newStats.pendingTrades > lastOrderCount && lastOrderCount > 0) {
-          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSh+zPLaizsKFGCy6OyrWBQLSKHf8sFuJAUuhM/y24k4CBhns+3qpVIRC0yl4fG5ZRwFNo3V8859LwUofszy2os7ChRgsujsq1gVC0ih3/LBbiQFLoTP8tuJOAgYZ7Pt6qVSEQtMpeHxuWUcBTaN1fPOfS8FKH7M8tqLOwoUYLLo7KtYFQtIod/ywW4kBS6Ez/LbiTgIGGez7eqlUhELTKXh8bllHAU2jdXzzn0vBSh+zPLaizsKFGCy6OyrWBULSKHf8sFuJAUuhM/y24k4CBhns+3qpVIRC0yl4fG5ZRwFNo3V8859LwUofszy2os7ChRgsujsq1gVC0ih3/LBbiQFLoTP8tuJOAgYZ7Pt6qVSEQtMpeHxuWUcBTaN1fPOfS8FKH7M8tqLOwoUYLLo7KtYFQtIod/ywW4kBS6Ez/LbiTgIGGez7eqlUhELTKXh8bllHAU2jdXzzn0vBSh+zPLaizsKFGCy6OyrWBULSKHf8sFuJAUuhM/y24k4CBhns+3qpVIRC0yl4fG5ZRwFNo3V8859LwUofszy2os7ChRgsujsq1gVC0ih3/LBbiQFLoTP8tuJOAgYZ7Pt6qVSEQtMpeHxuWUcBTaN1fPOfS8FKH7M8tqLOwoUYLLo7KtYFQtIod/ywW4kBS6Ez/LbiTgIGGez');
-          audio.play().catch(() => {});
-          alert('🔔 New order received!');
+          alert('New order received!');
         }
         setLastOrderCount(newStats.pendingTrades);
         setStats(newStats);
@@ -75,9 +73,7 @@ export default function SuperAdminDashboard() {
       <div className="bg-gradient-to-r from-orange-600 to-orange-500 p-4 md:p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-2xl md:text-3xl font-bold text-orange-600">B</span>
-            </div>
+            <img src="/favicon.svg" alt="BPay" className="w-10 h-10 md:w-12 md:h-12" />
             <div>
               <h1 className="text-xl md:text-3xl font-bold text-white">BPay Admin</h1>
               <p className="text-xs md:text-sm text-orange-100">Super Admin Dashboard</p>
@@ -88,21 +84,21 @@ export default function SuperAdminDashboard() {
 
         <div className="flex flex-wrap gap-2 mb-3">
           <button onClick={() => router.push('/admin/trade-management')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold relative hover:bg-opacity-30 transition-all">
-            💱 Trades
+            Trades
             {stats.pendingTrades > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">{stats.pendingTrades}</span>}
           </button>
-          <button onClick={() => router.push('/admin/users')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">👥 Users</button>
-          <button onClick={() => router.push('/admin/kyc-verification')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">📋 KYC</button>
-          <button onClick={() => router.push('/admin/analytics')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">📊 Analytics</button>
-          <button onClick={() => router.push('/admin/admin-chat')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">💬 Chat</button>
-          <button onClick={() => router.push('/admin/withdrawals')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">💸 Withdrawals</button>
-          <button onClick={() => router.push('/admin/create-admin')} className="bg-green-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-green-600 shadow-lg transition-all">➕ New Admin</button>
+          <button onClick={() => router.push('/admin/users')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">Users</button>
+          <button onClick={() => router.push('/admin/kyc-verification')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">KYC</button>
+          <button onClick={() => router.push('/admin/analytics')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">Analytics</button>
+          <button onClick={() => router.push('/admin/admin-chat')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">Chat</button>
+          <button onClick={() => router.push('/admin/withdrawals')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">Withdrawals</button>
+          <button onClick={() => router.push('/admin/create-admin')} className="bg-green-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-green-600 shadow-lg transition-all">+ New Admin</button>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => setActiveTab('overview')} className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all ${activeTab === 'overview' ? 'bg-white text-orange-600 shadow-lg' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'}`}>📈 Overview</button>
-          <button onClick={() => setActiveTab('admins')} className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all ${activeTab === 'admins' ? 'bg-white text-orange-600 shadow-lg' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'}`}>👨‍💼 Admins</button>
-          <button onClick={() => setActiveTab('disputes')} className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all ${activeTab === 'disputes' ? 'bg-white text-orange-600 shadow-lg' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'}`}>⚠️ Disputes ({disputes.filter(d => d.status === 'open').length})</button>
+          <button onClick={() => setActiveTab('overview')} className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all ${activeTab === 'overview' ? 'bg-white text-orange-600 shadow-lg' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'}`}>Overview</button>
+          <button onClick={() => setActiveTab('admins')} className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all ${activeTab === 'admins' ? 'bg-white text-orange-600 shadow-lg' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'}`}>Admins</button>
+          <button onClick={() => setActiveTab('disputes')} className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all ${activeTab === 'disputes' ? 'bg-white text-orange-600 shadow-lg' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'}`}>Disputes ({disputes.filter(d => d.status === 'open').length})</button>
         </div>
       </div>
 
@@ -111,26 +107,21 @@ export default function SuperAdminDashboard() {
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-4">
               {[
-                { label: 'Total Users', value: stats.totalUsers || 0, icon: '👥', color: 'from-blue-500 to-blue-600', textColor: 'text-white' },
-                { label: 'NGN Volume', value: `₦${(stats.ngnVolume || 0).toLocaleString()}`, icon: '🇳🇬', color: 'from-green-500 to-green-600', textColor: 'text-white' },
-                { label: 'KES Volume', value: `KSh${(stats.kesVolume || 0).toLocaleString()}`, icon: '🇰🇪', color: 'from-purple-500 to-purple-600', textColor: 'text-white' },
-                { label: 'Pending Trades', value: stats.pendingTrades || 0, icon: '⏳', color: 'from-orange-500 to-orange-600', textColor: 'text-white' },
-                { label: 'Deposits', value: stats.pendingDeposits || 0, icon: '💰', color: 'from-yellow-500 to-yellow-600', textColor: 'text-white' }
+                { label: 'Total Users', value: stats.totalUsers || 0, color: 'from-blue-500 to-blue-600' },
+                { label: 'NGN Volume', value: `₦${(stats.ngnVolume || 0).toLocaleString()}`, color: 'from-green-500 to-green-600' },
+                { label: 'KES Volume', value: `KSh${(stats.kesVolume || 0).toLocaleString()}`, color: 'from-purple-500 to-purple-600' },
+                { label: 'Pending Trades', value: stats.pendingTrades || 0, color: 'from-orange-500 to-orange-600' },
+                { label: 'Deposits', value: stats.pendingDeposits || 0, color: 'from-yellow-500 to-yellow-600' }
               ].map((stat, i) => (
                 <div key={i} className={`bg-gradient-to-br ${stat.color} rounded-2xl p-4 shadow-xl transform hover:scale-105 transition-all`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xs md:text-sm text-white opacity-90 font-semibold">{stat.label}</h3>
-                    <span className="text-2xl">{stat.icon}</span>
-                  </div>
-                  <p className={`text-xl md:text-3xl font-bold ${stat.textColor}`}>{stat.value}</p>
+                  <h3 className="text-xs md:text-sm text-white opacity-90 font-semibold mb-2">{stat.label}</h3>
+                  <p className="text-xl md:text-3xl font-bold text-white">{stat.value}</p>
                 </div>
-              ))})
+              ))}
             </div>
 
             <div className="bg-white bg-opacity-5 backdrop-blur-lg rounded-2xl p-4 md:p-6 border border-white border-opacity-10 shadow-2xl">
-              <h2 className="text-lg md:text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <span className="text-2xl">📊</span> Recent Orders
-              </h2>
+              <h2 className="text-lg md:text-xl font-bold text-white mb-4">Recent Orders</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs md:text-sm">
                   <thead>
@@ -145,10 +136,10 @@ export default function SuperAdminDashboard() {
                   <tbody>
                     {(stats.recentOrders || []).map((order: any) => (
                       <tr key={order.id} className="border-b border-white border-opacity-5 hover:bg-white hover:bg-opacity-5 transition-all">
-                        <td className="p-3 font-mono font-bold text-orange-400">#{order.order_id || order.id}</td>
+                        <td className="p-3 font-mono font-bold text-orange-400">#{order.id}</td>
                         <td className="p-3">
-                          <div className="text-white font-semibold text-sm">{order.user_name}</div>
-                          <div className="text-xs text-slate-400">{order.user_email}</div>
+                          <div className="text-white font-semibold text-sm">{order.first_name} {order.last_name}</div>
+                          <div className="text-xs text-slate-400">{order.email}</div>
                         </td>
                         <td className="p-3 text-white font-bold">{order.country === 'NG' ? '₦' : 'KSh'}{order.fiat_amount?.toLocaleString()}</td>
                         <td className="p-3">
@@ -168,9 +159,7 @@ export default function SuperAdminDashboard() {
 
         {activeTab === 'admins' && (
           <div className="bg-white bg-opacity-5 backdrop-blur-lg rounded-2xl p-4 md:p-6 border border-white border-opacity-10 shadow-2xl">
-            <h2 className="text-lg md:text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span className="text-2xl">👨💼</span> Admin Performance
-            </h2>
+            <h2 className="text-lg md:text-xl font-bold text-white mb-4">Admin Performance</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-xs md:text-sm">
                 <thead>
@@ -185,7 +174,7 @@ export default function SuperAdminDashboard() {
                   {admins.map((admin) => (
                     <tr key={admin.id} className="border-b border-slate-700">
                       <td className="p-2 text-white">{admin.name}</td>
-                      <td className="p-2 text-yellow-400">⭐ {admin.average_rating?.toFixed(1) || '0.0'}</td>
+                      <td className="p-2 text-yellow-400">{admin.average_rating?.toFixed(1) || '0.0'}</td>
                       <td className="p-2 text-white">{admin.total_trades || 0}</td>
                       <td className="p-2"><span className="bg-orange-600 text-white px-2 py-1 rounded text-xs">{admin.pending_trades || 0}</span></td>
                     </tr>
@@ -198,9 +187,7 @@ export default function SuperAdminDashboard() {
 
         {activeTab === 'disputes' && (
           <div className="bg-white bg-opacity-5 backdrop-blur-lg rounded-2xl p-4 md:p-6 border border-white border-opacity-10 shadow-2xl">
-            <h2 className="text-lg md:text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span className="text-2xl">⚠️</span> Active Disputes
-            </h2>
+            <h2 className="text-lg md:text-xl font-bold text-white mb-4">Active Disputes</h2>
             {disputes.length === 0 ? (
               <div className="text-center py-8 text-slate-400">No disputes</div>
             ) : (
