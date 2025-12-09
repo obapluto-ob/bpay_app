@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
 const API_BASE = 'https://bpay-app.onrender.com/api';
@@ -13,6 +13,14 @@ export default function CreateAdmin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Protect route
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      router.push('/admin/login');
+    }
+  }, [router]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

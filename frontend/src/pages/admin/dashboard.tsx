@@ -21,6 +21,24 @@ export default function SuperAdminDashboard() {
       return;
     }
 
+    // Verify token is valid
+    const verifyToken = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/admin/stats`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) {
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminUser');
+          router.push('/admin/login');
+          return;
+        }
+      } catch (error) {
+        router.push('/admin/login');
+      }
+    };
+    verifyToken();
+
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
@@ -105,7 +123,7 @@ export default function SuperAdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 shadow-lg">
+      <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-6 shadow-lg">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold text-white">Super Admin Dashboard</h1>
