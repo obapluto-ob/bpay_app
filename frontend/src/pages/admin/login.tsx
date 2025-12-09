@@ -178,15 +178,7 @@ export default function AdminLogin() {
             </form>
             )}
 
-            <button
-              onClick={() => {
-                setShowRegister(!showRegister);
-                setError('');
-              }}
-              className="w-full text-[#1a365d] text-center text-sm md:text-base hover:text-[#f59e0b] transition-colors mt-4"
-            >
-              {showRegister ? 'Back to Login' : 'Create Admin Account'}
-            </button>
+
 
             <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="bg-yellow-50 p-4 rounded-xl border-l-4 border-yellow-500">

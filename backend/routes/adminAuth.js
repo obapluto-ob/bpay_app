@@ -6,10 +6,15 @@ const { Pool } = require('pg');
 const router = express.Router();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 
-// Admin Register
+// Admin Register (Super Admin Only)
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role, assignedRegion } = req.body;
+    const { name, email, password, role, assignedRegion, superAdminToken } = req.body;
+
+    // Verify super admin token
+    if (!superAdminToken || superAdminToken !== process.env.SUPER_ADMIN_SECRET) {
+      return res.status(403).json({ error: 'Unauthorized: Super admin access required' });
+    }
 
     // Check if admin exists
     const existingAdmin = await pool.query('SELECT * FROM admins WHERE email = $1', [email]);
