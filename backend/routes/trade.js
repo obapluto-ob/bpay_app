@@ -52,17 +52,20 @@ router.post('/create', authenticateToken, async (req, res) => {
       });
     }
     
-    // Auto-assign best available admin
-    const adminQuery = `
-      SELECT id, name, COALESCE(average_rating, 5.0) as average_rating, response_time, total_trades 
-      FROM admins 
-      WHERE is_online = true 
-      AND (assigned_region = $1 OR assigned_region = 'ALL')
-      ORDER BY COALESCE(average_rating, 5.0) DESC, response_time ASC, total_trades ASC
-      LIMIT 1
-    `;
-    const adminResult = await pool.query(adminQuery, [country || 'NG']);
-    const assignedAdmin = adminResult.rows[0];
+    // Auto-assign best available admin (optional - skip if table doesn't have columns)
+    let assignedAdmin = null;
+    try {
+      const adminQuery = `
+        SELECT id, username as name, email
+        FROM admins 
+        WHERE is_online = true 
+        LIMIT 1
+      `;
+      const adminResult = await pool.query(adminQuery);
+      assignedAdmin = adminResult.rows[0];
+    } catch (adminError) {
+      console.log('Admin assignment skipped:', adminError.message);
+    }
     
     // Create trade record
     const tradeId = 'trade_' + Date.now();
@@ -104,7 +107,7 @@ router.post('/create', authenticateToken, async (req, res) => {
     // Send welcome message to user
     const welcomeMsgId = 'msg_' + (Date.now() + 1);
     const welcomeMessage = assignedAdmin 
-      ? `✅ Order created! You've been matched with ${assignedAdmin.name} (⭐ ${assignedAdmin.average_rating || 5.0}/5.0). They will assist you with this ${type} order.`
+      ? `✅ Order created! You've been matched with ${assignedAdmin.name}. They will assist you with this ${type} order.`
       : `✅ Order created! An admin will be assigned shortly to assist you.`;
     
     await pool.query(
@@ -123,8 +126,7 @@ router.post('/create', authenticateToken, async (req, res) => {
         status: trade.status,
         assignedAdmin: assignedAdmin ? {
           id: assignedAdmin.id,
-          name: assignedAdmin.name,
-          rating: assignedAdmin.average_rating
+          name: assignedAdmin.name
         } : null,
         createdAt: trade.created_at
       }
