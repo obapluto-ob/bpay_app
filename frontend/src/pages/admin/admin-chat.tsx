@@ -98,38 +98,48 @@ export default function AdminChat() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 shadow-lg">
-        <h1 className="text-2xl font-bold text-white">Admin Communication</h1>
-        <p className="text-white opacity-90 text-sm mt-1">Internal chat with team members</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="bg-gradient-to-r from-orange-600 to-orange-500 p-4 md:p-6 shadow-2xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-2xl">💬</span>
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-white">Admin Chat</h1>
+              <p className="text-xs md:text-sm text-orange-100">Internal team communication</p>
+            </div>
+          </div>
+          <button onClick={() => router.push('/admin/dashboard')} className="bg-white text-orange-600 px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-orange-50 shadow-lg transition-all">← Dashboard</button>
+        </div>
       </div>
 
-      <div className="flex h-[calc(100vh-120px)]">
+      <div className="flex h-[calc(100vh-140px)]">
         {/* Admins List */}
-        <div className="w-1/3 bg-white border-r border-slate-200 overflow-y-auto">
-          <div className="p-4 border-b border-slate-200">
-            <h2 className="font-bold text-slate-900">Team Members</h2>
+        <div className="w-full md:w-1/3 bg-slate-800 bg-opacity-50 backdrop-blur-lg border-r border-white border-opacity-10 overflow-y-auto">
+          <div className="p-4 border-b border-white border-opacity-10">
+            <h2 className="font-bold text-white text-lg">👥 Team Members</h2>
           </div>
           
           {loading ? (
-            <div className="p-4 text-center text-slate-500">Loading...</div>
+            <div className="p-4 text-center text-slate-400">Loading...</div>
           ) : admins.length === 0 ? (
-            <div className="p-4 text-center text-slate-500">No admins found</div>
+            <div className="p-4 text-center text-slate-400">No admins found</div>
           ) : (
-            <div className="divide-y divide-slate-200">
+            <div className="divide-y divide-white divide-opacity-5">
               {admins
                 .filter(admin => admin.id !== currentAdmin?.id)
                 .map((admin) => (
                   <button
                     key={admin.id}
                     onClick={() => selectAdmin(admin)}
-                    className={`w-full p-4 text-left hover:bg-slate-50 ${
-                      selectedAdmin?.id === admin.id ? 'bg-blue-50' : ''
+                    className={`w-full p-4 text-left hover:bg-white hover:bg-opacity-5 transition-all ${
+                      selectedAdmin?.id === admin.id ? 'bg-orange-500 bg-opacity-20' : ''
                     }`}
                   >
                     <div className="flex items-center space-x-3">
                       <div className="relative">
-                        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
                           {admin.username?.[0]?.toUpperCase() || 'A'}
                         </div>
                         <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
@@ -137,8 +147,8 @@ export default function AdminChat() {
                         }`}></div>
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-slate-900">{admin.username}</p>
-                        <p className="text-xs text-slate-500 capitalize">{admin.role || 'Admin'}</p>
+                        <p className="font-bold text-white">{admin.username}</p>
+                        <p className="text-xs text-slate-400 capitalize">{admin.role || 'Admin'}</p>
                         {admin.unreadCount > 0 && (
                           <span className="inline-block mt-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
                             {admin.unreadCount} new
@@ -153,21 +163,21 @@ export default function AdminChat() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col bg-slate-900">
           {!selectedAdmin ? (
-            <div className="flex-1 flex items-center justify-center text-slate-500">
+            <div className="flex-1 flex items-center justify-center text-slate-400">
               <div className="text-center">
                 <div className="text-6xl mb-4">💬</div>
-                <p className="text-lg">Select an admin to start chatting</p>
+                <p className="text-lg text-white">Select an admin to start chatting</p>
               </div>
             </div>
           ) : (
             <>
               {/* Chat Header */}
-              <div className="bg-white border-b border-slate-200 p-4">
+              <div className="bg-slate-800 bg-opacity-50 backdrop-blur-lg border-b border-white border-opacity-10 p-4">
                 <div className="flex items-center space-x-3">
                   <div className="relative">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                    <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
                       {selectedAdmin.username?.[0]?.toUpperCase() || 'A'}
                     </div>
                     <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
@@ -175,8 +185,8 @@ export default function AdminChat() {
                     }`}></div>
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">{selectedAdmin.username}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="font-bold text-white">{selectedAdmin.username}</p>
+                    <p className="text-xs text-slate-300">
                       {selectedAdmin.isOnline ? '🟢 Online' : '⚫ Offline'}
                     </p>
                   </div>
@@ -184,9 +194,9 @@ export default function AdminChat() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-900">
                 {messages.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">
+                  <div className="text-center py-8 text-slate-400">
                     No messages yet. Start the conversation!
                   </div>
                 ) : (
@@ -196,10 +206,10 @@ export default function AdminChat() {
                       className={`flex ${msg.senderId === currentAdmin?.id ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                        className={`max-w-[70%] rounded-2xl px-4 py-2 shadow-lg ${
                           msg.senderId === currentAdmin?.id
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-white text-slate-900 shadow-md'
+                            ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'
+                            : 'bg-slate-800 text-white border border-white border-opacity-10'
                         }`}
                       >
                         <p className="text-sm">{msg.message}</p>
@@ -215,22 +225,22 @@ export default function AdminChat() {
               </div>
 
               {/* Message Input */}
-              <div className="bg-white border-t border-slate-200 p-4">
-                <div className="flex space-x-2">
+              <div className="bg-slate-800 bg-opacity-50 backdrop-blur-lg border-t border-white border-opacity-10 p-4">
+                <div className="flex gap-2">
                   <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                     placeholder="Type your message..."
-                    className="flex-1 p-3 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
+                    className="flex-1 p-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:border-orange-500 focus:outline-none"
                   />
                   <button
                     onClick={sendMessage}
                     disabled={!newMessage.trim()}
-                    className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold disabled:opacity-50"
+                    className="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-600 disabled:opacity-50 transition-all shadow-lg"
                   >
-                    Send
+                    📤 Send
                   </button>
                 </div>
               </div>

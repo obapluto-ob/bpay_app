@@ -52,14 +52,19 @@ export default function Users() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      <div className="bg-gradient-to-r from-slate-800 to-slate-950 p-3 md:p-6 border-b-2 border-orange-500">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-orange-500">👥 User Management</h1>
-            <p className="text-xs md:text-sm text-slate-300">{users.length} total users</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="bg-gradient-to-r from-orange-600 to-orange-500 p-4 md:p-6 shadow-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-2xl">👥</span>
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-white">User Management</h1>
+              <p className="text-xs md:text-sm text-orange-100">{users.length} total users</p>
+            </div>
           </div>
-          <button onClick={() => router.push('/admin/dashboard')} className="bg-slate-700 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-slate-600">← Back</button>
+          <button onClick={() => router.push('/admin/dashboard')} className="bg-white text-orange-600 px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-orange-50 shadow-lg transition-all">← Dashboard</button>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -68,19 +73,19 @@ export default function Users() {
             placeholder="🔍 Search users..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 min-w-[200px] px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:border-orange-500 focus:outline-none"
+            className="flex-1 min-w-[200px] px-4 py-2.5 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-xl text-white text-sm placeholder-white placeholder-opacity-70 focus:bg-opacity-30 focus:outline-none transition-all"
           />
-          <select value={filter} onChange={(e) => setFilter(e.target.value)} className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:border-orange-500 focus:outline-none">
-            <option value="all">All Users</option>
-            <option value="approved">KYC Approved</option>
-            <option value="pending">KYC Pending</option>
-            <option value="rejected">KYC Rejected</option>
+          <select value={filter} onChange={(e) => setFilter(e.target.value)} className="px-4 py-2.5 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-xl text-white text-sm font-bold focus:bg-opacity-30 focus:outline-none transition-all">
+            <option value="all" className="bg-slate-800">All Users</option>
+            <option value="approved" className="bg-slate-800">KYC Approved</option>
+            <option value="pending" className="bg-slate-800">KYC Pending</option>
+            <option value="rejected" className="bg-slate-800">KYC Rejected</option>
           </select>
         </div>
       </div>
 
       <div className="p-3 md:p-6">
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+        <div className="bg-white bg-opacity-5 backdrop-blur-lg rounded-2xl border border-white border-opacity-10 shadow-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs md:text-sm">
               <thead className="bg-slate-700">

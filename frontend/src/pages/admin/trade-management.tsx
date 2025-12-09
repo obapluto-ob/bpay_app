@@ -150,69 +150,80 @@ export default function TradeManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 shadow-lg">
-        <h1 className="text-2xl font-bold text-white mb-4">Trade Management</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="bg-gradient-to-r from-orange-600 to-orange-500 p-4 md:p-6 shadow-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-2xl">💱</span>
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-white">Trade Management</h1>
+              <p className="text-xs md:text-sm text-orange-100">Monitor & verify transactions</p>
+            </div>
+          </div>
+          <button onClick={() => router.push('/admin/dashboard')} className="bg-white text-orange-600 px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-orange-50 shadow-lg transition-all">← Dashboard</button>
+        </div>
         
-        <div className="flex space-x-2">
+        <div className="flex gap-2">
           <button
             onClick={() => setFilter('pending')}
-            className={`flex-1 py-2 px-4 rounded-lg font-semibold ${
-              filter === 'pending' ? 'bg-white text-orange-500' : 'bg-white bg-opacity-20 text-white'
+            className={`flex-1 py-2.5 px-4 rounded-xl font-bold transition-all ${
+              filter === 'pending' ? 'bg-white text-orange-600 shadow-lg' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
             }`}
           >
-            Pending ({trades.filter(t => t.status === 'pending').length})
+            ⏳ Pending ({trades.filter(t => t.status === 'pending').length})
           </button>
           <button
             onClick={() => setFilter('all')}
-            className={`flex-1 py-2 px-4 rounded-lg font-semibold ${
-              filter === 'all' ? 'bg-white text-orange-500' : 'bg-white bg-opacity-20 text-white'
+            className={`flex-1 py-2.5 px-4 rounded-xl font-bold transition-all ${
+              filter === 'all' ? 'bg-white text-orange-600 shadow-lg' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
             }`}
           >
-            All
+            📊 All
           </button>
           <button
             onClick={() => setFilter('completed')}
-            className={`flex-1 py-2 px-4 rounded-lg font-semibold ${
-              filter === 'completed' ? 'bg-white text-orange-500' : 'bg-white bg-opacity-20 text-white'
+            className={`flex-1 py-2.5 px-4 rounded-xl font-bold transition-all ${
+              filter === 'completed' ? 'bg-white text-orange-600 shadow-lg' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
             }`}
           >
-            Completed
+            ✅ Completed
           </button>
         </div>
       </div>
 
       <div className="flex h-[calc(100vh-180px)]">
         {/* Trades List */}
-        <div className="w-1/3 bg-white border-r border-slate-200 overflow-y-auto">
+        <div className="w-full md:w-1/3 bg-slate-800 bg-opacity-50 backdrop-blur-lg border-r border-white border-opacity-10 overflow-y-auto">
           {loading ? (
-            <div className="p-4 text-center text-slate-500">Loading trades...</div>
+            <div className="p-4 text-center text-slate-400">Loading trades...</div>
           ) : trades.length === 0 ? (
-            <div className="p-4 text-center text-slate-500">No trades found</div>
+            <div className="p-4 text-center text-slate-400">No trades found</div>
           ) : (
-            <div className="divide-y divide-slate-200">
+            <div className="divide-y divide-white divide-opacity-5">
               {trades.map((trade) => (
                 <button
                   key={trade.id}
                   onClick={() => selectTrade(trade)}
-                  className={`w-full p-4 text-left hover:bg-slate-50 ${
-                    selectedTrade?.id === trade.id ? 'bg-orange-50' : ''
+                  className={`w-full p-4 text-left hover:bg-white hover:bg-opacity-5 transition-all ${
+                    selectedTrade?.id === trade.id ? 'bg-orange-500 bg-opacity-20' : ''
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-slate-900">#{trade.id}</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      trade.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      trade.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      'bg-red-100 text-red-800'
+                    <span className="font-bold text-orange-400">#{trade.id}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full font-bold ${
+                      trade.status === 'pending' ? 'bg-yellow-500 text-white' :
+                      trade.status === 'completed' ? 'bg-green-500 text-white' :
+                      'bg-red-500 text-white'
                     }`}>
                       {trade.status}
                     </span>
                   </div>
-                  <div className="text-sm text-slate-600">
-                    <p>{trade.type === 'buy' ? 'BUY' : 'SELL'} {trade.crypto}</p>
-                    <p className="font-semibold">{trade.fiatAmount?.toLocaleString()} {trade.country === 'NG' ? 'NGN' : 'KES'}</p>
-                    <p className="text-xs mt-1">{new Date(trade.createdAt).toLocaleString()}</p>
+                  <div className="text-sm text-slate-300">
+                    <p className="font-bold">{trade.type === 'buy' ? '📈 BUY' : '📉 SELL'} {trade.crypto}</p>
+                    <p className="font-semibold text-white">{trade.fiatAmount?.toLocaleString()} {trade.country === 'NG' ? 'NGN' : 'KES'}</p>
+                    <p className="text-xs mt-1 text-slate-400">{new Date(trade.createdAt).toLocaleString()}</p>
                   </div>
                 </button>
               ))}
@@ -221,51 +232,54 @@ export default function TradeManagement() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col bg-slate-900">
           {!selectedTrade ? (
-            <div className="flex-1 flex items-center justify-center text-slate-500">
-              Select a trade to view details
+            <div className="flex-1 flex items-center justify-center text-slate-400">
+              <div className="text-center">
+                <div className="text-6xl mb-4">💱</div>
+                <p className="text-lg">Select a trade to view details</p>
+              </div>
             </div>
           ) : (
             <>
               {/* Trade Details Header */}
-              <div className="bg-white border-b border-slate-200 p-4">
-                <div className="grid grid-cols-4 gap-4 mb-4">
+              <div className="bg-slate-800 bg-opacity-50 backdrop-blur-lg border-b border-white border-opacity-10 p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div>
-                    <p className="text-xs text-slate-500">Order ID</p>
-                    <p className="font-bold">#{selectedTrade.id}</p>
+                    <p className="text-xs text-slate-400">Order ID</p>
+                    <p className="font-bold text-orange-400">#{selectedTrade.id}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Type</p>
-                    <p className="font-bold">{selectedTrade.type === 'buy' ? 'BUY' : 'SELL'} {selectedTrade.crypto}</p>
+                    <p className="text-xs text-slate-400">Type</p>
+                    <p className="font-bold text-white">{selectedTrade.type === 'buy' ? '📈 BUY' : '📉 SELL'} {selectedTrade.crypto}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Amount</p>
-                    <p className="font-bold">{selectedTrade.fiatAmount?.toLocaleString()} {selectedTrade.country === 'NG' ? 'NGN' : 'KES'}</p>
+                    <p className="text-xs text-slate-400">Amount</p>
+                    <p className="font-bold text-white">{selectedTrade.fiatAmount?.toLocaleString()} {selectedTrade.country === 'NG' ? 'NGN' : 'KES'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Status</p>
-                    <p className="font-bold capitalize">{selectedTrade.status}</p>
+                    <p className="text-xs text-slate-400">Status</p>
+                    <p className="font-bold capitalize text-white">{selectedTrade.status}</p>
                   </div>
                 </div>
 
                 {selectedTrade.paymentProof && (
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-sm font-semibold text-blue-800">Payment Proof:</p>
-                    <p className="text-sm text-blue-600">{selectedTrade.paymentProof}</p>
+                  <div className="bg-blue-500 bg-opacity-20 p-3 rounded-xl border border-blue-500 border-opacity-30">
+                    <p className="text-sm font-bold text-blue-300">📎 Payment Proof:</p>
+                    <p className="text-sm text-white mt-1">{selectedTrade.paymentProof}</p>
                   </div>
                 )}
 
                 {selectedTrade.bankDetails && (
-                  <div className="bg-green-50 p-3 rounded-lg mt-2">
-                    <p className="text-sm font-semibold text-green-800">Bank Details:</p>
-                    <p className="text-sm text-green-600">{JSON.stringify(selectedTrade.bankDetails)}</p>
+                  <div className="bg-green-500 bg-opacity-20 p-3 rounded-xl mt-2 border border-green-500 border-opacity-30">
+                    <p className="text-sm font-bold text-green-300">🏦 Bank Details:</p>
+                    <p className="text-sm text-white mt-1">{JSON.stringify(selectedTrade.bankDetails)}</p>
                   </div>
                 )}
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-900">
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
@@ -291,19 +305,19 @@ export default function TradeManagement() {
 
               {/* Action Buttons */}
               {selectedTrade.status === 'pending' && (
-                <div className="bg-white border-t border-slate-200 p-4">
-                  <div className="flex space-x-2 mb-3">
+                <div className="bg-slate-800 bg-opacity-50 backdrop-blur-lg border-t border-white border-opacity-10 p-4">
+                  <div className="flex gap-2 mb-3">
                     <button
                       onClick={approveTrade}
-                      className="flex-1 bg-green-500 text-white py-3 rounded-lg font-semibold"
+                      className="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold hover:bg-green-600 transition-all shadow-lg"
                     >
-                      ✓ Approve Trade
+                      ✅ Approve Trade
                     </button>
                     <button
                       onClick={rejectTrade}
-                      className="flex-1 bg-red-500 text-white py-3 rounded-lg font-semibold"
+                      className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 transition-all shadow-lg"
                     >
-                      ✗ Reject Trade
+                      ❌ Reject Trade
                     </button>
                   </div>
                   <button
@@ -335,21 +349,21 @@ export default function TradeManagement() {
               )}
 
               {/* Message Input */}
-              <div className="bg-white border-t border-slate-200 p-4">
-                <div className="flex space-x-2">
+              <div className="bg-slate-800 bg-opacity-50 backdrop-blur-lg border-t border-white border-opacity-10 p-4">
+                <div className="flex gap-2">
                   <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                     placeholder="Type your message..."
-                    className="flex-1 p-3 border border-slate-300 rounded-lg"
+                    className="flex-1 p-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:border-orange-500 focus:outline-none"
                   />
                   <button
                     onClick={sendMessage}
-                    className="bg-orange-500 text-white px-6 py-3 rounded-lg font-semibold"
+                    className="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-600 transition-all shadow-lg"
                   >
-                    Send
+                    📤 Send
                   </button>
                 </div>
               </div>
