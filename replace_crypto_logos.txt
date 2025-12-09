@@ -1,0 +1,17 @@
+Replace all crypto symbol occurrences with real logos:
+
+1. Find: <span className="text-2xl">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
+   Replace with: <img src={crypto === 'BTC' ? 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' : crypto === 'ETH' ? 'https://cryptologos.cc/logos/ethereum-eth-logo.png' : 'https://cryptologos.cc/logos/tether-usdt-logo.png'} alt={crypto} className="w-8 h-8" />
+
+2. Find: <span className="text-lg">₿</span>
+   Replace with: <img src="https://cryptologos.cc/logos/bitcoin-btc-logo.png" alt="BTC" className="w-5 h-5" />
+
+3. Find: <span className="text-lg">Ξ</span>
+   Replace with: <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="w-5 h-5" />
+
+4. Find: <span className="text-lg">₮</span>
+   Replace with: <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="USDT" className="w-5 h-5" />
+
+5. In Live Rates section:
+   Find: <span className="text-2xl">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
+   Replace with: <img src={crypto === 'BTC' ? 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' : crypto === 'ETH' ? 'https://cryptologos.cc/logos/ethereum-eth-logo.png' : 'https://cryptologos.cc/logos/tether-usdt-logo.png'} alt={crypto} className="w-10 h-10" />
