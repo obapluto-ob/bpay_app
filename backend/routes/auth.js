@@ -33,10 +33,13 @@ router.post('/register', [
     // Hash security answer
     const hashedAnswer = securityAnswer ? await bcrypt.hash(securityAnswer.toLowerCase(), 12) : null;
 
+    // Generate UUID for user ID
+    const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
     // Create user
     const result = await db.query(
-      'INSERT INTO users (email, password, first_name, last_name, phone_number, country, preferred_currency, security_question, security_answer, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()) RETURNING id, email, first_name, last_name',
-      [email, hashedPassword, firstName, lastName, '', country || 'NG', country === 'KE' ? 'KES' : 'NGN', securityQuestion, hashedAnswer]
+      'INSERT INTO users (id, email, password, first_name, last_name, country, security_question, security_answer) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, email, first_name, last_name',
+      [userId, email, hashedPassword, firstName, lastName, country || 'NG', securityQuestion, hashedAnswer]
     );
 
     const user = result.rows[0];
