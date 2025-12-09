@@ -65,18 +65,27 @@ export default function TradeManagement() {
 
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${API_BASE}/trade/${selectedTrade.id}/chat`, {
+      const msgId = 'msg_' + Date.now();
+      const newMsg = {
+        id: msgId,
+        trade_id: selectedTrade.id,
+        sender_id: 'admin',
+        sender_type: 'admin',
+        message: newMessage,
+        created_at: new Date().toISOString()
+      };
+
+      const response = await fetch(`${API_BASE}/admin/trades/${selectedTrade.id}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ message: newMessage, sender: 'admin' })
+        body: JSON.stringify({ message: newMessage, adminId: 'admin_1' })
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setMessages(prev => [...prev, data.message]);
+        setMessages(prev => [...prev, newMsg]);
         setNewMessage('');
       }
     } catch (error) {
@@ -297,6 +306,31 @@ export default function TradeManagement() {
                       ✗ Reject Trade
                     </button>
                   </div>
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Cancel this trade? This action cannot be undone.')) return;
+                      try {
+                        const token = localStorage.getItem('adminToken');
+                        const response = await fetch(`${API_BASE}/trade/${selectedTrade.id}/cancel`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`
+                          }
+                        });
+                        if (response.ok) {
+                          alert('Trade cancelled');
+                          setSelectedTrade(null);
+                          fetchTrades();
+                        }
+                      } catch (error) {
+                        alert('Failed to cancel trade');
+                      }
+                    }}
+                    className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold"
+                  >
+                    🚫 Cancel Trade
+                  </button>
                 </div>
               )}
 

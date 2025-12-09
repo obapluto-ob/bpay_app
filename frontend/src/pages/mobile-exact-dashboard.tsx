@@ -801,29 +801,17 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
       ]
     },
     {
-      id: 'ke_bank',
-      type: 'bank_transfer', 
-      name: 'Bank Transfer',
-      details: 'Transfer to our Kenyan bank account',
-      country: 'KE',
-      instructions: [
-        'Transfer money to the account details below',
-        'Use your email as the transfer reference', 
-        'Upload proof of payment',
-        'Funds will be credited within 30 minutes after verification'
-      ]
-    },
-    {
       id: 'ke_mpesa',
       type: 'mobile_money',
-      name: 'M-Pesa',
+      name: 'M-Pesa Paybill',
       details: 'Send money via M-Pesa',
       country: 'KE',
       instructions: [
         'Go to M-Pesa menu on your phone',
-        'Select Send Money (Lipa na M-Pesa)',
+        'Select Lipa na M-Pesa',
+        'Select Paybill',
         'Enter the Paybill number below',
-        'Use your email as the account number',
+        'Enter Account number',
         'Upload M-Pesa confirmation message'
       ]
     }
@@ -2452,7 +2440,7 @@ export default function MobileExactDashboard() {
                 <>
                   <div className="flex items-center mb-3">
                     <span className="text-2xl mr-2">🇳🇬</span>
-                    <span className="text-slate-600 font-semibold">Nigeria</span>
+                    <span className="text-slate-600 font-semibold">NGN</span>
                   </div>
                   <span className="text-3xl font-bold text-slate-900">₦{balance.NGN?.toLocaleString() || '0'}</span>
                 </>
@@ -2462,7 +2450,7 @@ export default function MobileExactDashboard() {
                 <>
                   <div className="flex items-center mb-3">
                     <span className="text-2xl mr-2">🇰🇪</span>
-                    <span className="text-slate-600 font-semibold">Kenya</span>
+                    <span className="text-slate-600 font-semibold">KES</span>
                   </div>
                   <span className="text-3xl font-bold text-slate-900">KSh{balance.KES?.toLocaleString() || '0'}</span>
                 </>
