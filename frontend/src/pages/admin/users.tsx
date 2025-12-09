@@ -119,11 +119,11 @@ export default function Users() {
                     </td>
                     <td className="p-3">
                       <div className="text-white text-xs space-y-1">
-                        <div>₿ {(user.btc_balance || 0).toFixed(8)}</div>
-                        <div>Ξ {(user.eth_balance || 0).toFixed(8)}</div>
-                        <div>₮ {(user.usdt_balance || 0).toFixed(2)}</div>
-                        <div className="text-green-400">₦ {(user.ngn_balance || 0).toLocaleString()}</div>
-                        <div className="text-blue-400">KSh {(user.kes_balance || 0).toLocaleString()}</div>
+                        <div>₿ {parseFloat(user.btc_balance || 0).toFixed(8)}</div>
+                        <div>Ξ {parseFloat(user.eth_balance || 0).toFixed(8)}</div>
+                        <div>₮ {parseFloat(user.usdt_balance || 0).toFixed(2)}</div>
+                        <div className="text-green-400">₦ {parseFloat(user.ngn_balance || 0).toLocaleString()}</div>
+                        <div className="text-blue-400">KSh {parseFloat(user.kes_balance || 0).toLocaleString()}</div>
                       </div>
                     </td>
                     <td className="p-3 text-slate-400 text-xs">
