@@ -135,6 +135,12 @@ export default function SuperAdminDashboard() {
               )}
             </button>
             <button
+              onClick={() => router.push('/admin/create-admin')}
+              className="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold"
+            >
+              Create Admin
+            </button>
+            <button
               onClick={() => {
                 const alertsText = alerts.map(a => `${a.message} (${a.time})`).join('\n');
                 alert(alertsText || 'No new alerts');
