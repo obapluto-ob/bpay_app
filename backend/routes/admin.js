@@ -239,4 +239,115 @@ router.get('/disputes', async (req, res) => {
   }
 });
 
+// Get admin profile
+router.get('/profile', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+    
+    const result = await pool.query('SELECT id, username, email, role FROM admins WHERE id = $1', [decoded.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Profile error:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Get all admins for chat
+router.get('/list', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, username, email, role, is_online as "isOnline"
+      FROM admins 
+      ORDER BY username ASC
+    `);
+    
+    res.json({ admins: result.rows });
+  } catch (error) {
+    console.error('List admins error:', error);
+    res.status(500).json({ error: 'Failed to fetch admins' });
+  }
+});
+
+// Get chat messages between admins
+router.get('/chat/:adminId', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+    const currentAdminId = decoded.id;
+    const targetAdminId = req.params.adminId;
+    
+    // Create admin_chat table if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admin_chat (
+        id VARCHAR(255) PRIMARY KEY,
+        sender_id VARCHAR(255) NOT NULL,
+        receiver_id VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        read BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    
+    const result = await pool.query(`
+      SELECT id, sender_id as "senderId", receiver_id as "receiverId", message, read, created_at as timestamp
+      FROM admin_chat 
+      WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1)
+      ORDER BY created_at ASC
+    `, [currentAdminId, targetAdminId]);
+    
+    // Mark messages as read
+    await pool.query(
+      'UPDATE admin_chat SET read = true WHERE receiver_id = $1 AND sender_id = $2',
+      [currentAdminId, targetAdminId]
+    );
+    
+    res.json({ messages: result.rows });
+  } catch (error) {
+    console.error('Get chat error:', error);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+// Send chat message to another admin
+router.post('/chat/send', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+    const senderId = decoded.id;
+    
+    const { receiverId, message } = req.body;
+    
+    if (!receiverId || !message) {
+      return res.status(400).json({ error: 'Receiver ID and message required' });
+    }
+    
+    const msgId = 'admin_msg_' + Date.now();
+    await pool.query(
+      'INSERT INTO admin_chat (id, sender_id, receiver_id, message, created_at) VALUES ($1, $2, $3, $4, NOW())',
+      [msgId, senderId, receiverId, message]
+    );
+    
+    const newMessage = {
+      id: msgId,
+      senderId,
+      receiverId,
+      message,
+      timestamp: new Date().toISOString()
+    };
+    
+    res.json({ success: true, message: newMessage });
+  } catch (error) {
+    console.error('Send chat error:', error);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
 module.exports = router;

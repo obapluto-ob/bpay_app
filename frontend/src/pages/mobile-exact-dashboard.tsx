@@ -1045,12 +1045,45 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
               </div>
               
               <div className="flex space-x-2">
-                <button className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-lg font-semibold border-2 border-dashed border-slate-300 hover:bg-slate-200 transition-colors">
+                <label className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-lg font-semibold border-2 border-dashed border-slate-300 hover:bg-slate-200 transition-colors text-center cursor-pointer">
                   📷 Take Photo
-                </button>
-                <button className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-lg font-semibold border-2 border-dashed border-slate-300 hover:bg-slate-200 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          setPaymentProof(event.target?.result as string);
+                          alert('Photo captured successfully!');
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                </label>
+                <label className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-lg font-semibold border-2 border-dashed border-slate-300 hover:bg-slate-200 transition-colors text-center cursor-pointer">
                   📁 Choose File
-                </button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          setPaymentProof(event.target?.result as string);
+                          alert('File selected successfully!');
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                </label>
               </div>
             </div>
           </div>
