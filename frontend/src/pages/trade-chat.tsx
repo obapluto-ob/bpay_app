@@ -218,8 +218,8 @@ export default function TradeChat() {
                 `;
                 document.body.appendChild(modal);
                 
-                document.getElementById('cancelDispute').onclick = () => modal.remove();
-                document.getElementById('submitDispute').onclick = async () => {
+                document.getElementById('cancelDispute')!.onclick = () => modal.remove();
+                document.getElementById('submitDispute')!.onclick = async () => {
                   const reason = (document.getElementById('disputeReason') as HTMLSelectElement).value;
                   const txRef = (document.getElementById('txRef') as HTMLInputElement).value;
                   const details = (document.getElementById('disputeDetails') as HTMLTextAreaElement).value;
