@@ -36,8 +36,21 @@ CREATE TABLE IF NOT EXISTS trades (
     payment_method VARCHAR(50),
     country VARCHAR(2),
     status VARCHAR(20) DEFAULT 'pending',
+    payment_proof TEXT,
+    assigned_admin VARCHAR(50),
+    bank_details JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Chat messages table
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id VARCHAR(50) PRIMARY KEY,
+    trade_id VARCHAR(50) NOT NULL,
+    sender_id VARCHAR(50) NOT NULL,
+    sender_type VARCHAR(10) NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Deposits table

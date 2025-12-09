@@ -139,11 +139,93 @@ router.get('/:id', authenticateToken, async (req, res) => {
       fiatAmount: trade.fiat_amount,
       cryptoAmount: trade.crypto_amount,
       status: trade.status,
+      paymentProof: trade.payment_proof,
+      assignedAdmin: trade.assigned_admin,
       createdAt: trade.created_at
     });
   } catch (error) {
     console.error('Get trade error:', error);
     res.status(500).json({ error: 'Failed to fetch trade' });
+  }
+});
+
+// Upload payment proof
+router.post('/:id/payment-proof', authenticateToken, async (req, res) => {
+  try {
+    const { paymentProof } = req.body;
+    const tradeId = req.params.id;
+    const userId = req.user.id;
+    
+    await pool.query(
+      'UPDATE trades SET payment_proof = $1, status = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4',
+      [paymentProof, 'awaiting_verification', tradeId, userId]
+    );
+    
+    res.json({ success: true, message: 'Payment proof uploaded' });
+  } catch (error) {
+    console.error('Upload proof error:', error);
+    res.status(500).json({ error: 'Failed to upload payment proof' });
+  }
+});
+
+// Cancel trade
+router.post('/:id/cancel', authenticateToken, async (req, res) => {
+  try {
+    const tradeId = req.params.id;
+    const userId = req.user.id;
+    
+    const trade = await pool.query('SELECT status FROM trades WHERE id = $1 AND user_id = $2', [tradeId, userId]);
+    
+    if (trade.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    
+    if (trade.rows[0].status === 'completed') {
+      return res.status(400).json({ error: 'Cannot cancel completed trade' });
+    }
+    
+    await pool.query('UPDATE trades SET status = $1, updated_at = NOW() WHERE id = $2', ['cancelled', tradeId]);
+    
+    res.json({ success: true, message: 'Trade cancelled' });
+  } catch (error) {
+    console.error('Cancel trade error:', error);
+    res.status(500).json({ error: 'Failed to cancel trade' });
+  }
+});
+
+// Get chat messages
+router.get('/:id/chat', authenticateToken, async (req, res) => {
+  try {
+    const tradeId = req.params.id;
+    const result = await pool.query(
+      'SELECT * FROM chat_messages WHERE trade_id = $1 ORDER BY created_at ASC',
+      [tradeId]
+    );
+    
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get chat error:', error);
+    res.status(500).json({ error: 'Failed to fetch chat' });
+  }
+});
+
+// Send chat message
+router.post('/:id/chat', authenticateToken, async (req, res) => {
+  try {
+    const { message } = req.body;
+    const tradeId = req.params.id;
+    const userId = req.user.id;
+    
+    const msgId = 'msg_' + Date.now();
+    await pool.query(
+      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+      [msgId, tradeId, userId, 'user', message]
+    );
+    
+    res.json({ success: true, messageId: msgId });
+  } catch (error) {
+    console.error('Send chat error:', error);
+    res.status(500).json({ error: 'Failed to send message' });
   }
 });
 

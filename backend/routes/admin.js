@@ -126,9 +126,39 @@ router.post('/deposits/:id/approve', async (req, res) => {
 // Approve trade
 router.post('/trades/:id/approve', async (req, res) => {
   try {
-    await pool.query('UPDATE trades SET status = $1 WHERE id = $2', ['completed', req.params.id]);
+    const tradeId = req.params.id;
+    const trade = await pool.query('SELECT * FROM trades WHERE id = $1', [tradeId]);
+    
+    if (trade.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    
+    const t = trade.rows[0];
+    
+    // Update user balance
+    if (t.type === 'buy') {
+      await pool.query(
+        `UPDATE users SET ${t.crypto.toLowerCase()}_balance = ${t.crypto.toLowerCase()}_balance + $1 WHERE id = $2`,
+        [t.crypto_amount, t.user_id]
+      );
+    } else if (t.type === 'sell') {
+      await pool.query(
+        `UPDATE users SET ${t.country === 'NG' ? 'ngn' : 'kes'}_balance = ${t.country === 'NG' ? 'ngn' : 'kes'}_balance + $1 WHERE id = $2`,
+        [t.fiat_amount, t.user_id]
+      );
+    }
+    
+    await pool.query('UPDATE trades SET status = $1, updated_at = NOW() WHERE id = $2', ['completed', tradeId]);
+    
+    // Send system message
+    await pool.query(
+      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+      [`msg_${Date.now()}`, tradeId, 'system', 'system', 'Trade approved and completed successfully!', ]
+    );
+    
     res.json({ message: 'Trade approved' });
   } catch (error) {
+    console.error('Approve error:', error);
     res.status(500).json({ error: 'Failed to approve trade' });
   }
 });
@@ -136,10 +166,40 @@ router.post('/trades/:id/approve', async (req, res) => {
 // Reject trade
 router.post('/trades/:id/reject', async (req, res) => {
   try {
-    await pool.query('UPDATE trades SET status = $1 WHERE id = $2', ['cancelled', req.params.id]);
+    const { reason } = req.body;
+    const tradeId = req.params.id;
+    
+    await pool.query('UPDATE trades SET status = $1, updated_at = NOW() WHERE id = $2', ['rejected', tradeId]);
+    
+    // Send system message
+    await pool.query(
+      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+      [`msg_${Date.now()}`, tradeId, 'system', 'system', `Trade rejected. Reason: ${reason || 'Invalid payment proof'}`]
+    );
+    
     res.json({ message: 'Trade rejected' });
   } catch (error) {
+    console.error('Reject error:', error);
     res.status(500).json({ error: 'Failed to reject trade' });
+  }
+});
+
+// Admin send chat message
+router.post('/trades/:id/chat', async (req, res) => {
+  try {
+    const { message, adminId } = req.body;
+    const tradeId = req.params.id;
+    
+    const msgId = 'msg_' + Date.now();
+    await pool.query(
+      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+      [msgId, tradeId, adminId, 'admin', message]
+    );
+    
+    res.json({ success: true, messageId: msgId });
+  } catch (error) {
+    console.error('Admin chat error:', error);
+    res.status(500).json({ error: 'Failed to send message' });
   }
 });
 

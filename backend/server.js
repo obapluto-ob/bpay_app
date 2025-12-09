@@ -94,6 +94,7 @@ app.use('/api/user', require('./routes/user'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/avatar', require('./routes/avatar'));
 app.use('/api/admin/auth', require('./routes/adminAuth'));
+app.use('/api/deposit', require('./routes/deposit'));
 
 // Health check
 app.get('/health', (req, res) => {
