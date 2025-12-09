@@ -123,11 +123,11 @@ export default function SuperAdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-6 shadow-lg">
+      <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-6 shadow-lg">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">Super Admin Dashboard</h1>
-            <p className="text-white opacity-90">Complete system overview and control</p>
+            <h1 className="text-3xl font-bold text-white drop-shadow-lg">🔐 SUPER ADMIN PANEL</h1>
+            <p className="text-white font-semibold">Complete system overview and control</p>
           </div>
           <div className="flex space-x-2">
             <button
@@ -274,7 +274,7 @@ export default function SuperAdminDashboard() {
                   <tbody>
                     {(stats.recentOrders || []).map((order: any) => (
                       <tr key={order.id} className="border-b border-slate-100 hover:bg-orange-50 cursor-pointer">
-                        <td className="p-3 font-mono text-sm">#{order.id}</td>
+                        <td className="p-3 font-mono text-sm font-bold text-orange-600">#{order.order_id || order.id}</td>
                         <td className="p-3">
                           <div className="font-semibold text-slate-900">{order.user_name}</div>
                           <div className="text-xs text-slate-500">{order.user_email}</div>

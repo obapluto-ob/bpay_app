@@ -21,9 +21,12 @@ router.get('/stats', async (req, res) => {
       "SELECT SUM(fiat_amount) FROM trades WHERE DATE(created_at) = CURRENT_DATE AND country = 'KE' AND status IN ('completed', 'pending')"
     );
     
-    // Get recent orders with user info
+    // Get recent orders with user info and order_id
     const recentOrders = await pool.query(`
-      SELECT t.*, u.first_name || ' ' || u.last_name as user_name, u.email as user_email
+      SELECT t.*, 
+             COALESCE(t.order_id, LPAD(FLOOR(RANDOM() * 1000000000)::TEXT, 9, '0')) as order_id,
+             u.first_name || ' ' || u.last_name as user_name, 
+             u.email as user_email
       FROM trades t
       JOIN users u ON t.user_id = u.id
       ORDER BY t.created_at DESC
