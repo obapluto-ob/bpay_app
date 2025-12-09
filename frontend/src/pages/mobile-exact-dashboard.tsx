@@ -232,9 +232,20 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
                 Transfer {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{parseFloat(amount).toLocaleString()} to complete your order.
               </p>
               <div className="bg-white p-3 rounded-xl mb-4">
-                <p className="font-bold">Bank Details:</p>
-                <p>GTBank - 0123456789</p>
-                <p>BPay Technologies Ltd</p>
+                <p className="font-bold">{selectedCurrency === 'NGN' ? 'Nigeria Bank Details:' : 'Kenya M-Pesa Details:'}</p>
+                {selectedCurrency === 'NGN' ? (
+                  <>
+                    <p className="font-bold text-green-600">GLOBUS BANK</p>
+                    <p>Account: 1000461745</p>
+                    <p>Name: GLOBAL BURGERS NIGERIA LIMITED</p>
+                  </>
+                ) : (
+                  <>
+                    <p>Paybill: 756756</p>
+                    <p>Account: 53897</p>
+                    <p>Business: BPay Kenya</p>
+                  </>
+                )}
               </div>
             </>
           )}
@@ -319,9 +330,8 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
             Transfer {selectedCurrency === 'NGN' ? '₦' : 'KSh'}{parseFloat(amount).toLocaleString()} to complete your order.
           </p>
           <div className="bg-white p-3 rounded-xl mb-4">
-            <p className="font-bold">Bank Details:</p>
-            <p>GTBank - 0123456789</p>
-            <p>BPay Technologies Ltd</p>
+            <p className="font-bold">Payment Details:</p>
+            <p className="text-sm text-gray-600">Transfer to the account shown in escrow details above</p>
           </div>
           <button
             onClick={() => alert('Payment submitted - awaiting verification')}
@@ -1876,19 +1886,19 @@ const ProfileScreenWeb = ({ fullName, email, user, userAvatar, setUserAvatar, on
             
             <div className="space-y-3">
               <button 
-                onClick={() => alert('Nigeria Bank Account\n\nGTBank - 0123456789\nBPay Technologies Ltd\n\nUse this for NGN deposits and withdrawals.')}
+                onClick={() => alert('Nigeria Bank Account\n\nGLOBUS BANK\nAccount: 1000461745\nName: GLOBAL BURGERS NIGERIA LIMITED\n\nUse this for NGN deposits and withdrawals.')}
                 className="w-full bg-slate-50 p-4 rounded-lg text-left hover:bg-slate-100"
               >
                 <h4 className="font-bold text-slate-900">Nigeria Bank Account</h4>
-                <p className="text-sm text-slate-600">Add or update Nigerian bank details</p>
+                <p className="text-sm text-slate-600">View system bank details</p>
               </button>
               
               <button 
-                onClick={() => alert('Kenya M-Pesa\n\nPaybill: 522522\nBusiness: BPay Kenya\nAccount: Your email\n\nUse this for KES deposits and withdrawals.')}
+                onClick={() => alert('Kenya M-Pesa\n\nPaybill: 756756\nAccount: 53897\nBusiness: BPay Kenya\n\nUse this for KES deposits and withdrawals.')}
                 className="w-full bg-slate-50 p-4 rounded-lg text-left hover:bg-slate-100"
               >
                 <h4 className="font-bold text-slate-900">Kenya M-Pesa</h4>
-                <p className="text-sm text-slate-600">Add or update M-Pesa details</p>
+                <p className="text-sm text-slate-600">View M-Pesa details</p>
               </button>
             </div>
             
