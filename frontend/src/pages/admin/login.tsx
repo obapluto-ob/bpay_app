@@ -10,6 +10,8 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showRegister, setShowRegister] = useState(false);
+  const [showSecretKey, setShowSecretKey] = useState(false);
+  const [secretKey, setSecretKey] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState('admin');
 
@@ -99,6 +101,39 @@ export default function AdminLogin() {
                 {loading ? 'Logging in...' : 'Login to Dashboard'}
               </button>
             </form>
+            ) : !showRegister ? (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (secretKey === 'Peace25') {
+                setShowRegister(true);
+                setShowSecretKey(false);
+                setError('');
+              } else {
+                setError('Invalid secret key');
+              }
+            }} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
+
+              <input
+                type="password"
+                placeholder="Enter Secret Key"
+                value={secretKey}
+                onChange={(e) => setSecretKey(e.target.value)}
+                required
+                className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
+              />
+
+              <button
+                type="submit"
+                className="w-full bg-[#f59e0b] text-white p-3 md:p-4 rounded-xl text-base md:text-lg font-bold mt-6 hover:bg-[#d97706] transition-colors shadow-lg"
+              >
+                Verify Secret Key
+              </button>
+            </form>
             ) : (
             <form onSubmit={async (e) => {
               e.preventDefault();
@@ -180,14 +215,24 @@ export default function AdminLogin() {
 
 
 
-            {/* Super Admin Link */}
+            {/* Toggle Register/Login */}
             <div className="mt-6 text-center">
-              <p className="text-sm text-slate-600 mb-2">Super Admin?</p>
+              <p className="text-sm text-slate-600 mb-2">{showRegister ? 'Already have an account?' : 'Super Admin?'}</p>
               <button
-                onClick={() => router.push('/admin/create-admin')}
+                type="button"
+                onClick={() => {
+                  if (showRegister) {
+                    setShowRegister(false);
+                    setShowSecretKey(false);
+                  } else {
+                    setShowSecretKey(true);
+                  }
+                  setError('');
+                  setSecretKey('');
+                }}
                 className="text-orange-600 hover:text-orange-700 font-semibold text-sm underline"
               >
-                Create New Admin Account
+                {showRegister || showSecretKey ? 'Back to Login' : 'Create New Admin Account'}
               </button>
             </div>
 

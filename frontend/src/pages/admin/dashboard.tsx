@@ -11,6 +11,7 @@ export default function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'disputes'>('overview');
   const [unreadChats, setUnreadChats] = useState(0);
+  const [lastOrderCount, setLastOrderCount] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
@@ -28,7 +29,14 @@ export default function SuperAdminDashboard() {
       const token = localStorage.getItem('adminToken');
       const statsRes = await fetch(`${API_BASE}/admin/stats`, { headers: { Authorization: `Bearer ${token}` } });
       if (statsRes.ok) {
-        setStats(await statsRes.json());
+        const newStats = await statsRes.json();
+        if (newStats.pendingTrades > lastOrderCount && lastOrderCount > 0) {
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSh+zPLaizsKFGCy6OyrWBQLSKHf8sFuJAUuhM/y24k4CBhns+3qpVIRC0yl4fG5ZRwFNo3V8859LwUofszy2os7ChRgsujsq1gVC0ih3/LBbiQFLoTP8tuJOAgYZ7Pt6qVSEQtMpeHxuWUcBTaN1fPOfS8FKH7M8tqLOwoUYLLo7KtYFQtIod/ywW4kBS6Ez/LbiTgIGGez7eqlUhELTKXh8bllHAU2jdXzzn0vBSh+zPLaizsKFGCy6OyrWBULSKHf8sFuJAUuhM/y24k4CBhns+3qpVIRC0yl4fG5ZRwFNo3V8859LwUofszy2os7ChRgsujsq1gVC0ih3/LBbiQFLoTP8tuJOAgYZ7Pt6qVSEQtMpeHxuWUcBTaN1fPOfS8FKH7M8tqLOwoUYLLo7KtYFQtIod/ywW4kBS6Ez/LbiTgIGGez7eqlUhELTKXh8bllHAU2jdXzzn0vBSh+zPLaizsKFGCy6OyrWBULSKHf8sFuJAUuhM/y24k4CBhns+3qpVIRC0yl4fG5ZRwFNo3V8859LwUofszy2os7ChRgsujsq1gVC0ih3/LBbiQFLoTP8tuJOAgYZ7Pt6qVSEQtMpeHxuWUcBTaN1fPOfS8FKH7M8tqLOwoUYLLo7KtYFQtIod/ywW4kBS6Ez/LbiTgIGGez');
+          audio.play().catch(() => {});
+          alert('🔔 New order received!');
+        }
+        setLastOrderCount(newStats.pendingTrades);
+        setStats(newStats);
       } else {
         setStats({ totalUsers: 0, ngnVolume: 0, kesVolume: 0, pendingTrades: 0, pendingDeposits: 0, recentOrders: [] });
       }
@@ -78,6 +86,7 @@ export default function SuperAdminDashboard() {
             Trades
             {stats.pendingTrades > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{stats.pendingTrades}</span>}
           </button>
+          <button onClick={() => router.push('/admin/users')} className="bg-slate-700 text-orange-400 px-2 md:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold hover:bg-slate-600">Users</button>
           <button onClick={() => router.push('/admin/kyc-verification')} className="bg-slate-700 text-orange-400 px-2 md:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold hover:bg-slate-600">KYC</button>
           <button onClick={() => router.push('/admin/analytics')} className="bg-slate-700 text-orange-400 px-2 md:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold hover:bg-slate-600">Analytics</button>
           <button onClick={() => router.push('/admin/create-admin')} className="bg-green-600 text-white px-2 md:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold hover:bg-green-700">+ Admin</button>
