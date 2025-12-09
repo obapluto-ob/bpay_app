@@ -2471,10 +2471,7 @@ export default function MobileExactDashboard() {
                     <span className="text-xs text-slate-900 font-semibold">Sell</span>
                   </button>
                   <button 
-                    onClick={() => {
-                      setShowWalletScreen(true);
-                      setActiveTab('wallet');
-                    }}
+                    onClick={() => setShowWalletScreen(true)}
                     className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"
                   >
                     <span className="text-xl text-orange-500 mb-1">+</span>

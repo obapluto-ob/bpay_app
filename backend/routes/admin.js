@@ -8,16 +8,35 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejec
 router.get('/stats', async (req, res) => {
   try {
     const users = await pool.query('SELECT COUNT(*) FROM users');
-    const trades = await pool.query('SELECT COUNT(*), SUM(fiat_amount) FROM trades WHERE DATE(created_at) = CURRENT_DATE');
     const pendingTrades = await pool.query('SELECT COUNT(*) FROM trades WHERE status = $1', ['pending']);
     const deposits = await pool.query('SELECT COUNT(*) FROM deposits WHERE status = $1', ['pending']);
     
+    // Get NGN volume (Nigeria trades)
+    const ngnVolume = await pool.query(
+      "SELECT SUM(fiat_amount) FROM trades WHERE DATE(created_at) = CURRENT_DATE AND country = 'NG' AND status IN ('completed', 'pending')"
+    );
+    
+    // Get KES volume (Kenya trades)
+    const kesVolume = await pool.query(
+      "SELECT SUM(fiat_amount) FROM trades WHERE DATE(created_at) = CURRENT_DATE AND country = 'KE' AND status IN ('completed', 'pending')"
+    );
+    
+    // Get recent orders with user info
+    const recentOrders = await pool.query(`
+      SELECT t.*, u.first_name || ' ' || u.last_name as user_name, u.email as user_email
+      FROM trades t
+      JOIN users u ON t.user_id = u.id
+      ORDER BY t.created_at DESC
+      LIMIT 10
+    `);
+    
     res.json({
       totalUsers: parseInt(users.rows[0].count),
-      todayTrades: parseInt(trades.rows[0].count),
-      todayVolume: parseFloat(trades.rows[0].sum || 0),
+      ngnVolume: parseFloat(ngnVolume.rows[0].sum || 0),
+      kesVolume: parseFloat(kesVolume.rows[0].sum || 0),
       pendingTrades: parseInt(pendingTrades.rows[0].count),
-      pendingDeposits: parseInt(deposits.rows[0].count)
+      pendingDeposits: parseInt(deposits.rows[0].count),
+      recentOrders: recentOrders.rows
     });
   } catch (error) {
     console.error('Stats error:', error);
@@ -143,7 +162,7 @@ router.post('/trades/:id/approve', async (req, res) => {
       );
     } else if (t.type === 'sell') {
       await pool.query(
-        `UPDATE users SET ${t.country === 'NG' ? 'ngn' : 'kes'}_balance = ${t.country === 'NG' ? 'ngn' : 'kes'}_balance + $1 WHERE id = $2`,
+        `UPDATE users SET ${t.country === 'NG' ? 'ngn_balance' : 'kes_balance'} = ${t.country === 'NG' ? 'ngn_balance' : 'kes_balance'} + $1 WHERE id = $2`,
         [t.fiat_amount, t.user_id]
       );
     }
