@@ -243,10 +243,14 @@ router.get('/disputes', async (req, res) => {
 router.get('/profile', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+    
     const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
     
-    const result = await pool.query('SELECT id, username, email, role FROM admins WHERE id = $1', [decoded.id]);
+    const result = await pool.query('SELECT id, username, email FROM admins WHERE id = $1', [decoded.id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Admin not found' });
     }
@@ -254,7 +258,7 @@ router.get('/profile', async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Profile error:', error);
-    res.status(500).json({ error: 'Failed to fetch profile' });
+    res.status(500).json({ error: 'Failed to fetch profile', details: error.message });
   }
 });
 
@@ -262,7 +266,7 @@ router.get('/profile', async (req, res) => {
 router.get('/list', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, username, email, role, is_online as "isOnline"
+      SELECT id, username, email, COALESCE(is_online, false) as "isOnline"
       FROM admins 
       ORDER BY username ASC
     `);
@@ -270,7 +274,7 @@ router.get('/list', async (req, res) => {
     res.json({ admins: result.rows });
   } catch (error) {
     console.error('List admins error:', error);
-    res.status(500).json({ error: 'Failed to fetch admins' });
+    res.status(500).json({ error: 'Failed to fetch admins', details: error.message });
   }
 });
 
