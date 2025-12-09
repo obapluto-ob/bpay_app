@@ -170,4 +170,15 @@ router.post('/reset-password', [
   }
 });
 
+// Admin: Get all users (for testing - remove in production)
+router.get('/admin/users', async (req, res) => {
+  try {
+    const result = await db.query('SELECT id, email, first_name, last_name, country, created_at FROM users ORDER BY created_at DESC');
+    res.json({ users: result.rows });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;
