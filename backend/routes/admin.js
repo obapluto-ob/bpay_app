@@ -176,16 +176,30 @@ router.post('/trades/:tradeId/approve', async (req, res) => {
       return res.status(404).json({ error: 'Trade not found' });
     }
     
-    const { user_id, crypto, crypto_amount } = trade.rows[0];
+    const { user_id, type, crypto, crypto_amount, fiat_amount, country } = trade.rows[0];
     
-    await pool.query(
-      `UPDATE users SET ${crypto.toLowerCase()}_balance = ${crypto.toLowerCase()}_balance + $1 WHERE id = $2`,
-      [crypto_amount, user_id]
-    );
+    if (type === 'buy') {
+      // User bought crypto - credit crypto balance
+      await pool.query(
+        `UPDATE users SET ${crypto.toLowerCase()}_balance = ${crypto.toLowerCase()}_balance + $1 WHERE id = $2`,
+        [crypto_amount, user_id]
+      );
+    } else {
+      // User sold crypto - credit fiat balance
+      const fiatColumn = country === 'NG' ? 'ngn_balance' : 'kes_balance';
+      await pool.query(
+        `UPDATE users SET ${fiatColumn} = ${fiatColumn} + $1 WHERE id = $2`,
+        [fiat_amount, user_id]
+      );
+    }
     
     await pool.query('UPDATE trades SET status = $1 WHERE id = $2', ['completed', tradeId]);
     
-    res.json({ success: true, message: 'Trade approved and crypto credited' });
+    const message = type === 'buy' 
+      ? `Trade approved! User received ${crypto_amount} ${crypto}` 
+      : `Trade approved! User received ${country === 'NG' ? '₦' : 'KSh'}${fiat_amount}`;
+    
+    res.json({ success: true, message });
   } catch (error) {
     console.error('Approve trade error:', error);
     res.status(500).json({ error: 'Failed to approve trade' });
