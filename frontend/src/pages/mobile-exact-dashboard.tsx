@@ -11,6 +11,10 @@ const TradeHistoryScreen = () => {
 
   useEffect(() => {
     fetchTrades();
+    
+    // Auto-refresh every 5 seconds
+    const interval = setInterval(fetchTrades, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchTrades = async () => {
@@ -841,14 +845,37 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
     alert(`${label} copied to clipboard`);
   };
 
-  const handleSubmitProof = () => {
+  const handleSubmitProof = async () => {
     if (!amount || !paymentProof) {
       alert('Please fill all fields and upload payment proof');
       return;
     }
     
-    alert(`Your deposit of ${currency}${amount} has been submitted for verification. You will be notified once processed.`);
-    onSuccess();
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/deposit/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          amount: parseFloat(amount),
+          currency: selectedCurrency === 'NG' ? 'NGN' : 'KES',
+          paymentMethod: selectedMethod.type,
+          reference: paymentProof
+        })
+      });
+      
+      if (response.ok) {
+        alert(`Your deposit of ${currency}${amount} has been submitted for verification. You will be notified once processed.`);
+        onSuccess();
+      } else {
+        alert('Failed to submit deposit. Please try again.');
+      }
+    } catch (error) {
+      alert('Network error. Please try again.');
+    }
   };
 
   if (!selectedMethod) {

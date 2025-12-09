@@ -54,11 +54,11 @@ router.post('/create', authenticateToken, async (req, res) => {
     
     // Auto-assign best available admin
     const adminQuery = `
-      SELECT id, name, average_rating, response_time, total_trades 
+      SELECT id, name, COALESCE(average_rating, 5.0) as average_rating, response_time, total_trades 
       FROM admins 
       WHERE is_online = true 
       AND (assigned_region = $1 OR assigned_region = 'ALL')
-      ORDER BY average_rating DESC, response_time ASC, total_trades ASC
+      ORDER BY COALESCE(average_rating, 5.0) DESC, response_time ASC, total_trades ASC
       LIMIT 1
     `;
     const adminResult = await pool.query(adminQuery, [country || 'NG']);
