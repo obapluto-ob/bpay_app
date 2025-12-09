@@ -25,18 +25,10 @@ async function initDatabase() {
       
       const schemaPath = path.join(__dirname, 'src/database/simple_schema.sql');
       if (fs.existsSync(schemaPath)) {
-        // Force complete database reset
-        try {
-          await pool.query('DROP SCHEMA public CASCADE;');
-          await pool.query('CREATE SCHEMA public;');
-          console.log('Schema reset complete');
-        } catch (e) {
-          console.log('Schema reset error (continuing):', e.message);
-        }
-        
+        // Only create tables if they don't exist (preserves data)
         const schema = fs.readFileSync(schemaPath, 'utf8');
         await pool.query(schema);
-        console.log('Database recreated with new schema!');
+        console.log('Database schema initialized (tables created if not exist)');
       }
       
       // Force add avatar column
