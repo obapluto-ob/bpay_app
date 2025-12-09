@@ -1048,9 +1048,6 @@ const CryptoWalletScreenWeb = ({ onClose, onSuccess }: any) => {
       </div>
 
       <div className="bg-white border border-slate-200 p-5 rounded-xl mb-4 shadow-md">
-
-
-      <div className="bg-white border border-slate-200 p-5 rounded-xl mb-4 shadow-md">
         <h4 className="font-bold text-slate-900 mb-2 text-lg">Verify Your Deposit</h4>
         <p className="text-sm text-slate-600 mb-5">
           After sending crypto, paste your transaction details below for instant verification:
