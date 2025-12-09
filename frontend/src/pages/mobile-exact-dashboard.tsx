@@ -2627,5 +2627,3 @@ export default function MobileExactDashboard() {
     </div>
   );
 }
-
-export default MobileExactDashboard;
