@@ -1045,8 +1045,9 @@ const CryptoWalletScreenWeb = ({ onClose, onSuccess }: any) => {
             <p>• After sending, paste transaction hash below for verification</p>
           </div>
         </div>
-        
-        {
+      </div>
+
+      <div className="bg-white border border-slate-200 p-5 rounded-xl mb-4 shadow-md">
 
 
       <div className="bg-white border border-slate-200 p-5 rounded-xl mb-4 shadow-md">
