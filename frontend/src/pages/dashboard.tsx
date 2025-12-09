@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import MobileExactDashboard from './mobile-exact-dashboard';
 
-const API_BASE = 'https://bpay-app.onrender.com/api';
-
-export default MobileExactDashboard;
+export default function Dashboard() {
+  const router = useRouter();
+  
+  useEffect(() => {
+    router.replace('/mobile-exact-dashboard');
+  }, [router]);
+  
+  return null;
+}
 
 // Full mobile functionality with proper sell screen
 function FullMobileDashboard() {
