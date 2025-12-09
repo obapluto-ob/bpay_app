@@ -2395,7 +2395,7 @@ export default function MobileExactDashboard() {
                     : 'text-slate-600'
                 }`}
               >
-                🇳🇬 Nigeria
+                🇳🇬 NGN
               </button>
               <button
                 onClick={() => {
@@ -2408,7 +2408,7 @@ export default function MobileExactDashboard() {
                     : 'text-slate-600'
                 }`}
               >
-                🇰🇪 Kenya
+                🇰🇪 KES
               </button>
             </div>
 
