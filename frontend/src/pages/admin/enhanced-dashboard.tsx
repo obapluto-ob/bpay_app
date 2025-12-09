@@ -303,6 +303,10 @@ export default function EnhancedAdminDashboard() {
                       <div className="text-sm text-gray-600 mb-1">Ethereum (ERC20)</div>
                       <div className="text-xs font-mono text-orange-600 break-all">{depositMethods.crypto.eth.address}</div>
                     </div>
+                    <div className="bg-white p-3 rounded">
+                      <div className="text-sm text-gray-600 mb-1">USDT - Tron (TRC20)</div>
+                      <div className="text-xs font-mono text-orange-600 break-all">{depositMethods.crypto.usdt.address}</div>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -93,6 +93,10 @@ router.get('/deposit-methods', (req, res) => {
       eth: {
         address: '0x0a84b4f12e332324bf5256aaeb57b6751fa8c1fa',
         network: 'Ethereum (ERC20)'
+      },
+      usdt: {
+        address: 'TAMS1NHkMepW46fCFnoyCvvN9Yb9jATXNB',
+        network: 'Tron (TRC20)'
       }
     }
   });

@@ -310,6 +310,34 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
   const [bankDetails, setBankDetails] = useState({ accountName: '', accountNumber: '', bankName: '' });
   const [loading, setLoading] = useState(false);
   const [orderStep, setOrderStep] = useState<'create' | 'escrow' | 'transfer'>('create');
+  const [showBankList, setShowBankList] = useState(false);
+  const [showMobileList, setShowMobileList] = useState(false);
+
+  const nigeriaBanks = [
+    'Access Bank', 'GTBank', 'First Bank', 'UBA', 'Zenith Bank', 'Fidelity Bank',
+    'Union Bank', 'Sterling Bank', 'Stanbic IBTC', 'Polaris Bank', 'Wema Bank',
+    'Ecobank', 'FCMB', 'Heritage Bank', 'Keystone Bank', 'Unity Bank', 'Globus Bank',
+    'Providus Bank', 'Jaiz Bank', 'Suntrust Bank', 'Kuda Bank', 'Opay', 'PalmPay',
+    'Moniepoint', 'VFD Bank', 'Rubies Bank'
+  ];
+
+  const kenyaBanks = [
+    'Equity Bank', 'KCB Bank', 'Cooperative Bank', 'NCBA Bank', 'Absa Bank Kenya',
+    'Standard Chartered', 'Stanbic Bank', 'DTB Bank', 'I&M Bank', 'Family Bank',
+    'Prime Bank', 'Gulf African Bank', 'Sidian Bank', 'Credit Bank', 'Ecobank Kenya',
+    'Guardian Bank', 'National Bank', 'HFC Bank', 'Consolidated Bank', 'M-Pesa'
+  ];
+
+  const nigeriaMobileWallets = [
+    'OPay', 'PalmPay', 'Kuda', 'Moniepoint', 'Paga', 'Eyowo', 'Quickteller', 'Flutterwave'
+  ];
+
+  const kenyaMobileWallets = [
+    'M-Pesa', 'Airtel Money', 'T-Kash', 'Equitel'
+  ];
+
+  const banks = selectedCurrency === 'NGN' ? nigeriaBanks : kenyaBanks;
+  const mobileWallets = selectedCurrency === 'NGN' ? nigeriaMobileWallets : kenyaMobileWallets;
 
   const baseRate = (usdRates[selectedCrypto] || 0) * (selectedCurrency === 'NGN' ? exchangeRates.USDNGN : exchangeRates.USDKES);
   const sellMargin = 0.02;
@@ -475,13 +503,48 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
           onChange={(e) => setBankDetails(prev => ({ ...prev, accountNumber: e.target.value }))}
           className="w-full p-3 border border-slate-300 rounded-xl"
         />
-        <input
-          type="text"
-          placeholder={paymentMethod === 'bank' ? 'Bank Name' : (selectedCurrency === 'NGN' ? 'Wallet Provider (OPay, PalmPay, etc.)' : 'Provider (M-Pesa, Airtel, etc.)')}
-          value={bankDetails.bankName}
-          onChange={(e) => setBankDetails(prev => ({ ...prev, bankName: e.target.value }))}
-          className="w-full p-3 border border-slate-300 rounded-xl"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            placeholder={paymentMethod === 'bank' ? 'Select Bank' : 'Select Wallet Provider'}
+            value={bankDetails.bankName}
+            onChange={(e) => setBankDetails(prev => ({ ...prev, bankName: e.target.value }))}
+            onFocus={() => paymentMethod === 'bank' ? setShowBankList(true) : setShowMobileList(true)}
+            className="w-full p-3 border border-slate-300 rounded-xl"
+          />
+          {showBankList && paymentMethod === 'bank' && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+              {banks.filter(bank => bank.toLowerCase().includes(bankDetails.bankName.toLowerCase())).map(bank => (
+                <button
+                  key={bank}
+                  onClick={() => {
+                    setBankDetails(prev => ({ ...prev, bankName: bank }));
+                    setShowBankList(false);
+                  }}
+                  className="w-full text-left p-3 hover:bg-slate-100 border-b border-slate-100"
+                >
+                  {bank}
+                </button>
+              ))}
+            </div>
+          )}
+          {showMobileList && paymentMethod === 'mobile' && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+              {mobileWallets.filter(wallet => wallet.toLowerCase().includes(bankDetails.bankName.toLowerCase())).map(wallet => (
+                <button
+                  key={wallet}
+                  onClick={() => {
+                    setBankDetails(prev => ({ ...prev, bankName: wallet }));
+                    setShowMobileList(false);
+                  }}
+                  className="w-full text-left p-3 hover:bg-slate-100 border-b border-slate-100"
+                >
+                  {wallet}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {orderStep === 'create' && (
