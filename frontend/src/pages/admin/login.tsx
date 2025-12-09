@@ -39,72 +39,77 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-4xl text-white">🔐</span>
+    <div className="min-h-screen bg-[#1a365d]">
+      <div className="flex flex-col min-h-screen">
+        <div className="text-center pt-8 md:pt-16 pb-6 md:pb-8 px-4">
+          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full mx-auto mb-4 md:mb-6 shadow-lg overflow-hidden">
+            <img 
+              src="/5782897843587714011_120.jpg" 
+              alt="BPay Logo" 
+              className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-slate-900">Admin Portal</h1>
-          <p className="text-slate-600 mt-2">BPay Administration System</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">BPay Admin</h1>
+          <p className="text-base md:text-lg text-slate-300 mb-2">Administration Portal</p>
+          <div className="inline-block bg-red-500 text-white px-4 py-1 rounded-full text-xs font-semibold">
+            ADMIN ACCESS ONLY
+          </div>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-              <p className="text-red-800 text-sm">{error}</p>
+        <div className="flex-1 bg-[#f8fafc] rounded-t-3xl p-4 md:p-6">
+          <div className="max-w-md mx-auto w-full">
+            <h2 className="text-xl md:text-2xl font-bold text-[#1a365d] text-center mb-6 md:mb-8">
+              Admin Login
+            </h2>
+            
+            <form onSubmit={handleLogin} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
+
+              <input
+                type="email"
+                placeholder="Admin Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
+              />
+              
+              <input
+                type="password"
+                placeholder="Admin Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full p-3 md:p-4 border border-gray-300 rounded-xl text-base md:text-lg focus:border-[#f59e0b] focus:outline-none transition-colors"
+              />
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#f59e0b] text-white p-3 md:p-4 rounded-xl text-base md:text-lg font-bold mt-6 hover:bg-[#d97706] disabled:opacity-50 transition-colors shadow-lg"
+              >
+                {loading ? 'Logging in...' : 'Login to Dashboard'}
+              </button>
+            </form>
+
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="bg-yellow-50 p-4 rounded-xl border-l-4 border-yellow-500">
+                <p className="text-sm text-yellow-800 font-semibold mb-2">Admin Access Only</p>
+                <p className="text-xs text-yellow-700">This portal is restricted to authorized administrators. User accounts cannot access this area.</p>
+              </div>
             </div>
-          )}
 
-          <div>
-            <label className="block text-sm font-bold text-slate-900 mb-2">
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@bpay.com"
-              required
-              className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-slate-900 mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-orange-500 text-white py-3 rounded-lg font-bold disabled:opacity-50 hover:bg-orange-600 transition-colors"
-          >
-            {loading ? 'Logging in...' : 'Login to Dashboard'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-slate-600">
-            Secure admin access only
-          </p>
-        </div>
-
-        <div className="mt-8 bg-blue-50 p-4 rounded-lg">
-          <h3 className="font-bold text-blue-800 mb-2">Demo Credentials</h3>
-          <div className="text-sm text-blue-700 space-y-1">
-            <p><strong>Super Admin:</strong></p>
-            <p>Email: admin@bpay.com</p>
-            <p>Password: admin123</p>
+            <div className="mt-6 bg-blue-50 p-4 rounded-xl">
+              <h3 className="font-bold text-blue-800 mb-2 text-sm">Demo Credentials</h3>
+              <div className="text-xs text-blue-700 space-y-1">
+                <p><strong>Email:</strong> admin@bpay.com</p>
+                <p><strong>Password:</strong> admin123</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
