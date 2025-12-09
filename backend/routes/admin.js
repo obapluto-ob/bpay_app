@@ -53,10 +53,9 @@ router.get('/stats', async (req, res) => {
     let recentOrders = { rows: [] };
     try {
       recentOrders = await pool.query(`
-        SELECT t.*, 
-               COALESCE(t.order_id, LPAD(FLOOR(RANDOM() * 1000000000)::TEXT, 9, '0')) as order_id,
-               COALESCE(u.first_name || ' ' || u.last_name, 'Unknown User') as user_name, 
-               COALESCE(u.email, 'no-email@bpay.com') as user_email
+        SELECT t.id, t.type, t.from_currency as crypto, t.to_amount as fiat_amount, 
+               t.status, t.created_at, t.payment_method as country,
+               u.first_name, u.last_name, u.email, u.country
         FROM trades t
         LEFT JOIN users u ON t.user_id = u.id
         ORDER BY t.created_at DESC
@@ -145,17 +144,15 @@ router.get('/performance', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
-        a.id, 
-        a.name, 
-        a.email,
-        COALESCE(a.average_rating, 0) as average_rating, 
-        COALESCE(a.total_trades, 0) as total_trades, 
-        COALESCE(a.response_time, 0) as response_time,
-        COUNT(t.id) as pending_trades
-      FROM admins a
-      LEFT JOIN trades t ON t.assigned_admin = a.id AND t.status = 'pending'
-      GROUP BY a.id, a.name, a.email, a.average_rating, a.total_trades, a.response_time
-      ORDER BY a.average_rating DESC
+        id, 
+        username as name, 
+        email,
+        0 as average_rating, 
+        0 as total_trades, 
+        0 as response_time,
+        0 as pending_trades
+      FROM admins
+      ORDER BY created_at DESC
     `);
     
     res.json({ admins: result.rows || [] });
