@@ -91,7 +91,12 @@ export default function SuperAdminDashboard() {
           <button onClick={() => router.push('/admin/kyc-verification')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">KYC</button>
           <button onClick={() => router.push('/admin/analytics')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">Analytics</button>
           <button onClick={() => router.push('/admin/admin-chat')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">Chat</button>
+          <button onClick={() => router.push('/admin/deposits')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold relative hover:bg-opacity-30 transition-all">
+            Deposits
+            {stats.pendingDeposits > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">{stats.pendingDeposits}</span>}
+          </button>
           <button onClick={() => router.push('/admin/withdrawals')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">Withdrawals</button>
+          <button onClick={() => router.push('/admin/system-health')} className="bg-purple-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-purple-600 shadow-lg transition-all">System Health</button>
           <button onClick={() => router.push('/admin/create-admin')} className="bg-green-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-green-600 shadow-lg transition-all">+ New Admin</button>
         </div>
 
