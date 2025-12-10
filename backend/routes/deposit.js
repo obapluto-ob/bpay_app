@@ -26,6 +26,20 @@ const authenticateToken = (req, res, next) => {
 // Create deposit
 router.post('/create', authenticateToken, async (req, res) => {
   try {
+    // Ensure deposits table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS deposits (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        amount DECIMAL(20,8) NOT NULL,
+        currency VARCHAR(10) NOT NULL,
+        payment_method VARCHAR(50),
+        reference TEXT,
+        status VARCHAR(20) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    
     const { amount, currency, paymentMethod, reference, paymentProof } = req.body;
     const userId = req.user.id;
     

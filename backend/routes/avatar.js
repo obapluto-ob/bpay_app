@@ -1,12 +1,36 @@
 const express = require('express');
-const db = require('../config/database');
-const auth = require('../middleware/auth');
+const { Pool } = require('pg');
 const router = express.Router();
+
+// Database connection
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+// Auth middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+  
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+};
 
 console.log('Avatar routes loaded, JWT_SECRET exists:', !!process.env.JWT_SECRET);
 
 // Upload avatar (base64)
-router.post('/upload', auth, async (req, res) => {
+router.post('/upload', authenticateToken, async (req, res) => {
   try {
     console.log('Avatar upload request received');
     const { avatar } = req.body;
@@ -25,7 +49,7 @@ router.post('/upload', auth, async (req, res) => {
 
     // Ensure avatar column exists
     try {
-      await db.query(`
+      await pool.query(`
         DO $$ 
         BEGIN 
           IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'avatar') THEN
@@ -38,7 +62,7 @@ router.post('/upload', auth, async (req, res) => {
     }
 
     // Store base64 avatar in database
-    const result = await db.query(
+    const result = await pool.query(
       'UPDATE users SET avatar = $1 WHERE id = $2 RETURNING id',
       [avatar, userId]
     );
@@ -60,7 +84,7 @@ router.post('/upload', auth, async (req, res) => {
 });
 
 // Get avatar
-router.get('/', auth, async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     console.log('Get avatar request received');
     const userId = req.user?.id;
@@ -71,7 +95,7 @@ router.get('/', auth, async (req, res) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     
-    const result = await db.query('SELECT avatar FROM users WHERE id = $1', [userId]);
+    const result = await pool.query('SELECT avatar FROM users WHERE id = $1', [userId]);
     console.log('Database query result:', result.rowCount);
     
     if (result.rows.length === 0) {
