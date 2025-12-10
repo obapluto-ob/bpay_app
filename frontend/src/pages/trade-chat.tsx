@@ -158,6 +158,17 @@ export default function TradeChat() {
               }`}
             >
               <p className="text-sm">{msg.message}</p>
+              {msg.imageData && (
+                <div className="mt-2">
+                  <img 
+                    src={msg.imageData} 
+                    alt="Payment proof" 
+                    className="max-w-full h-auto rounded-lg cursor-pointer border-2 border-white"
+                    onClick={() => window.open(msg.imageData, '_blank')}
+                  />
+                  <p className="text-xs mt-1 opacity-70">Click to view full size</p>
+                </div>
+              )}
               <p className="text-xs opacity-70 mt-1">
                 {new Date(msg.timestamp).toLocaleTimeString()}
               </p>

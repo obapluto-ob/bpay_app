@@ -259,6 +259,7 @@ router.get('/:id/chat', authenticateToken, async (req, res) => {
       id: msg.id,
       sender: msg.sender_type,
       message: msg.message,
+      imageData: msg.image_data,
       timestamp: msg.created_at
     }));
     
@@ -272,14 +273,14 @@ router.get('/:id/chat', authenticateToken, async (req, res) => {
 // Send chat message
 router.post('/:id/chat', authenticateToken, async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, imageData } = req.body;
     const tradeId = req.params.id;
     const userId = req.user.id;
     
     const msgId = 'msg_' + Date.now();
     await pool.query(
-      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
-      [msgId, tradeId, userId, 'user', message]
+      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, image_data, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
+      [msgId, tradeId, userId, 'user', message, imageData || null]
     );
     
     res.json({ success: true, messageId: msgId });

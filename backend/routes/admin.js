@@ -435,6 +435,7 @@ router.get('/trades/:tradeId/chat', async (req, res) => {
       id: msg.id,
       sender: msg.sender_type,
       message: msg.message,
+      imageData: msg.image_data,
       timestamp: msg.created_at
     }));
     
@@ -448,7 +449,7 @@ router.get('/trades/:tradeId/chat', async (req, res) => {
 // Send chat message (admin to user)
 router.post('/trades/:tradeId/chat', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, imageData } = req.body;
     const { tradeId } = req.params;
     
     const token = req.headers.authorization?.split(' ')[1];
@@ -458,8 +459,8 @@ router.post('/trades/:tradeId/chat', async (req, res) => {
     
     const msgId = 'msg_' + Date.now();
     await pool.query(
-      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
-      [msgId, tradeId, adminId, 'admin', message]
+      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, image_data, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
+      [msgId, tradeId, adminId, 'admin', message, imageData || null]
     );
     
     res.json({ success: true, messageId: msgId });
