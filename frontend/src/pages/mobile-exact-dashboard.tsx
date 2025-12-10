@@ -184,7 +184,7 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
   const [timeRemaining, setTimeRemaining] = useState(900);
   const [orderId, setOrderId] = useState<string | null>(null);
 
-  const baseRate = (usdRates[selectedCrypto] || 0) * (selectedCurrency === 'NGN' ? exchangeRates.USDNGN : exchangeRates.USDKES);
+  const baseRate = (usdRates[selectedCrypto]?.price || 0) * (selectedCurrency === 'NGN' ? exchangeRates.USDNGN : exchangeRates.USDKES);
   const buyMargin = 0.02;
   const currentRate = lockedRate || Math.round(baseRate * (1 + buyMargin));
   const cryptoAmount = parseFloat(amount || '0') / currentRate;
@@ -509,7 +509,7 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
   const banks = selectedCurrency === 'NGN' ? nigeriaBanks : kenyaBanks;
   const mobileWallets = selectedCurrency === 'NGN' ? nigeriaMobileWallets : kenyaMobileWallets;
 
-  const baseRate = (usdRates[selectedCrypto] || 0) * (selectedCurrency === 'NGN' ? exchangeRates.USDNGN : exchangeRates.USDKES);
+  const baseRate = (usdRates[selectedCrypto]?.price || 0) * (selectedCurrency === 'NGN' ? exchangeRates.USDNGN : exchangeRates.USDKES);
   const sellMargin = 0.02;
   const currentRate = Math.round(baseRate * (1 - sellMargin));
   const fiatAmount = parseFloat(amount || '0') * currentRate;
