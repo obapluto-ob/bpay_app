@@ -172,7 +172,7 @@ export default function TradeChat() {
           {!paymentProofUploaded ? (
             <div className="flex space-x-2">
               <label className="flex-1 bg-blue-500 text-white py-2 rounded-lg font-bold text-sm text-center cursor-pointer">
-                📷 Take Photo
+                Take Photo
                 <input
                   type="file"
                   accept="image/*"
@@ -212,7 +212,7 @@ export default function TradeChat() {
                 />
               </label>
               <label className="flex-1 bg-green-500 text-white py-2 rounded-lg font-bold text-sm text-center cursor-pointer">
-                📁 Choose Photo
+                Choose Photo
                 <input
                   type="file"
                   accept="image/*"
