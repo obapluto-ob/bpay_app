@@ -846,8 +846,8 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
   };
 
   const handleSubmitProof = async () => {
-    if (!amount || !paymentProof) {
-      alert('Please fill all fields and upload payment proof');
+    if (!amount || (!paymentProof && !paymentProof.startsWith('data:image'))) {
+      alert('Please fill amount and provide either payment reference or upload receipt image');
       return;
     }
     
@@ -1034,56 +1034,75 @@ const DepositScreenWeb = ({ selectedCurrency, onClose, onSuccess }: any) => {
               </div>
               
               <div>
-                <label className="block text-sm font-bold text-slate-900 mb-2">Payment Reference/Receipt</label>
-                <textarea
-                  placeholder="Paste transaction reference, receipt number, or M-Pesa confirmation message"
+                <label className="block text-sm font-bold text-slate-900 mb-2">Payment Reference (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="Transaction reference, receipt number, or M-Pesa confirmation code"
                   value={paymentProof}
                   onChange={(e) => setPaymentProof(e.target.value)}
-                  rows={4}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:border-orange-500 focus:outline-none"
+                  className="w-full p-3 border border-slate-300 rounded-lg focus:border-orange-500 focus:outline-none mb-4"
                 />
               </div>
               
-              <div className="flex space-x-2">
-                <label className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-lg font-semibold border-2 border-dashed border-slate-300 hover:bg-slate-200 transition-colors text-center cursor-pointer">
-                  📷 Take Photo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          setPaymentProof(event.target?.result as string);
-                          alert('Photo captured successfully!');
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    className="hidden"
-                  />
-                </label>
-                <label className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-lg font-semibold border-2 border-dashed border-slate-300 hover:bg-slate-200 transition-colors text-center cursor-pointer">
-                  📁 Choose File
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          setPaymentProof(event.target?.result as string);
-                          alert('File selected successfully!');
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    className="hidden"
-                  />
-                </label>
+              <div>
+                <label className="block text-sm font-bold text-slate-900 mb-2">Upload Receipt Image</label>
+                {!paymentProof.startsWith('data:image') ? (
+                  <div className="flex space-x-2">
+                    <label className="flex-1 bg-slate-100 text-slate-700 py-4 rounded-lg font-semibold border-2 border-dashed border-slate-300 hover:bg-slate-200 transition-colors text-center cursor-pointer">
+                      📷 Take Photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              setPaymentProof(event.target?.result as string);
+                              alert('Photo captured successfully!');
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    <label className="flex-1 bg-slate-100 text-slate-700 py-4 rounded-lg font-semibold border-2 border-dashed border-slate-300 hover:bg-slate-200 transition-colors text-center cursor-pointer">
+                      📁 Choose File
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              setPaymentProof(event.target?.result as string);
+                              alert('File selected successfully!');
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <img 
+                      src={paymentProof} 
+                      alt="Payment Receipt" 
+                      className="w-48 h-48 object-cover rounded-lg mx-auto mb-3"
+                    />
+                    <button
+                      onClick={() => setPaymentProof('')}
+                      className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors"
+                    >
+                      ✕ Remove Image
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2577,16 +2596,7 @@ export default function MobileExactDashboard() {
                     <span className="text-xl text-orange-500 mb-1">+</span>
                     <span className="text-xs text-slate-900 font-semibold">Deposit Crypto</span>
                   </button>
-                  <button 
-                    onClick={() => {
-                      setShowWalletScreen(true);
-                      setActiveTab('wallet');
-                    }}
-                    className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"
-                  >
-                    <span className="text-xl text-orange-500 mb-1">💼</span>
-                    <span className="text-xs text-slate-900 font-semibold">Wallet</span>
-                  </button>
+
                   <button 
                     onClick={() => setShowConvertScreen(true)}
                     className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"

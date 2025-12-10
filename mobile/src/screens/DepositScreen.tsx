@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, TextInput, Clipboard } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, TextInput, Clipboard, Image } from 'react-native';
+import { launchImageLibrary, launchCamera, ImagePickerResponse, MediaType } from 'react-native-image-picker';
 import { DepositMethod } from '../types';
 
 interface Props {
@@ -74,7 +75,8 @@ const mpesaDetails = {
 export const DepositScreen: React.FC<Props> = ({ userCountry, onClose, onSuccess }) => {
   const [selectedMethod, setSelectedMethod] = useState<DepositMethod | null>(null);
   const [amount, setAmount] = useState('');
-  const [paymentProof, setPaymentProof] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
 
   const availableMethods = depositMethods.filter(method => method.country === userCountry);
@@ -86,9 +88,34 @@ export const DepositScreen: React.FC<Props> = ({ userCountry, onClose, onSuccess
     Alert.alert('Copied!', `${label} copied to clipboard`);
   };
 
+  const handleImagePicker = (type: 'camera' | 'library') => {
+    const options = {
+      mediaType: 'photo' as MediaType,
+      quality: 0.8,
+      maxWidth: 1024,
+      maxHeight: 1024,
+    };
+
+    const callback = (response: ImagePickerResponse) => {
+      if (response.didCancel || response.errorMessage) {
+        return;
+      }
+      
+      if (response.assets && response.assets[0]) {
+        setUploadedImage(response.assets[0].uri || null);
+      }
+    };
+
+    if (type === 'camera') {
+      launchCamera(options, callback);
+    } else {
+      launchImageLibrary(options, callback);
+    }
+  };
+
   const handleSubmitProof = () => {
-    if (!amount || !paymentProof) {
-      Alert.alert('Error', 'Please fill all fields and upload payment proof');
+    if (!amount || (!paymentReference && !uploadedImage)) {
+      Alert.alert('Error', 'Please fill amount and provide either payment reference or upload receipt image');
       return;
     }
     
@@ -265,24 +292,41 @@ export const DepositScreen: React.FC<Props> = ({ userCountry, onClose, onSuccess
                 keyboardType="numeric"
               />
               
-              <Text style={styles.fieldLabel}>Payment Reference/Receipt</Text>
+              <Text style={styles.fieldLabel}>Payment Reference (Optional)</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Paste transaction reference, receipt number, or M-Pesa confirmation message"
-                value={paymentProof}
-                onChangeText={setPaymentProof}
-                multiline
-                numberOfLines={4}
+                style={styles.input}
+                placeholder="Transaction reference, receipt number, or M-Pesa confirmation code"
+                value={paymentReference}
+                onChangeText={setPaymentReference}
               />
               
-              <View style={styles.uploadButtons}>
-                <TouchableOpacity style={styles.uploadButton}>
-                  <Text style={styles.uploadButtonText}>📷 Take Photo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.uploadButton}>
-                  <Text style={styles.uploadButtonText}>📁 Choose File</Text>
-                </TouchableOpacity>
-              </View>
+              <Text style={styles.fieldLabel}>Upload Receipt Image</Text>
+              {!uploadedImage ? (
+                <View style={styles.uploadButtons}>
+                  <TouchableOpacity 
+                    style={styles.uploadButton}
+                    onPress={() => handleImagePicker('camera')}
+                  >
+                    <Text style={styles.uploadButtonText}>📷 Take Photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.uploadButton}
+                    onPress={() => handleImagePicker('library')}
+                  >
+                    <Text style={styles.uploadButtonText}>📁 Choose File</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.imagePreview}>
+                  <Image source={{ uri: uploadedImage }} style={styles.previewImage} />
+                  <TouchableOpacity 
+                    style={styles.removeImageButton}
+                    onPress={() => setUploadedImage(null)}
+                  >
+                    <Text style={styles.removeImageText}>✕ Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
 
             <TouchableOpacity 
@@ -641,20 +685,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginTop: 10,
+    marginBottom: 16,
   },
   uploadButton: {
     flex: 1,
     backgroundColor: '#f1f5f9',
-    padding: 12,
+    padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#d1d5db',
     borderStyle: 'dashed',
   },
   uploadButtonText: {
     color: '#64748b',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  imagePreview: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  previewImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  removeImageButton: {
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  removeImageText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   submitButton: {
     backgroundColor: '#10b981',
