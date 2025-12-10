@@ -422,4 +422,51 @@ router.post('/deposits/:id/reject', async (req, res) => {
   }
 });
 
+// Get trade chat messages (admin view)
+router.get('/trades/:tradeId/chat', async (req, res) => {
+  try {
+    const { tradeId } = req.params;
+    const result = await pool.query(
+      'SELECT * FROM chat_messages WHERE trade_id = $1 ORDER BY created_at ASC',
+      [tradeId]
+    );
+    
+    const messages = result.rows.map(msg => ({
+      id: msg.id,
+      sender: msg.sender_type,
+      message: msg.message,
+      timestamp: msg.created_at
+    }));
+    
+    res.json({ messages });
+  } catch (error) {
+    console.error('Admin get chat error:', error);
+    res.status(500).json({ error: 'Failed to fetch chat' });
+  }
+});
+
+// Send chat message (admin to user)
+router.post('/trades/:tradeId/chat', async (req, res) => {
+  try {
+    const { message } = req.body;
+    const { tradeId } = req.params;
+    
+    const token = req.headers.authorization?.split(' ')[1];
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+    const adminId = decoded.id;
+    
+    const msgId = 'msg_' + Date.now();
+    await pool.query(
+      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+      [msgId, tradeId, adminId, 'admin', message]
+    );
+    
+    res.json({ success: true, messageId: msgId });
+  } catch (error) {
+    console.error('Admin send chat error:', error);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
 module.exports = router;
