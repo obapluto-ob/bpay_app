@@ -1174,7 +1174,7 @@ const CryptoWalletScreenWeb = ({ onClose, onSuccess }: any) => {
             }`}
           >
             <div className="w-10 h-10 flex items-center justify-center">
-              <span className="text-3xl">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
+              <img src={`https://cryptologos.cc/logos/${crypto === 'BTC' ? 'bitcoin' : crypto === 'ETH' ? 'ethereum' : 'tether'}-${crypto.toLowerCase()}-logo.png`} alt={crypto} className="w-10 h-10" />
             </div>
             <div className="flex-1 text-left">
               <h4 className="font-bold text-slate-900 text-lg">{crypto} Wallet</h4>
@@ -2575,17 +2575,17 @@ export default function MobileExactDashboard() {
                     className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"
                   >
                     <span className="text-xl text-orange-500 mb-1">+</span>
-                    <span className="text-xs text-slate-900 font-semibold">Deposit</span>
+                    <span className="text-xs text-slate-900 font-semibold">Deposit Crypto</span>
                   </button>
                   <button 
                     onClick={() => {
-                      setShowWalletScreen(true);
-                      setActiveTab('wallet');
+                      setShowConvertScreen(true);
+                      setActiveTab('convert');
                     }}
                     className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"
                   >
-                    <span className="text-xl text-orange-500 mb-1">₿</span>
-                    <span className="text-xs text-slate-900 font-semibold">Wallet</span>
+                    <span className="text-xl text-orange-500 mb-1">↔</span>
+                    <span className="text-xs text-slate-900 font-semibold">Convert</span>
                   </button>
                   <button 
                     onClick={() => setShowConvertScreen(true)}
