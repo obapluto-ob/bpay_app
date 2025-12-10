@@ -48,13 +48,36 @@ async function initDatabase() {
         }
       } catch (error) {
         console.log('Avatar column migration error:', error.message);
-        // Try to add it anyway
-        try {
-          await pool.query('ALTER TABLE users ADD COLUMN avatar TEXT;');
-          console.log('Avatar column added on retry!');
-        } catch (retryError) {
-          console.log('Avatar column retry failed:', retryError.message);
-        }
+      }
+      
+      // Add chat tables
+      try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS chat_messages (
+            id SERIAL PRIMARY KEY,
+            trade_id VARCHAR(255) NOT NULL,
+            sender_id VARCHAR(255) NOT NULL,
+            sender_type VARCHAR(20) NOT NULL CHECK (sender_type IN ('user', 'admin')),
+            message TEXT NOT NULL,
+            message_type VARCHAR(20) DEFAULT 'text' CHECK (message_type IN ('text', 'image', 'system')),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS admin_chat_messages (
+            id SERIAL PRIMARY KEY,
+            sender_id VARCHAR(255) NOT NULL,
+            receiver_id VARCHAR(255) NOT NULL,
+            message TEXT NOT NULL,
+            read_at TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        
+        console.log('Chat tables created successfully!');
+      } catch (error) {
+        console.log('Chat tables already exist or error:', error.message);
       }
       await pool.end();
     } catch (error) {
@@ -101,6 +124,7 @@ app.use('/api/referrals', require('./routes/referrals'));
 app.use('/api/withdrawals', require('./routes/withdrawals'));
 app.use('/api/system', require('./routes/system-health'));
 app.use('/api/chat', require('./routes/chat'));
+app.use('/api/admin', require('./routes/admin-assignment'));
 
 // Health check
 app.get('/health', (req, res) => {

@@ -4,6 +4,7 @@ import { apiService } from '../services/api';
 import { CryptoRate } from '../types';
 import { CryptoIcon } from '../components/CryptoIcon';
 import { storage } from '../utils/storage';
+import { TradeChatScreen } from './TradeChatScreen';
 import * as ImagePicker from 'expo-image-picker';
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
   onLockRate: (crypto: string, type: 'buy') => number;
   userBalance: { NGN: number; KES: number };
   onNotification: (message: string, type: 'success' | 'warning' | 'info') => void;
+  onOpenChat?: (trade: any) => void;
 }
 
 export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRates, token, userCountry, onClose, onSuccess, onLockRate, userBalance, onNotification }) => {
@@ -32,6 +34,8 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [paymentProof, setPaymentProof] = useState<string | null>(null);
   const [assignedAdmin, setAssignedAdmin] = useState<any>(null);
+  const [showChat, setShowChat] = useState(false);
+  const [currentTrade, setCurrentTrade] = useState<any>(null);
   
   // Admin assignment logic
   const getBestAvailableAdmin = async () => {
@@ -669,11 +673,13 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
               
               // Trade is already saved via API, no need for local storage
               
-              // Here you would navigate to TradeChatScreen with tradeData
-              Alert.alert(
-                'Chat with Admin',
-                `Chat will open to communicate with ${assignedAdmin.name} (${assignedAdmin.email}) about your payment verification.`,
-                [{ text: 'OK' }]
+              // Open chat screen
+              setCurrentTrade(tradeData);
+              setShowChat(true);
+              
+              onNotification(
+                `Chat opened with ${assignedAdmin.name} - communicate about your payment verification`,
+                'info'
               );
             }}
           >
@@ -713,6 +719,24 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
         }
       </Text>
       </ScrollView>
+      
+      {/* Chat Modal */}
+      {showChat && currentTrade && (
+        <TradeChatScreen
+          trade={currentTrade}
+          userToken={token}
+          onClose={() => {
+            setShowChat(false);
+            setCurrentTrade(null);
+          }}
+          onRateAdmin={(rating) => {
+            onNotification(`Rated admin ${rating} stars - thank you for your feedback!`, 'success');
+          }}
+          onRaiseDispute={(reason) => {
+            onNotification(`Dispute raised: ${reason} - admin will review shortly`, 'warning');
+          }}
+        />
+      )}
     </View>
   );
 };

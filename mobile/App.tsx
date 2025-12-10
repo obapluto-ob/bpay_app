@@ -595,6 +595,9 @@ export default function App() {
         
         // Initialize WebSocket connection
         websocketService.connect(result.token, 'user');
+        
+        // Add welcome message about chat
+        addNotification('💬 Real-time chat enabled - communicate instantly with admins during trades!', 'info');
       }
     } catch (error) {
       Alert.alert('Error', 'Login failed. Please try again.');
@@ -1093,6 +1096,9 @@ export default function App() {
             }}
             onLockRate={lockRateForTrade}
             onNotification={addNotification}
+            onOpenChat={(trade) => {
+              addNotification(`💬 Chat opened for sell order ${trade.id}`, 'info');
+            }}
           />
         </Modal>
         
@@ -1115,6 +1121,9 @@ export default function App() {
             }}
             onLockRate={lockRateForTrade}
             onNotification={addNotification}
+            onOpenChat={(trade) => {
+              addNotification(`Chat opened for trade ${trade.id}`, 'info');
+            }}
           />
         </Modal>
         
@@ -1161,10 +1170,14 @@ export default function App() {
         <Modal visible={showDepositScreen} animationType="slide">
           <DepositScreen
             userCountry={activeCountry}
+            userToken={userToken}
             onClose={() => setShowDepositScreen(false)}
             onSuccess={() => {
               setShowDepositScreen(false);
-              addNotification('Fiat deposit submitted - pending verification', 'info');
+              addNotification('💰 Fiat deposit submitted - admin will verify shortly', 'info');
+            }}
+            onOpenChat={(deposit) => {
+              addNotification(`💬 Chat opened for deposit verification`, 'info');
             }}
           />
         </Modal>
@@ -1176,9 +1189,12 @@ export default function App() {
             onSuccess={() => {
               setShowCryptoWallet(false);
               loadBalance(userToken);
-              addNotification('Crypto deposit verified and added to wallet', 'success');
+              addNotification('✨ Crypto deposit detected and added to wallet', 'success');
             }}
             userToken={userToken}
+            onOpenChat={(deposit) => {
+              addNotification(`💬 Chat available for deposit support`, 'info');
+            }}
           />
         </Modal>
         
