@@ -2633,7 +2633,7 @@ export default function MobileExactDashboard() {
             </div>
             
             <div className="space-y-2">
-              {Object.entries(usdRates).map(([crypto, rateData]) => {
+              {Object.entries(usdRates).filter(([crypto]) => ['BTC', 'ETH', 'USDT', 'XRP', 'SOL'].includes(crypto)).map(([crypto, rateData]) => {
                 const cryptoName = crypto === 'BTC' ? 'Bitcoin' : crypto === 'ETH' ? 'Ethereum' : crypto === 'USDT' ? 'Tether' : crypto === 'XRP' ? 'Ripple' : 'Solana';
                 const logoName = crypto === 'BTC' ? 'bitcoin' : crypto === 'ETH' ? 'ethereum' : crypto === 'USDT' ? 'tether' : crypto === 'XRP' ? 'xrp' : 'solana';
                 const change = rateData?.change || 0;
