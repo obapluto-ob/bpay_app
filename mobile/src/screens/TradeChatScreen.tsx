@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Modal, Image } from 'react-native';
+import { useChat } from '../hooks/useChat';
 
 interface ChatMessage {
   id: string;
@@ -40,7 +41,7 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
   onRateAdmin,
   onRaiseDispute
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>(trade.chatMessages || []);
+  const { messages, sendMessage, isConnected, isLoading } = useChat(trade.id, userToken);
   const [newMessage, setNewMessage] = useState('');
   const [showRating, setShowRating] = useState(false);
   const [showDispute, setShowDispute] = useState(false);
@@ -55,30 +56,11 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
     }, 100);
   }, [messages]);
 
-  const sendMessage = () => {
+  const handleSendMessage = () => {
     if (!newMessage.trim()) return;
 
-    const message: ChatMessage = {
-      id: `msg_${Date.now()}`,
-      senderId: 'user',
-      senderName: 'You',
-      senderType: 'user',
-      message: newMessage,
-      timestamp: new Date().toISOString(),
-      type: 'text'
-    };
-
-    setMessages(prev => [...prev, message]);
+    sendMessage(newMessage);
     setNewMessage('');
-
-    // Save to localStorage (simulate API call)
-    const trades = JSON.parse(localStorage.getItem('bpayTrades') || '[]');
-    const updatedTrades = trades.map((t: any) => 
-      t.id === trade.id 
-        ? { ...t, chatMessages: [...(t.chatMessages || []), message] }
-        : t
-    );
-    localStorage.setItem('bpayTrades', JSON.stringify(updatedTrades));
   };
 
   const submitRating = () => {
@@ -122,6 +104,9 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
           <Text style={styles.headerTitle}>Trade Chat</Text>
           <Text style={styles.headerSubtitle}>
             {trade.type.toUpperCase()} {trade.amount} {trade.crypto}
+          </Text>
+          <Text style={[styles.connectionStatus, isConnected ? styles.connected : styles.disconnected]}>
+            {isConnected ? '🟢 Live' : '🔴 Offline'}
           </Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
@@ -198,11 +183,11 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
           maxLength={500}
         />
         <TouchableOpacity 
-          style={styles.sendButton}
-          onPress={sendMessage}
+          style={[styles.sendButton, !isConnected && styles.disconnectedButton]}
+          onPress={handleSendMessage}
           disabled={!newMessage.trim()}
         >
-          <Text style={styles.sendText}>Send</Text>
+          <Text style={styles.sendText}>{isConnected ? 'Send' : 'Offline'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -577,5 +562,20 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  connectionStatus: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  connected: {
+    color: '#10b981',
+  },
+  disconnected: {
+    color: '#ef4444',
+  },
+  disconnectedButton: {
+    backgroundColor: '#6b7280',
+    opacity: 0.7,
   },
 });

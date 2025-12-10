@@ -18,6 +18,7 @@ import { AdminPendingTradesScreen } from './src/screens/AdminPendingTradesScreen
 import { AdminRateManagementScreen } from './src/screens/AdminRateManagementScreen';
 import { apiService } from './src/services/api';
 import { storage } from './src/utils/storage';
+import { websocketService } from './src/services/websocket';
 import { User, Balance, CryptoRate, Notification, CryptoWallet } from './src/types';
 
 const LoginScreen: React.FC<{
@@ -334,6 +335,9 @@ export default function App() {
           loadBalance(savedToken);
           loadUserProfile(savedToken);
           loadCryptoWallets(savedToken);
+          
+          // Initialize WebSocket connection
+          websocketService.connect(savedToken, 'user');
         }
       } catch (error) {
         console.log('No saved login found');
@@ -588,6 +592,9 @@ export default function App() {
         loadBalance(result.token);
         loadUserProfile(result.token);
         loadCryptoWallets(result.token);
+        
+        // Initialize WebSocket connection
+        websocketService.connect(result.token, 'user');
       }
     } catch (error) {
       Alert.alert('Error', 'Login failed. Please try again.');
@@ -616,6 +623,7 @@ export default function App() {
     await storage.removeItem('userToken');
     await storage.removeItem('userEmail');
     // Don't remove avatar - keep it for this user
+    websocketService.disconnect();
     setIsLoggedIn(false);
     setEmail('');
     setPassword('');
@@ -882,13 +890,6 @@ export default function App() {
                     <Text style={[styles.compactIconText, { color: '#10b981' }]}>D</Text>
                   </View>
                   <Text style={styles.compactText}>Deposit</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.compactButton} onPress={() => setShowCryptoWallet(true)}>
-                  <View style={[styles.compactIconCircle, { backgroundColor: '#fef3c7' }]}>
-                    <Text style={[styles.compactIconText, { color: '#f59e0b' }]}>W</Text>
-                  </View>
-                  <Text style={styles.compactText}>Wallet</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity style={styles.compactButton} onPress={() => setShowConvertScreen(true)}>

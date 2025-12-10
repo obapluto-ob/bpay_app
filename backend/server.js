@@ -5,6 +5,8 @@ const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const websocketService = require('./src/services/websocket');
 require('dotenv').config();
 
 const app = express();
@@ -98,6 +100,7 @@ app.use('/api/price-alerts', require('./routes/priceAlerts'));
 app.use('/api/referrals', require('./routes/referrals'));
 app.use('/api/withdrawals', require('./routes/withdrawals'));
 app.use('/api/system', require('./routes/system-health'));
+app.use('/api/chat', require('./routes/chat'));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -115,12 +118,18 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, async () => {
+const server = http.createServer(app);
+
+// Initialize WebSocket
+websocketService.initialize(server);
+
+server.listen(PORT, async () => {
   console.log('\n🚀 ========================================');
   console.log(`🚀 BPay API Server Started`);
   console.log(`🚀 Port: ${PORT}`);
   console.log(`🚀 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🚀 Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
+  console.log(`🚀 WebSocket: Enabled`);
   console.log('🚀 ========================================\n');
   
   await initDatabase();
