@@ -1278,8 +1278,8 @@ const ConvertScreenWeb = ({ balance, usdRates, onClose, onSuccess }: any) => {
   const [loading, setLoading] = useState(false);
 
   const getConversionRate = () => {
-    const fromRate = usdRates[fromCrypto] || 0;
-    const toRate = usdRates[toCrypto] || 0;
+    const fromRate = usdRates[fromCrypto]?.price || 0;
+    const toRate = usdRates[toCrypto]?.price || 0;
     return fromRate / toRate;
   };
 
@@ -2579,13 +2579,13 @@ export default function MobileExactDashboard() {
                   </button>
                   <button 
                     onClick={() => {
-                      setShowConvertScreen(true);
-                      setActiveTab('convert');
+                      setShowWalletScreen(true);
+                      setActiveTab('wallet');
                     }}
                     className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"
                   >
-                    <span className="text-xl text-orange-500 mb-1">↔</span>
-                    <span className="text-xs text-slate-900 font-semibold">Convert</span>
+                    <span className="text-xl text-orange-500 mb-1">💼</span>
+                    <span className="text-xs text-slate-900 font-semibold">Wallet</span>
                   </button>
                   <button 
                     onClick={() => setShowConvertScreen(true)}
