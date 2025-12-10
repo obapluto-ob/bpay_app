@@ -2074,8 +2074,8 @@ const ProfileScreenWeb = ({ fullName, email, user, userAvatar, setUserAvatar, on
 
 export default function MobileExactDashboard() {
   const [user, setUser] = useState<any>(null);
-  const [balance, setBalance] = useState({ NGN: 0, KES: 0, BTC: 0, ETH: 0, USDT: 0 });
-  const [rates, setRates] = useState({ BTC: { NGN: 0, KES: 0 }, ETH: { NGN: 0, KES: 0 }, USDT: { NGN: 0, KES: 0 } });
+  const [balance, setBalance] = useState({ NGN: 0, KES: 0, BTC: 0, ETH: 0, USDT: 0, XRP: 0, SOL: 0 });
+  const [rates, setRates] = useState({ BTC: { NGN: 0, KES: 0 }, ETH: { NGN: 0, KES: 0 }, USDT: { NGN: 0, KES: 0 }, XRP: { NGN: 0, KES: 0 }, SOL: { NGN: 0, KES: 0 } });
   const [usdRates, setUsdRates] = useState<Record<string, number>>({});
   const [exchangeRates, setExchangeRates] = useState({ USDNGN: 1600, USDKES: 150 });
   const [loading, setLoading] = useState(true);
@@ -2156,12 +2156,14 @@ export default function MobileExactDashboard() {
 
     const fetchUsdRates = async () => {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=usd');
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether,ripple,solana&vs_currencies=usd');
         const data = await response.json();
         const newRates = {
           BTC: data.bitcoin?.usd || 95000,
           ETH: data.ethereum?.usd || 3400,
           USDT: data.tether?.usd || 1,
+          XRP: data.ripple?.usd || 2.5,
+          SOL: data.solana?.usd || 200,
         };
         // Check for price changes and notify
         Object.entries(newRates).forEach(([crypto, newPrice]) => {
@@ -2487,6 +2489,14 @@ export default function MobileExactDashboard() {
                     <div className="flex items-center space-x-2">
                       <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="USDT" className="w-5 h-5" />
                       <span className="text-slate-900 font-semibold">{balance.USDT?.toFixed(2) || '0.00'} USDT</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <img src="https://cryptologos.cc/logos/xrp-xrp-logo.png" alt="XRP" className="w-5 h-5" />
+                      <span className="text-slate-900 font-semibold">{balance.XRP?.toFixed(2) || '0.00'} XRP</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <img src="https://cryptologos.cc/logos/solana-sol-logo.png" alt="SOL" className="w-5 h-5" />
+                      <span className="text-slate-900 font-semibold">{balance.SOL?.toFixed(4) || '0.0000'} SOL</span>
                     </div>
                   </div>
                 </>
