@@ -227,7 +227,7 @@ export default function TradeManagement() {
                   <div className="text-sm text-slate-300">
                     <p className="font-bold">{trade.type === 'buy' ? '📈 BUY' : '📉 SELL'} {trade.crypto}</p>
                     <p className="font-semibold text-white">{trade.fiatAmount?.toLocaleString()} {trade.country === 'NG' ? 'NGN' : 'KES'}</p>
-                    <p className="text-xs mt-1 text-slate-400">{new Date(trade.createdAt).toLocaleString()}</p>
+                    <p className="text-xs mt-1 text-slate-400">{new Date(trade.created_at || trade.createdAt || Date.now()).toLocaleString()}</p>
                   </div>
                 </button>
               ))}
@@ -300,7 +300,7 @@ export default function TradeManagement() {
                     >
                       <p className="text-sm">{msg.message}</p>
                       <p className={`text-xs mt-1 ${msg.sender === 'admin' ? 'text-white opacity-70' : 'text-slate-500'}`}>
-                        {new Date(msg.timestamp).toLocaleTimeString()}
+                        {new Date(msg.created_at || msg.timestamp || Date.now()).toLocaleTimeString()}
                       </p>
                     </div>
                   </div>

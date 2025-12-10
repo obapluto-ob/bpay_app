@@ -161,7 +161,11 @@ router.get('/history', authenticateToken, async (req, res) => {
       fiatAmount: trade.fiat_amount,
       cryptoAmount: trade.crypto_amount,
       status: trade.status,
-      createdAt: trade.created_at
+      country: trade.country,
+      paymentProof: trade.payment_proof,
+      bankDetails: trade.bank_details,
+      createdAt: trade.created_at,
+      created_at: trade.created_at
     }));
     
     res.json(trades);

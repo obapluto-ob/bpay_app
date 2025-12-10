@@ -2593,8 +2593,8 @@ export default function MobileExactDashboard() {
                     onClick={() => setShowWalletScreen(true)}
                     className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"
                   >
-                    <span className="text-xl text-orange-500 mb-1">+</span>
-                    <span className="text-xs text-slate-900 font-semibold">Deposit Crypto</span>
+                    <span className="text-xl text-orange-500 mb-1">₿</span>
+                    <span className="text-xs text-slate-900 font-semibold">Wallet</span>
                   </button>
 
                   <button 

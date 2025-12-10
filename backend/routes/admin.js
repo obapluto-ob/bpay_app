@@ -130,13 +130,37 @@ router.get('/users', async (req, res) => {
 // Get all trades
 router.get('/trades', async (req, res) => {
   try {
-    const result = await pool.query(`
+    const { status } = req.query;
+    let query = `
       SELECT t.*, u.first_name, u.last_name, u.email 
       FROM trades t 
-      JOIN users u ON t.user_id = u.id 
+      LEFT JOIN users u ON t.user_id = u.id 
       ORDER BY t.created_at DESC
-    `);
-    res.json({ trades: result.rows });
+    `;
+    let params = [];
+    
+    if (status && status !== 'all') {
+      query = `
+        SELECT t.*, u.first_name, u.last_name, u.email 
+        FROM trades t 
+        LEFT JOIN users u ON t.user_id = u.id 
+        WHERE t.status = $1
+        ORDER BY t.created_at DESC
+      `;
+      params = [status];
+    }
+    
+    const result = await pool.query(query, params);
+    const trades = result.rows.map(trade => ({
+      ...trade,
+      fiatAmount: trade.fiat_amount,
+      cryptoAmount: trade.crypto_amount,
+      createdAt: trade.created_at,
+      paymentProof: trade.payment_proof,
+      bankDetails: trade.bank_details
+    }));
+    
+    res.json({ trades });
   } catch (error) {
     console.error('Trades error:', error);
     res.status(500).json({ error: 'Failed to fetch trades' });
@@ -436,7 +460,8 @@ router.get('/trades/:tradeId/chat', async (req, res) => {
       sender: msg.sender_type,
       message: msg.message,
       imageData: msg.image_data,
-      timestamp: msg.created_at
+      timestamp: msg.created_at,
+      created_at: msg.created_at
     }));
     
     res.json({ messages });
