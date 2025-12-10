@@ -103,7 +103,7 @@ export default function AdminChat() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-2xl">💬</span>
+              <span className="text-2xl font-bold text-orange-600">C</span>
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-white">Admin Chat</h1>
@@ -118,7 +118,7 @@ export default function AdminChat() {
         {/* Admins List */}
         <div className="w-full md:w-1/3 bg-slate-800 bg-opacity-50 backdrop-blur-lg border-r border-white border-opacity-10 overflow-y-auto">
           <div className="p-4 border-b border-white border-opacity-10">
-            <h2 className="font-bold text-white text-lg">👥 Team Members</h2>
+            <h2 className="font-bold text-white text-lg">Team Members</h2>
           </div>
           
           {loading ? (
@@ -167,7 +167,7 @@ export default function AdminChat() {
           {!selectedAdmin ? (
             <div className="flex-1 flex items-center justify-center text-slate-400">
               <div className="text-center">
-                <div className="text-6xl mb-4">💬</div>
+                <div className="text-6xl mb-4 font-bold text-slate-600">CHAT</div>
                 <p className="text-lg text-white">Select an admin to start chatting</p>
               </div>
             </div>
@@ -187,7 +187,7 @@ export default function AdminChat() {
                   <div>
                     <p className="font-bold text-white">{selectedAdmin.username}</p>
                     <p className="text-xs text-slate-300">
-                      {selectedAdmin.isOnline ? '🟢 Online' : '⚫ Offline'}
+                      {selectedAdmin.isOnline ? 'Online' : 'Offline'}
                     </p>
                   </div>
                 </div>
@@ -240,7 +240,7 @@ export default function AdminChat() {
                     disabled={!newMessage.trim()}
                     className="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-600 disabled:opacity-50 transition-all shadow-lg"
                   >
-                    📤 Send
+Send
                   </button>
                 </div>
               </div>

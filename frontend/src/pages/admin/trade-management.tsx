@@ -159,7 +159,7 @@ export default function TradeManagement() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-2xl">💱</span>
+              <span className="text-2xl font-bold text-orange-600">T</span>
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-white">Trade Management</h1>
@@ -176,7 +176,7 @@ export default function TradeManagement() {
               filter === 'pending' ? 'bg-white text-orange-600 shadow-lg' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
             }`}
           >
-            ⏳ Pending ({trades.filter(t => t.status === 'pending').length})
+Pending ({trades.filter(t => t.status === 'pending').length})
           </button>
           <button
             onClick={() => setFilter('all')}
@@ -184,7 +184,7 @@ export default function TradeManagement() {
               filter === 'all' ? 'bg-white text-orange-600 shadow-lg' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
             }`}
           >
-            📊 All
+All
           </button>
           <button
             onClick={() => setFilter('completed')}
@@ -192,7 +192,7 @@ export default function TradeManagement() {
               filter === 'completed' ? 'bg-white text-orange-600 shadow-lg' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
             }`}
           >
-            ✅ Completed
+Completed
           </button>
         </div>
       </div>
@@ -225,8 +225,9 @@ export default function TradeManagement() {
                     </span>
                   </div>
                   <div className="text-sm text-slate-300">
-                    <p className="font-bold">{trade.type === 'buy' ? '📈 BUY' : '📉 SELL'} {trade.crypto}</p>
+                    <p className="font-bold">{trade.type === 'buy' ? 'BUY' : 'SELL'} {trade.crypto}</p>
                     <p className="font-semibold text-white">{trade.fiatAmount?.toLocaleString()} {trade.country === 'NG' ? 'NGN' : 'KES'}</p>
+                    <p className="text-xs text-orange-300">{trade.email || `${trade.first_name || ''} ${trade.last_name || ''}`.trim() || 'Unknown User'}</p>
                     <p className="text-xs mt-1 text-slate-400">{new Date(trade.created_at || trade.createdAt || Date.now()).toLocaleString()}</p>
                   </div>
                 </button>
@@ -248,18 +249,22 @@ export default function TradeManagement() {
             <>
               {/* Trade Details Header */}
               <div className="bg-slate-800 bg-opacity-50 backdrop-blur-lg border-b border-white border-opacity-10 p-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                   <div>
                     <p className="text-xs text-slate-400">Order ID</p>
                     <p className="font-bold text-orange-400">#{selectedTrade.id}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Type</p>
-                    <p className="font-bold text-white">{selectedTrade.type === 'buy' ? '📈 BUY' : '📉 SELL'} {selectedTrade.crypto}</p>
+                    <p className="font-bold text-white">{selectedTrade.type === 'buy' ? 'BUY' : 'SELL'} {selectedTrade.crypto}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Amount</p>
                     <p className="font-bold text-white">{selectedTrade.fiatAmount?.toLocaleString()} {selectedTrade.country === 'NG' ? 'NGN' : 'KES'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400">User</p>
+                    <p className="font-bold text-orange-300">{selectedTrade.email || `${selectedTrade.first_name || ''} ${selectedTrade.last_name || ''}`.trim() || 'Unknown'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Status</p>
@@ -325,13 +330,13 @@ export default function TradeManagement() {
                       onClick={approveTrade}
                       className="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold hover:bg-green-600 transition-all shadow-lg"
                     >
-                      ✅ Approve & Credit Crypto
+Approve & Credit Crypto
                     </button>
                     <button
                       onClick={rejectTrade}
                       className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 transition-all shadow-lg"
                     >
-                      ❌ Reject Trade
+Reject Trade
                     </button>
                   </div>
                   <button
@@ -377,7 +382,7 @@ export default function TradeManagement() {
                     onClick={sendMessage}
                     className="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-600 transition-all shadow-lg"
                   >
-                    📤 Send
+Send
                   </button>
                 </div>
               </div>
