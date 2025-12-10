@@ -20,8 +20,5 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
-  },
-  "dependencies": {
-    "react-native-image-picker": "^8.2.1"
   }
 }
