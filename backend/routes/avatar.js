@@ -23,6 +23,20 @@ router.post('/upload', auth, async (req, res) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Ensure avatar column exists
+    try {
+      await db.query(`
+        DO $$ 
+        BEGIN 
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'avatar') THEN
+            ALTER TABLE users ADD COLUMN avatar TEXT;
+          END IF;
+        END $$;
+      `);
+    } catch (columnError) {
+      console.log('Avatar column check/creation:', columnError.message);
+    }
+
     // Store base64 avatar in database
     const result = await db.query(
       'UPDATE users SET avatar = $1 WHERE id = $2 RETURNING id',
@@ -30,6 +44,10 @@ router.post('/upload', auth, async (req, res) => {
     );
 
     console.log('Database update result:', result.rowCount);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
     res.json({ 
       message: 'Avatar updated successfully',

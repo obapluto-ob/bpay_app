@@ -1619,21 +1619,20 @@ const ProfileScreenWeb = ({ fullName, email, user, userAvatar, setUserAvatar, on
                         },
                         body: JSON.stringify({ avatar: imageUrl })
                       });
+                      
                       if (response.ok) {
+                        // Successfully saved to database
                         setUserAvatar(imageUrl);
                         localStorage.setItem('userAvatar', imageUrl);
                         alert('Avatar updated successfully!');
                       } else {
-                        // Fallback to localStorage only
-                        setUserAvatar(imageUrl);
-                        localStorage.setItem('userAvatar', imageUrl);
-                        alert('Avatar updated locally!');
+                        const errorData = await response.json();
+                        console.error('Avatar upload failed:', errorData);
+                        alert('Failed to update avatar: ' + (errorData.error || 'Server error'));
                       }
                     } catch (error) {
-                      // Fallback to localStorage only
-                      setUserAvatar(imageUrl);
-                      localStorage.setItem('userAvatar', imageUrl);
-                      alert('Avatar updated locally!');
+                      console.error('Avatar upload error:', error);
+                      alert('Failed to update avatar. Please check your connection and try again.');
                     }
                   };
                   reader.readAsDataURL(file);
@@ -2141,7 +2140,7 @@ export default function MobileExactDashboard() {
           setBalance(balanceData);
         }
 
-        // Try to get avatar from server, fallback to localStorage
+        // Get avatar from server (database) - this is the single source of truth
         try {
           const avatarRes = await fetch(`${API_BASE}/avatar`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -2150,15 +2149,18 @@ export default function MobileExactDashboard() {
             const avatarData = await avatarRes.json();
             if (avatarData.avatar) {
               setUserAvatar(avatarData.avatar);
+              // Update localStorage to match database
               localStorage.setItem('userAvatar', avatarData.avatar);
+            } else {
+              // No avatar in database, clear localStorage
+              localStorage.removeItem('userAvatar');
+              setUserAvatar('');
             }
           }
         } catch (error) {
-          // Fallback to localStorage
-          const savedAvatar = localStorage.getItem('userAvatar');
-          if (savedAvatar) {
-            setUserAvatar(savedAvatar);
-          }
+          console.error('Failed to fetch avatar from server:', error);
+          // Don't fallback to localStorage - database is source of truth
+          setUserAvatar('');
         }
 
         const ratesRes = await fetch(`${API_BASE}/trade/rates`);
