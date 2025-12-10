@@ -159,27 +159,45 @@ export default function TradeChat() {
       {trade?.status === 'pending' && (
         <div className="bg-slate-100 p-3 border-t space-y-2">
           <div className="flex space-x-2">
-            <button
-              onClick={async () => {
-                if (!confirm('Mark this order as completed?')) return;
-                try {
-                  const token = localStorage.getItem('token');
-                  const response = await fetch(`${API_BASE}/trade/${tradeId}/complete`, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${token}` }
-                  });
-                  if (response.ok) {
-                    alert('Order marked as completed!');
-                    fetchTradeDetails();
+            <label className="flex-1 bg-blue-500 text-white py-2 rounded-lg font-bold text-sm text-center cursor-pointer">
+              📷 Upload Payment Proof
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                      const imageData = event.target?.result as string;
+                      try {
+                        const token = localStorage.getItem('token');
+                        const response = await fetch(`${API_BASE}/trade/${tradeId}/chat`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`
+                          },
+                          body: JSON.stringify({ 
+                            message: `📸 PAYMENT PROOF UPLOADED\n\nI have completed the payment. Please verify and approve my order.`,
+                            imageData
+                          })
+                        });
+                        if (response.ok) {
+                          alert('Payment proof uploaded! Admin will verify shortly.');
+                          fetchMessages();
+                        }
+                      } catch (error) {
+                        alert('Failed to upload payment proof');
+                      }
+                    };
+                    reader.readAsDataURL(file);
                   }
-                } catch (error) {
-                  alert('Failed to complete order');
-                }
-              }}
-              className="flex-1 bg-green-500 text-white py-2 rounded-lg font-bold text-sm"
-            >
-              ✓ Complete Order
-            </button>
+                }}
+                className="hidden"
+              />
+            </label>
             <button
               onClick={() => {
                 const modal = document.createElement('div');
@@ -264,6 +282,11 @@ export default function TradeChat() {
             >
               ⚠ Raise Dispute
             </button>
+          </div>
+          <div className="bg-yellow-50 p-3 rounded-lg border-l-4 border-yellow-500">
+            <p className="text-xs text-yellow-800">
+              ⚠️ Upload payment proof first, then wait for admin to verify and approve your order. Do not mark as complete yourself.
+            </p>
           </div>
         </div>
       )}
