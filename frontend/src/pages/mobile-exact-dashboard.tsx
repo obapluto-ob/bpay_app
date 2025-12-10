@@ -285,7 +285,7 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
             <img src={`https://cryptologos.cc/logos/${crypto === 'BTC' ? 'bitcoin' : crypto === 'ETH' ? 'ethereum' : 'tether'}-${crypto.toLowerCase()}-logo.png`} alt={crypto} className="w-8 h-8" />
             <span className="font-semibold">{crypto}</span>
           </button>
-        ))
+        ))}
       </div>
 
       <div className="space-y-2 mb-4">
