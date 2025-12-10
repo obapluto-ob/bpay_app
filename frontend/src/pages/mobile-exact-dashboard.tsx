@@ -2076,7 +2076,7 @@ export default function MobileExactDashboard() {
   const [user, setUser] = useState<any>(null);
   const [balance, setBalance] = useState({ NGN: 0, KES: 0, BTC: 0, ETH: 0, USDT: 0, XRP: 0, SOL: 0 });
   const [rates, setRates] = useState({ BTC: { NGN: 0, KES: 0 }, ETH: { NGN: 0, KES: 0 }, USDT: { NGN: 0, KES: 0 }, XRP: { NGN: 0, KES: 0 }, SOL: { NGN: 0, KES: 0 } });
-  const [usdRates, setUsdRates] = useState<Record<string, number>>({});
+  const [usdRates, setUsdRates] = useState<Record<string, any>>({});
   const [exchangeRates, setExchangeRates] = useState({ USDNGN: 1600, USDKES: 150 });
   const [loading, setLoading] = useState(true);
   const [selectedAccount, setSelectedAccount] = useState<'nigeria' | 'kenya' | 'crypto'>('crypto');
@@ -2156,18 +2156,40 @@ export default function MobileExactDashboard() {
 
     const fetchUsdRates = async () => {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether,ripple,solana&vs_currencies=usd');
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether,ripple,solana&vs_currencies=usd&include_24hr_change=true');
         const data = await response.json();
         const newRates = {
-          BTC: data.bitcoin?.usd || 95000,
-          ETH: data.ethereum?.usd || 3400,
-          USDT: data.tether?.usd || 1,
-          XRP: data.ripple?.usd || 2.5,
-          SOL: data.solana?.usd || 200,
+          BTC: { 
+            price: data.bitcoin?.usd || 95000, 
+            change: data.bitcoin?.usd_24h_change || 0,
+            trend: generateMiniChart(data.bitcoin?.usd_24h_change || 0)
+          },
+          ETH: { 
+            price: data.ethereum?.usd || 3400, 
+            change: data.ethereum?.usd_24h_change || 0,
+            trend: generateMiniChart(data.ethereum?.usd_24h_change || 0)
+          },
+          USDT: { 
+            price: data.tether?.usd || 1, 
+            change: data.tether?.usd_24h_change || 0,
+            trend: generateMiniChart(data.tether?.usd_24h_change || 0)
+          },
+          XRP: { 
+            price: data.ripple?.usd || 2.5, 
+            change: data.ripple?.usd_24h_change || 0,
+            trend: generateMiniChart(data.ripple?.usd_24h_change || 0)
+          },
+          SOL: { 
+            price: data.solana?.usd || 200, 
+            change: data.solana?.usd_24h_change || 0,
+            trend: generateMiniChart(data.solana?.usd_24h_change || 0)
+          },
         };
+        
         // Check for price changes and notify
-        Object.entries(newRates).forEach(([crypto, newPrice]) => {
-          const oldPrice = usdRates[crypto];
+        Object.entries(newRates).forEach(([crypto, rateData]) => {
+          const oldPrice = usdRates[crypto]?.price || 0;
+          const newPrice = rateData.price;
           if (oldPrice && oldPrice > 0) {
             const changePercent = ((newPrice - oldPrice) / oldPrice) * 100;
             if (Math.abs(changePercent) >= 5) {
@@ -2186,6 +2208,18 @@ export default function MobileExactDashboard() {
       } catch (error) {
         console.log('Failed to fetch USD rates');
       }
+    };
+
+    const generateMiniChart = (change: number) => {
+      // Generate simple SVG mini chart based on change
+      const isPositive = change >= 0;
+      const points = isPositive 
+        ? '0,20 10,15 20,10 30,5 40,0' 
+        : '0,0 10,5 20,10 30,15 40,20';
+      
+      return `<svg width="40" height="20" viewBox="0 0 40 20">
+        <polyline points="${points}" fill="none" stroke="${isPositive ? '#10b981' : '#ef4444'}" stroke-width="2"/>
+      </svg>`;
     };
 
     const fetchExchangeRates = async () => {
@@ -2599,31 +2633,48 @@ export default function MobileExactDashboard() {
             </div>
             
             <div className="space-y-2">
-              {Object.entries(rates).map(([crypto, rate]) => (
-                <div key={crypto} className="bg-white p-4 rounded-xl shadow-md flex justify-between items-center">
-                  <div className="flex items-center space-x-3">
-                    <img src={`https://cryptologos.cc/logos/${crypto === 'BTC' ? 'bitcoin' : crypto === 'ETH' ? 'ethereum' : 'tether'}-${crypto.toLowerCase()}-logo.png`} alt={crypto} className="w-8 h-8" />
-                    <div>
-                      <p className="font-bold text-slate-900">{crypto}</p>
-                      <p className="text-xs text-slate-600">
-                        {crypto === 'BTC' ? 'Bitcoin' : crypto === 'ETH' ? 'Ethereum' : 'Tether'}
+              {Object.entries(usdRates).map(([crypto, rateData]) => {
+                const cryptoName = crypto === 'BTC' ? 'Bitcoin' : crypto === 'ETH' ? 'Ethereum' : crypto === 'USDT' ? 'Tether' : crypto === 'XRP' ? 'Ripple' : 'Solana';
+                const logoName = crypto === 'BTC' ? 'bitcoin' : crypto === 'ETH' ? 'ethereum' : crypto === 'USDT' ? 'tether' : crypto === 'XRP' ? 'xrp' : 'solana';
+                const change = rateData?.change || 0;
+                const isPositive = change >= 0;
+                
+                return (
+                  <div key={crypto} className="bg-white p-4 rounded-xl shadow-md">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center space-x-3">
+                        <img src={`https://cryptologos.cc/logos/${logoName}-${crypto.toLowerCase()}-logo.png`} alt={crypto} className="w-8 h-8" />
+                        <div>
+                          <p className="font-bold text-slate-900">{crypto}</p>
+                          <p className="text-xs text-slate-600">{cryptoName}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-slate-900">
+                          ${rateData?.price?.toLocaleString() || '0'}
+                        </p>
+                        <div className="flex items-center space-x-1">
+                          <span className={`text-sm font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                            {isPositive ? '+' : ''}{change.toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <div dangerouslySetInnerHTML={{ __html: rateData?.trend || '' }} />
+                        <span className="text-xs text-slate-500">24h</span>
+                      </div>
+                      <p className="text-sm text-slate-600">
+                        {selectedAccount === 'crypto' ? 
+                          `$${rateData?.price?.toLocaleString() || '0'}` :
+                          `${activeCountry === 'NG' ? '₦' : 'KSh'}${((rateData?.price || 0) * (activeCountry === 'NG' ? exchangeRates.USDNGN : exchangeRates.USDKES)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        }
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-green-600">
-                      ${usdRates[crypto]?.toLocaleString() || '0'}
-                    </p>
-                    <p className="text-sm font-semibold text-slate-900">
-                      {selectedAccount === 'crypto' ? 
-                        `$${usdRates[crypto]?.toLocaleString() || '0'}` :
-                        `${activeCountry === 'NG' ? '₦' : 'KSh'}${((usdRates[crypto] || 0) * (activeCountry === 'NG' ? exchangeRates.USDNGN : exchangeRates.USDKES)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                      }
-                    </p>
-                    <p className="text-xs text-slate-600">Live</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })
             </div>
           </div>
         </div>
