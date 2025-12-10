@@ -76,7 +76,7 @@ export const CryptoWalletScreen: React.FC<Props> = ({ wallets, onClose, onSucces
               </View>
               <Text style={styles.walletName}>{crypto} Wallet</Text>
               <Text style={styles.walletNetwork}>
-                {crypto === 'BTC' ? 'Bitcoin Network' : crypto === 'ETH' ? 'Ethereum Network' : 'ERC-20 Network'}
+                {crypto === 'BTC' ? 'Bitcoin Network' : crypto === 'ETH' ? 'Ethereum Network' : 'TRC-20 Network'}
               </Text>
               {selectedCrypto === crypto && <View style={styles.selectedIndicator} />}
             </TouchableOpacity>
@@ -123,7 +123,7 @@ export const CryptoWalletScreen: React.FC<Props> = ({ wallets, onClose, onSucces
               • Minimum deposit: {selectedCrypto === 'BTC' ? '0.001 BTC' : selectedCrypto === 'ETH' ? '0.01 ETH' : '10 USDT'}
             </Text>
             <Text style={styles.warningText}>
-              • Network: {selectedCrypto === 'USDT' ? 'ERC-20 (Ethereum)' : selectedCrypto === 'BTC' ? 'Bitcoin' : 'Ethereum'}
+              • Network: {selectedCrypto === 'USDT' ? 'TRC-20 (Tron)' : selectedCrypto === 'BTC' ? 'Bitcoin' : 'Ethereum'}
             </Text>
             <Text style={styles.warningText}>
               • Deposits are automatically verified using blockchain API
