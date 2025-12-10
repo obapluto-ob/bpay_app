@@ -577,7 +577,7 @@ const SellCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, onClose }:
               selectedCrypto === crypto ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
             }`}
           >
-            <span className="text-2xl">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
+            <img src={`https://cryptologos.cc/logos/${crypto === 'BTC' ? 'bitcoin' : crypto === 'ETH' ? 'ethereum' : 'tether'}-${crypto.toLowerCase()}-logo.png`} alt={crypto} className="w-8 h-8" />
             <span className="font-semibold">{crypto}</span>
           </button>
         ))}
@@ -1360,7 +1360,7 @@ const ConvertScreenWeb = ({ balance, usdRates, onClose, onSuccess }: any) => {
                 fromCrypto === crypto ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
               }`}
             >
-              <span className="text-lg">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
+              <img src={`https://cryptologos.cc/logos/${crypto === 'BTC' ? 'bitcoin' : crypto === 'ETH' ? 'ethereum' : 'tether'}-${crypto.toLowerCase()}-logo.png`} alt={crypto} className="w-6 h-6" />
               <span className="text-xs font-semibold">{crypto}</span>
             </button>
           ))}
@@ -1404,7 +1404,7 @@ const ConvertScreenWeb = ({ balance, usdRates, onClose, onSuccess }: any) => {
                 toCrypto === crypto ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
               }`}
             >
-              <span className="text-lg">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
+              <img src={`https://cryptologos.cc/logos/${crypto === 'BTC' ? 'bitcoin' : crypto === 'ETH' ? 'ethereum' : 'tether'}-${crypto.toLowerCase()}-logo.png`} alt={crypto} className="w-6 h-6" />
               <span className="text-xs font-semibold">{crypto}</span>
             </button>
           ))}
