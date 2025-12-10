@@ -2477,15 +2477,15 @@ export default function MobileExactDashboard() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">₿</span>
+                      <img src="https://cryptologos.cc/logos/bitcoin-btc-logo.png" alt="BTC" className="w-5 h-5" />
                       <span className="text-slate-900 font-semibold">{balance.BTC?.toFixed(6) || '0.000000'} BTC</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">Ξ</span>
+                      <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="w-5 h-5" />
                       <span className="text-slate-900 font-semibold">{balance.ETH?.toFixed(4) || '0.0000'} ETH</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">₮</span>
+                      <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="USDT" className="w-5 h-5" />
                       <span className="text-slate-900 font-semibold">{balance.USDT?.toFixed(2) || '0.00'} USDT</span>
                     </div>
                   </div>
@@ -2592,7 +2592,7 @@ export default function MobileExactDashboard() {
               {Object.entries(rates).map(([crypto, rate]) => (
                 <div key={crypto} className="bg-white p-4 rounded-xl shadow-md flex justify-between items-center">
                   <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
+                    <img src={`https://cryptologos.cc/logos/${crypto === 'BTC' ? 'bitcoin' : crypto === 'ETH' ? 'ethereum' : 'tether'}-${crypto.toLowerCase()}-logo.png`} alt={crypto} className="w-8 h-8" />
                     <div>
                       <p className="font-bold text-slate-900">{crypto}</p>
                       <p className="text-xs text-slate-600">
