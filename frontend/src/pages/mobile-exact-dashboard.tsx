@@ -220,7 +220,7 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
 
     if (paymentMethod === 'balance') {
       if (availableBalance === 0) {
-        alert('Your wallet is empty. Please use Bank Transfer.');
+        alert(`Your wallet is empty. Please use ${selectedCurrency === 'NGN' ? 'Bank Transfer' : 'M-Pesa'}.`);
         setPaymentMethod('bank');
         return;
       }
@@ -282,10 +282,10 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
               selectedCrypto === crypto ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'
             }`}
           >
-            <span className="text-2xl">{crypto === 'BTC' ? '₿' : crypto === 'ETH' ? 'Ξ' : '₮'}</span>
+            <img src={`https://cryptologos.cc/logos/${crypto === 'BTC' ? 'bitcoin' : crypto === 'ETH' ? 'ethereum' : 'tether'}-${crypto.toLowerCase()}-logo.png`} alt={crypto} className="w-8 h-8" />
             <span className="font-semibold">{crypto}</span>
           </button>
-        ))}
+        ))
       </div>
 
       <div className="space-y-2 mb-4">
