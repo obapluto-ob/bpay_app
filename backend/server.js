@@ -125,6 +125,7 @@ app.use('/api/withdrawals', require('./routes/withdrawals'));
 app.use('/api/system', require('./routes/system-health'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/admin', require('./routes/admin-assignment'));
+app.use('/api/admin-decisions', require('./routes/admin-decisions'));
 
 // Health check
 app.get('/health', (req, res) => {

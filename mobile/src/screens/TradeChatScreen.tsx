@@ -32,6 +32,7 @@ interface TradeChatScreenProps {
   onClose: () => void;
   onRateAdmin: (rating: number) => void;
   onRaiseDispute: (reason: string) => void;
+  onTradeComplete?: (status: 'approved' | 'declined', message: string) => void;
 }
 
 export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
@@ -39,7 +40,8 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
   userToken,
   onClose,
   onRateAdmin,
-  onRaiseDispute
+  onRaiseDispute,
+  onTradeComplete
 }) => {
   const { messages, sendMessage, isConnected, isLoading } = useChat(trade.id, userToken);
   const [newMessage, setNewMessage] = useState('');

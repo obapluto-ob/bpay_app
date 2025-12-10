@@ -4,6 +4,7 @@ import { apiService } from '../services/api';
 import { BankDetails, CryptoRate } from '../types';
 import { CryptoIcon } from '../components/CryptoIcon';
 import { PaymentIcon } from '../components/PaymentIcon';
+import { TradeChatScreen } from './TradeChatScreen';
 
 interface Props {
   rates: Record<string, CryptoRate>;
@@ -16,6 +17,7 @@ interface Props {
   onLockRate: (crypto: string, type: 'sell') => number;
   userBalance: { BTC: number; ETH: number; USDT: number };
   onNotification: (message: string, type: 'success' | 'warning' | 'info') => void;
+  onOpenChat?: (trade: any) => void;
 }
 
 export const SellCryptoScreen: React.FC<Props> = ({ rates, usdRates, exchangeRates, token, userCountry, onClose, onSuccess, onLockRate, userBalance, onNotification }) => {
@@ -36,6 +38,8 @@ export const SellCryptoScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
   const [escrowId, setEscrowId] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(900);
   const [assignedAdmin, setAssignedAdmin] = useState<any>(null);
+  const [showChat, setShowChat] = useState(false);
+  const [currentTrade, setCurrentTrade] = useState<any>(null);
   
   // Admin assignment logic for sell orders
   const getBestAvailableAdmin = async () => {
@@ -554,10 +558,13 @@ export const SellCryptoScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
               
               // Trade is already saved via API
               
-              Alert.alert(
-                'Chat with Admin',
-                `Chat will open to communicate with ${admin.name} (${admin.email}) about your transfer confirmation.`,
-                [{ text: 'OK' }]
+              // Open chat screen
+              setCurrentTrade(tradeData);
+              setShowChat(true);
+              
+              onNotification(
+                `💬 Chat opened with ${admin.name} - communicate about your transfer verification`,
+                'info'
               );
             }}
           >
@@ -600,6 +607,36 @@ export const SellCryptoScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
         </Text>
       )}
       </ScrollView>
+      
+      {/* Chat Modal */}
+      {showChat && currentTrade && (
+        <TradeChatScreen
+          trade={currentTrade}
+          userToken={token}
+          onClose={() => {
+            setShowChat(false);
+            setCurrentTrade(null);
+          }}
+          onRateAdmin={(rating) => {
+            onNotification(`⭐ Rated admin ${rating} stars - thank you for your feedback!`, 'success');
+          }}
+          onRaiseDispute={(reason) => {
+            onNotification(`⚠️ Dispute raised: ${reason} - admin will review shortly`, 'warning');
+          }}
+          onTradeComplete={(status, message) => {
+            // Auto-close chat and show completion message
+            setShowChat(false);
+            setCurrentTrade(null);
+            
+            if (status === 'approved') {
+              onNotification(`🎉 ${message} - Your payment is being processed!`, 'success');
+              onSuccess(); // Close sell screen and refresh balance
+            } else {
+              onNotification(`❌ ${message} - Please contact support if needed`, 'warning');
+            }
+          }}
+        />
+      )}
     </View>
   );
 };

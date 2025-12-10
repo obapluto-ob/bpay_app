@@ -735,6 +735,17 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
           onRaiseDispute={(reason) => {
             onNotification(`Dispute raised: ${reason} - admin will review shortly`, 'warning');
           }}
+          onTradeComplete={(status, message) => {
+            setShowChat(false);
+            setCurrentTrade(null);
+            
+            if (status === 'approved') {
+              onNotification(`🎉 ${message} - Your crypto has been added to your wallet!`, 'success');
+              onSuccess();
+            } else {
+              onNotification(`❌ ${message} - Please contact support if needed`, 'warning');
+            }
+          }}
         />
       )}
     </View>
