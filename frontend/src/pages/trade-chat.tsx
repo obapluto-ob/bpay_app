@@ -10,6 +10,8 @@ export default function TradeChat() {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [paymentProofUploaded, setPaymentProofUploaded] = useState(false);
+  const [adminOnline, setAdminOnline] = useState(false);
 
   useEffect(() => {
     if (!tradeId) return;
@@ -112,13 +114,16 @@ export default function TradeChat() {
              trade?.status === 'completed' ? '✅ Completed' : 
              trade?.status === 'cancelled' ? '❌ Cancelled' : trade?.status}
           </p>
+          <p className="text-xs text-slate-300">
+            Order: #{trade?.id?.slice(-8) || 'N/A'}
+          </p>
         </div>
         <div className="w-16"></div>
       </div>
 
       {/* Trade Details */}
       <div className="bg-white p-4 border-b">
-        <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="grid grid-cols-2 gap-4 text-sm mb-3">
           <div>
             <p className="text-slate-600">Amount</p>
             <p className="font-bold">{trade?.fiatAmount} {trade?.country === 'NG' ? 'NGN' : 'KES'}</p>
@@ -127,6 +132,12 @@ export default function TradeChat() {
             <p className="text-slate-600">Crypto</p>
             <p className="font-bold">{parseFloat(trade?.cryptoAmount || 0).toFixed(6)} {trade?.crypto}</p>
           </div>
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-slate-500">Admin Status:</span>
+          <span className={`font-semibold ${adminOnline ? 'text-green-600' : 'text-red-600'}`}>
+            {adminOnline ? '🟢 Online' : '🔴 Offline'}
+          </span>
         </div>
       </div>
 
@@ -158,46 +169,110 @@ export default function TradeChat() {
       {/* Action Buttons */}
       {trade?.status === 'pending' && (
         <div className="bg-slate-100 p-3 border-t space-y-2">
-          <div className="flex space-x-2">
-            <label className="flex-1 bg-blue-500 text-white py-2 rounded-lg font-bold text-sm text-center cursor-pointer">
-              📷 Upload Payment Proof
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = async (event) => {
-                      const imageData = event.target?.result as string;
-                      try {
-                        const token = localStorage.getItem('token');
-                        const response = await fetch(`${API_BASE}/trade/${tradeId}/chat`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${token}`
-                          },
-                          body: JSON.stringify({ 
-                            message: `📸 PAYMENT PROOF UPLOADED\n\nI have completed the payment. Please verify and approve my order.`,
-                            imageData
-                          })
-                        });
-                        if (response.ok) {
-                          alert('Payment proof uploaded! Admin will verify shortly.');
-                          fetchMessages();
+          {!paymentProofUploaded ? (
+            <div className="flex space-x-2">
+              <label className="flex-1 bg-blue-500 text-white py-2 rounded-lg font-bold text-sm text-center cursor-pointer">
+                📷 Take Photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        const imageData = event.target?.result as string;
+                        try {
+                          const token = localStorage.getItem('token');
+                          const response = await fetch(`${API_BASE}/trade/${tradeId}/chat`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ 
+                              message: `📸 PAYMENT PROOF UPLOADED\n\nI have completed the payment. Please verify and approve my order.`,
+                              imageData
+                            })
+                          });
+                          if (response.ok) {
+                            setPaymentProofUploaded(true);
+                            alert('Payment proof uploaded! Admin will verify shortly.');
+                            fetchMessages();
+                          }
+                        } catch (error) {
+                          alert('Failed to upload payment proof');
                         }
-                      } catch (error) {
-                        alert('Failed to upload payment proof');
-                      }
-                    };
-                    reader.readAsDataURL(file);
-                  }
-                }}
-                className="hidden"
-              />
-            </label>
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+              <label className="flex-1 bg-green-500 text-white py-2 rounded-lg font-bold text-sm text-center cursor-pointer">
+                📁 Choose Photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        const imageData = event.target?.result as string;
+                        try {
+                          const token = localStorage.getItem('token');
+                          const response = await fetch(`${API_BASE}/trade/${tradeId}/chat`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ 
+                              message: `📸 PAYMENT PROOF UPLOADED\n\nI have completed the payment. Please verify and approve my order.`,
+                              imageData
+                            })
+                          });
+                          if (response.ok) {
+                            setPaymentProofUploaded(true);
+                            alert('Payment proof uploaded! Admin will verify shortly.');
+                            fetchMessages();
+                          }
+                        } catch (error) {
+                          alert('Failed to upload payment proof');
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                const adminMessage = `🔔 ADMIN ALERT\n\nHello admin, I have uploaded my payment proof. Please verify and approve my order. Thank you!`;
+                const token = localStorage.getItem('token');
+                fetch(`${API_BASE}/trade/${tradeId}/chat`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ message: adminMessage })
+                }).then(() => {
+                  alert('Admin has been notified!');
+                  fetchMessages();
+                });
+              }}
+              className="w-full bg-orange-500 text-white py-2 rounded-lg font-bold text-sm"
+            >
+              🔔 Alert Admin
+            </button>
+          )}
             <button
               onClick={() => {
                 const modal = document.createElement('div');
@@ -283,10 +358,15 @@ export default function TradeChat() {
               ⚠ Raise Dispute
             </button>
           </div>
-          <div className="bg-yellow-50 p-3 rounded-lg border-l-4 border-yellow-500">
-            <p className="text-xs text-yellow-800">
-              ⚠️ Upload payment proof first, then wait for admin to verify and approve your order. Do not mark as complete yourself.
-            </p>
+          <div className="bg-red-50 p-3 rounded-lg border-l-4 border-red-500">
+            <h4 className="font-bold text-red-800 text-xs mb-1">⚠️ IMPORTANT WARNINGS</h4>
+            <div className="text-xs text-red-700 space-y-1">
+              <p>• Upload REAL payment proof only</p>
+              <p>• Fake screenshots = Account suspension</p>
+              <p>• Wait for admin approval - DO NOT self-complete</p>
+              <p>• False disputes may result in permanent ban</p>
+              <p>• Only raise disputes for genuine payment issues</p>
+            </div>
           </div>
         </div>
       )}
