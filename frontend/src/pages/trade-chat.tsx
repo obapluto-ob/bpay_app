@@ -179,7 +179,8 @@ export default function TradeChat() {
 
       {/* Action Buttons */}
       {trade?.status === 'pending' && (
-        <div className="bg-slate-100 p-3 border-t space-y-2">
+        <>
+          <div className="bg-slate-100 p-3 border-t space-y-2">
           {!paymentProofUploaded ? (
             <div className="flex space-x-2">
               <label className="flex-1 bg-blue-500 text-white py-2 rounded-lg font-bold text-sm text-center cursor-pointer">
@@ -379,7 +380,7 @@ export default function TradeChat() {
               <p>• Only raise disputes for genuine payment issues</p>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Input */}
