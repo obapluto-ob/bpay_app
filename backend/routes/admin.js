@@ -479,6 +479,19 @@ router.post('/deposits/:id/reject', async (req, res) => {
 // Get trade chat messages (admin view)
 router.get('/trades/:tradeId/chat', async (req, res) => {
   try {
+    // Ensure chat_messages table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id VARCHAR(255) PRIMARY KEY,
+        trade_id VARCHAR(255) NOT NULL,
+        sender_id VARCHAR(255) NOT NULL,
+        sender_type VARCHAR(20) NOT NULL,
+        message TEXT NOT NULL,
+        image_data TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    
     const { tradeId } = req.params;
     const result = await pool.query(
       'SELECT * FROM chat_messages WHERE trade_id = $1 ORDER BY created_at ASC',
