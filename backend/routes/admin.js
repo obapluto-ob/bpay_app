@@ -517,6 +517,19 @@ router.get('/trades/:tradeId/chat', async (req, res) => {
 // Send chat message (admin to user)
 router.post('/trades/:tradeId/chat', async (req, res) => {
   try {
+    // Ensure chat_messages table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id VARCHAR(255) PRIMARY KEY,
+        trade_id VARCHAR(255) NOT NULL,
+        sender_id VARCHAR(255) NOT NULL,
+        sender_type VARCHAR(20) NOT NULL,
+        message TEXT NOT NULL,
+        image_data TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    
     const { message, imageData } = req.body;
     const { tradeId } = req.params;
     
