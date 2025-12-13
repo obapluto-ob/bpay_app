@@ -75,9 +75,30 @@ async function initDatabase() {
           );
         `);
         
-        console.log('Chat tables created successfully!');
+        // Add rates table
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS crypto_rates (
+            id SERIAL PRIMARY KEY,
+            crypto VARCHAR(10) UNIQUE NOT NULL,
+            buy_rate DECIMAL(15,2) NOT NULL,
+            sell_rate DECIMAL(15,2) NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_active BOOLEAN DEFAULT true
+          );
+        `);
+        
+        // Insert default rates
+        await pool.query(`
+          INSERT INTO crypto_rates (crypto, buy_rate, sell_rate) VALUES
+          ('BTC', 45250000, 44750000),
+          ('ETH', 2850000, 2820000),
+          ('USDT', 1580, 1570)
+          ON CONFLICT (crypto) DO NOTHING;
+        `);
+        
+        console.log('Chat and rates tables created successfully!');
       } catch (error) {
-        console.log('Chat tables already exist or error:', error.message);
+        console.log('Tables already exist or error:', error.message);
       }
       await pool.end();
     } catch (error) {
@@ -89,7 +110,7 @@ async function initDatabase() {
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://bpay-app-frontend.vercel.app', 'https://bpay-app.vercel.app', 'https://bpayapp.netlify.app', 'https://bpay-app.netlify.app'],
+  origin: ['http://localhost:3000', 'https://bpay-app-frontend.vercel.app', 'https://bpay-app.vercel.app', 'https://bpayapp.netlify.app', 'https://bpay-app.netlify.app', 'https://bpayapp.co.ke', 'https://www.bpayapp.co.ke'],
   credentials: true
 }));
 
@@ -126,6 +147,7 @@ app.use('/api/system', require('./routes/system-health'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/admin', require('./routes/admin-assignment'));
 app.use('/api/admin-decisions', require('./routes/admin-decisions'));
+app.use('/api/rates', require('./routes/rates'));
 
 // Health check
 app.get('/health', (req, res) => {

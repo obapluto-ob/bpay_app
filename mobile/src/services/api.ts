@@ -1,6 +1,6 @@
 import { User, Trade, CryptoRate, BankDetails, Notification, CryptoWallet } from '../types';
 
-const API_BASE = 'https://bpay-app.onrender.com/api';
+const API_BASE = 'https://api.bpayapp.co.ke/api';
 
 class ApiService {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {

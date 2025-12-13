@@ -27,14 +27,44 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-// Get crypto rates
+// Get crypto rates from custom rates table
 router.get('/rates', async (req, res) => {
-  // Return fallback rates directly for now
-  res.json({
-    BTC: { NGN: 130012175, KES: 11592860 },
-    ETH: { NGN: 4407045, KES: 392965 },
-    USDT: { NGN: 1450, KES: 129 }
-  });
+  try {
+    const result = await pool.query(`
+      SELECT crypto, buy_rate, sell_rate, updated_at 
+      FROM crypto_rates 
+      WHERE is_active = true
+      ORDER BY crypto
+    `);
+    
+    if (result.rows.length === 0) {
+      // Fallback rates if table is empty
+      return res.json({
+        BTC: { buy: 45250000, sell: 44750000, lastUpdated: new Date().toISOString() },
+        ETH: { buy: 2850000, sell: 2820000, lastUpdated: new Date().toISOString() },
+        USDT: { buy: 1580, sell: 1570, lastUpdated: new Date().toISOString() }
+      });
+    }
+    
+    const rates = {};
+    result.rows.forEach(row => {
+      rates[row.crypto] = {
+        buy: parseFloat(row.buy_rate),
+        sell: parseFloat(row.sell_rate),
+        lastUpdated: row.updated_at
+      };
+    });
+    
+    res.json(rates);
+  } catch (error) {
+    console.error('Rates error:', error);
+    // Fallback rates on error
+    res.json({
+      BTC: { buy: 45250000, sell: 44750000, lastUpdated: new Date().toISOString() },
+      ETH: { buy: 2850000, sell: 2820000, lastUpdated: new Date().toISOString() },
+      USDT: { buy: 1580, sell: 1570, lastUpdated: new Date().toISOString() }
+    });
+  }
 });
 
 // Create trade with auto admin assignment

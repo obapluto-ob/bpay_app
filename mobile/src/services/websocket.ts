@@ -7,9 +7,7 @@ class WebSocketService {
   private isAuthenticated = false;
 
   connect(token: string, userType: 'user' | 'admin' = 'user') {
-    const wsUrl = __DEV__ 
-      ? 'ws://localhost:3001/ws' 
-      : 'wss://bpay-app.onrender.com/ws';
+    const wsUrl = 'wss://api.bpayapp.co.ke/ws';
 
     try {
       this.ws = new WebSocket(wsUrl);

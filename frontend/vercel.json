@@ -17,6 +17,6 @@
     }
   ],
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://bpay-app.onrender.com"
+    "NEXT_PUBLIC_API_URL": "https://api.yourdomain.com"
   }
 }
