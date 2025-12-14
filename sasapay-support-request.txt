@@ -1,0 +1,53 @@
+Subject: API Credentials Request for Merchant Code 53897
+
+Dear SasaPay Development Team,
+
+I hope this email finds you well.
+
+I am writing to request API credentials for my merchant account to integrate SasaPay payment services into our platform.
+
+MERCHANT DETAILS:
+- Merchant Code: 53897
+- Business Name: BPay
+- Platform: Crypto-to-Cash Trading Platform
+- Country: Kenya
+- Integration Type: M-Pesa STK Push & B2C Payouts
+
+REQUIRED CREDENTIALS:
+1. API Key
+2. API Secret
+3. Client ID
+4. Sandbox Base URL (if different from production)
+5. Webhook configuration instructions
+
+INTEGRATION PURPOSE:
+- Automated M-Pesa deposits for users buying cryptocurrency
+- Automated M-Pesa withdrawals for users cashing out
+- Real-time transaction status updates via webhooks
+
+TECHNICAL REQUIREMENTS:
+- STK Push for customer payments
+- B2C transfers for customer payouts
+- Transaction status callbacks
+- Webhook endpoint: https://bpay.onrender.com/api/sasapay/callback/deposit
+
+Our development team has already prepared the integration code and is ready to implement once we receive the API credentials.
+
+Could you please provide:
+1. The API credentials mentioned above
+2. API documentation for STK Push and B2C operations
+3. Webhook setup instructions
+4. Any testing guidelines for sandbox environment
+
+We would appreciate your prompt response as we are eager to launch this integration for our Kenyan users.
+
+Thank you for your time and assistance.
+
+Best regards,
+
+[Your Name]
+[Your Title]
+BPay Platform
+Email: [your-email]
+Phone: [your-phone]
+Merchant Code: 53897

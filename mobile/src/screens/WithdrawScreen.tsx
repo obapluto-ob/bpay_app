@@ -1,39 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, TextInput } from 'react-native';
 
-const API_BASE = 'https://bpay-app.onrender.com/api';
+interface Props {
+  userCountry: 'NG' | 'KE';
+  userBalance: { kes: number; ngn: number };
+  onClose: () => void;
+  onSuccess: () => void;
+}
 
-export default function WithdrawScreen() {
-  const [currency, setCurrency] = useState('NGN');
+export const WithdrawScreen: React.FC<Props> = ({ userCountry, userBalance, onClose, onSuccess }) => {
   const [amount, setAmount] = useState('');
-  const [balance, setBalance] = useState(0);
-  const [withdrawType, setWithdrawType] = useState('bank');
-  const [bankName, setBankName] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [accountName, setAccountName] = useState('');
-  const [walletAddress, setWalletAddress] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [bankDetails, setBankDetails] = useState({
+    accountNumber: '',
+    bankName: '',
+    accountName: ''
+  });
+  const [selectedMethod, setSelectedMethod] = useState<'sasapay' | 'bank' | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  useEffect(() => {
-    fetchBalance();
-  }, [currency]);
+  const currency = userCountry === 'NG' ? '₦' : 'KSh';
+  const currencyName = userCountry === 'NG' ? 'Naira' : 'Shillings';
+  const balance = userCountry === 'NG' ? userBalance.ngn : userBalance.kes;
 
-  const fetchBalance = async () => {
-    try {
-      const userId = await AsyncStorage.getItem('userId');
-      const response = await fetch(`${API_BASE}/user/balance`, {
-        headers: { 'user-id': userId }
-      });
-      const data = await response.json();
-      setBalance(data[currency.toLowerCase()] || 0);
-    } catch (error) {
-      console.error('Fetch balance error:', error);
+  const handleSasaPayWithdraw = async () => {
+    if (!amount || !phoneNumber) {
+      Alert.alert('Error', 'Please enter amount and phone number');
+      return;
     }
-  };
 
-  const handleWithdraw = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      Alert.alert('Error', 'Please enter a valid amount');
+    if (parseFloat(amount) < 100) {
+      Alert.alert('Error', 'Minimum withdrawal is KSh 100');
       return;
     }
 
@@ -42,173 +39,440 @@ export default function WithdrawScreen() {
       return;
     }
 
-    if (withdrawType === 'bank' && (!bankName || !accountNumber || !accountName)) {
+    setIsProcessing(true);
+    
+    try {
+      const response = await fetch('/api/sasapay/withdrawal/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: 'current_user_id', // Replace with actual user ID
+          amount: parseFloat(amount),
+          phoneNumber: phoneNumber
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        Alert.alert(
+          'Withdrawal Initiated!',
+          'Your withdrawal is being processed. Funds will be sent to your M-Pesa within 5 minutes.',
+          [{ text: 'OK', onPress: onSuccess }]
+        );
+      } else {
+        Alert.alert('Error', result.error || 'Failed to initiate withdrawal');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Network error. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBankWithdraw = () => {
+    if (!amount || !bankDetails.accountNumber || !bankDetails.bankName || !bankDetails.accountName) {
       Alert.alert('Error', 'Please fill all bank details');
       return;
     }
 
-    if (withdrawType === 'crypto' && !walletAddress) {
-      Alert.alert('Error', 'Please enter wallet address');
-      return;
-    }
-
-    try {
-      const userId = await AsyncStorage.getItem('userId');
-      const response = await fetch(`${API_BASE}/withdrawals/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          amount: parseFloat(amount),
-          currency,
-          walletAddress: withdrawType === 'crypto' ? walletAddress : null,
-          bankDetails: withdrawType === 'bank' ? { bankName, accountNumber, accountName } : null
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        Alert.alert('Success', data.message);
-        setAmount('');
-        setBankName('');
-        setAccountNumber('');
-        setAccountName('');
-        setWalletAddress('');
-        fetchBalance();
-      } else {
-        Alert.alert('Error', data.error);
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create withdrawal request');
-    }
+    Alert.alert(
+      'Withdrawal Submitted',
+      `Your withdrawal of ${currency}${amount} has been submitted. Admin will process within 24 hours.`,
+      [{ text: 'OK', onPress: onSuccess }]
+    );
   };
 
-  return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>💸 Withdraw Funds</Text>
-      </View>
+  if (!selectedMethod) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Withdraw {currencyName}</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Available Balance</Text>
-        <Text style={styles.balanceAmount}>
-          {currency === 'NGN' ? '₦' : currency === 'KES' ? 'KSh' : ''}{balance.toLocaleString()}
-        </Text>
-      </View>
+        <ScrollView style={styles.content}>
+          <View style={styles.balanceCard}>
+            <Text style={styles.balanceLabel}>Available Balance</Text>
+            <Text style={styles.balanceAmount}>{currency}{balance.toFixed(2)}</Text>
+          </View>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Select Currency</Text>
-        <View style={styles.currencyButtons}>
-          {['NGN', 'KES', 'BTC', 'ETH', 'USDT'].map((c) => (
+          <Text style={styles.subtitle}>Choose withdrawal method:</Text>
+          
+          {userCountry === 'KE' && (
             <TouchableOpacity
-              key={c}
-              style={[styles.currencyButton, currency === c && styles.currencyButtonActive]}
-              onPress={() => setCurrency(c)}
+              style={styles.methodCard}
+              onPress={() => setSelectedMethod('sasapay')}
             >
-              <Text style={[styles.currencyButtonText, currency === c && styles.currencyButtonTextActive]}>{c}</Text>
+              <View style={[styles.methodIcon, styles.automatedIcon]}>
+                <View style={styles.lightningBolt} />
+                <View style={styles.phoneBody} />
+                <View style={styles.phoneScreen} />
+              </View>
+              <View style={styles.methodInfo}>
+                <Text style={styles.methodName}>SasaPay (Instant)</Text>
+                <Text style={styles.methodDetails}>Instant M-Pesa withdrawal</Text>
+              </View>
+              <Text style={styles.methodArrow}>›</Text>
             </TouchableOpacity>
-          ))}
-        </View>
+          )}
 
-        <Text style={styles.label}>Withdrawal Type</Text>
-        <View style={styles.typeButtons}>
           <TouchableOpacity
-            style={[styles.typeButton, withdrawType === 'bank' && styles.typeButtonActive]}
-            onPress={() => setWithdrawType('bank')}
+            style={styles.methodCard}
+            onPress={() => setSelectedMethod('bank')}
           >
-            <Text style={[styles.typeButtonText, withdrawType === 'bank' && styles.typeButtonTextActive]}>🏦 Bank Transfer</Text>
+            <View style={[styles.methodIcon, styles.bankIcon]}>
+              <View style={styles.bankIconContainer}>
+                <View style={styles.bankBuilding} />
+                <View style={styles.bankPillar1} />
+                <View style={styles.bankPillar2} />
+                <View style={styles.bankPillar3} />
+                <View style={styles.bankRoof} />
+              </View>
+            </View>
+            <View style={styles.methodInfo}>
+              <Text style={styles.methodName}>Bank Transfer</Text>
+              <Text style={styles.methodDetails}>Transfer to your bank account</Text>
+            </View>
+            <Text style={styles.methodArrow}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.typeButton, withdrawType === 'crypto' && styles.typeButtonActive]}
-            onPress={() => setWithdrawType('crypto')}
-          >
-            <Text style={[styles.typeButtonText, withdrawType === 'crypto' && styles.typeButtonTextActive]}>₿ Crypto Wallet</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.label}>Amount</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter amount"
-          keyboardType="numeric"
-          value={amount}
-          onChangeText={setAmount}
-        />
-
-        {withdrawType === 'bank' ? (
-          <>
-            <Text style={styles.label}>Bank Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter bank name"
-              value={bankName}
-              onChangeText={setBankName}
-            />
-
-            <Text style={styles.label}>Account Number</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter account number"
-              keyboardType="numeric"
-              value={accountNumber}
-              onChangeText={setAccountNumber}
-            />
-
-            <Text style={styles.label}>Account Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter account name"
-              value={accountName}
-              onChangeText={setAccountName}
-            />
-          </>
-        ) : (
-          <>
-            <Text style={styles.label}>Wallet Address</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter wallet address"
-              value={walletAddress}
-              onChangeText={setWalletAddress}
-            />
-          </>
-        )}
-
-        <TouchableOpacity style={styles.withdrawButton} onPress={handleWithdraw}>
-          <Text style={styles.withdrawButtonText}>Submit Withdrawal Request</Text>
-        </TouchableOpacity>
-
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>ℹ️ Withdrawals are processed within 24 hours by our admin team</Text>
-        </View>
+        </ScrollView>
       </View>
-    </ScrollView>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => setSelectedMethod(null)} style={styles.backButton}>
+          <Text style={styles.backButtonText}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>
+          {selectedMethod === 'sasapay' ? 'SasaPay Withdrawal' : 'Bank Withdrawal'}
+        </Text>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Text style={styles.closeButtonText}>✕</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.content}>
+        <View style={styles.balanceCard}>
+          <Text style={styles.balanceLabel}>Available Balance</Text>
+          <Text style={styles.balanceAmount}>{currency}{balance.toFixed(2)}</Text>
+        </View>
+
+        <View style={styles.withdrawCard}>
+          <Text style={styles.withdrawTitle}>
+            {selectedMethod === 'sasapay' ? 'Instant M-Pesa Withdrawal' : 'Bank Transfer Withdrawal'}
+          </Text>
+          
+          <Text style={styles.fieldLabel}>Amount to Withdraw</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={`Enter amount in ${currencyName}`}
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="numeric"
+          />
+
+          {selectedMethod === 'sasapay' ? (
+            <>
+              <Text style={styles.fieldLabel}>M-Pesa Phone Number</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="254712345678"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                keyboardType="phone-pad"
+              />
+              
+              <TouchableOpacity 
+                style={[styles.withdrawButton, isProcessing && styles.disabledButton]}
+                onPress={handleSasaPayWithdraw}
+                disabled={isProcessing}
+              >
+                <Text style={styles.withdrawButtonText}>
+                  {isProcessing ? 'Processing...' : 'Withdraw to M-Pesa'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Text style={styles.fieldLabel}>Account Number</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter account number"
+                value={bankDetails.accountNumber}
+                onChangeText={(text) => setBankDetails({...bankDetails, accountNumber: text})}
+              />
+
+              <Text style={styles.fieldLabel}>Bank Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter bank name"
+                value={bankDetails.bankName}
+                onChangeText={(text) => setBankDetails({...bankDetails, bankName: text})}
+              />
+
+              <Text style={styles.fieldLabel}>Account Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter account holder name"
+                value={bankDetails.accountName}
+                onChangeText={(text) => setBankDetails({...bankDetails, accountName: text})}
+              />
+              
+              <TouchableOpacity 
+                style={styles.withdrawButton}
+                onPress={handleBankWithdraw}
+              >
+                <Text style={styles.withdrawButtonText}>Submit Withdrawal Request</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#1e293b' },
-  balanceCard: { backgroundColor: '#f59e0b', margin: 16, padding: 24, borderRadius: 20, alignItems: 'center' },
-  balanceLabel: { fontSize: 14, color: '#fff', opacity: 0.9 },
-  balanceAmount: { fontSize: 36, fontWeight: 'bold', color: '#fff', marginTop: 8 },
-  card: { backgroundColor: '#fff', margin: 16, padding: 20, borderRadius: 20 },
-  label: { fontSize: 14, fontWeight: 'bold', color: '#64748b', marginTop: 16, marginBottom: 8 },
-  currencyButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  currencyButton: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 2, borderColor: '#e2e8f0' },
-  currencyButtonActive: { backgroundColor: '#f59e0b', borderColor: '#f59e0b' },
-  currencyButtonText: { fontWeight: 'bold', color: '#64748b' },
-  currencyButtonTextActive: { color: '#fff' },
-  typeButtons: { flexDirection: 'row', gap: 8 },
-  typeButton: { flex: 1, padding: 12, borderRadius: 12, borderWidth: 2, borderColor: '#e2e8f0', alignItems: 'center' },
-  typeButtonActive: { backgroundColor: '#f59e0b', borderColor: '#f59e0b' },
-  typeButtonText: { fontWeight: 'bold', color: '#64748b' },
-  typeButtonTextActive: { color: '#fff' },
-  input: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, fontSize: 16 },
-  withdrawButton: { backgroundColor: '#f59e0b', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 24 },
-  withdrawButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  infoBox: { backgroundColor: '#fef3c7', padding: 12, borderRadius: 12, marginTop: 16 },
-  infoText: { fontSize: 12, color: '#92400e', textAlign: 'center' }
+  container: {
+    flex: 1,
+    backgroundColor: '#1a365d',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: 80,
+    padding: 20,
+    paddingTop: 30,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1a365d',
+  },
+  closeButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f59e0b',
+  },
+  closeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#64748b',
+  },
+  backButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  content: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+    padding: 20,
+  },
+  balanceCard: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  balanceLabel: {
+    fontSize: 14,
+    color: '#64748b',
+    marginBottom: 8,
+  },
+  balanceAmount: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#10b981',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#64748b',
+    marginBottom: 20,
+  },
+  methodCard: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  methodIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    position: 'relative',
+  },
+  bankIcon: {
+    backgroundColor: '#dbeafe',
+  },
+  automatedIcon: {
+    backgroundColor: '#fef3c7',
+  },
+  bankIconContainer: {
+    width: 28,
+    height: 28,
+    position: 'relative',
+  },
+  bankBuilding: {
+    width: 20,
+    height: 16,
+    backgroundColor: '#3b82f6',
+    borderRadius: 2,
+    position: 'absolute',
+    bottom: 0,
+    left: 4,
+  },
+  bankPillar1: {
+    width: 3,
+    height: 12,
+    backgroundColor: '#1e40af',
+    position: 'absolute',
+    bottom: 4,
+    left: 6,
+  },
+  bankPillar2: {
+    width: 3,
+    height: 12,
+    backgroundColor: '#1e40af',
+    position: 'absolute',
+    bottom: 4,
+    left: 12,
+  },
+  bankPillar3: {
+    width: 3,
+    height: 12,
+    backgroundColor: '#1e40af',
+    position: 'absolute',
+    bottom: 4,
+    right: 6,
+  },
+  bankRoof: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 14,
+    borderRightWidth: 14,
+    borderBottomWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#1e40af',
+    position: 'absolute',
+    top: 0,
+    left: -4,
+  },
+  lightningBolt: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderBottomWidth: 12,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#f59e0b',
+    position: 'absolute',
+    top: 2,
+    left: 8,
+    transform: [{ rotate: '15deg' }],
+  },
+  phoneBody: {
+    width: 16,
+    height: 24,
+    backgroundColor: '#16a34a',
+    borderRadius: 4,
+    position: 'absolute',
+    left: 4,
+    top: 2,
+  },
+  phoneScreen: {
+    width: 12,
+    height: 16,
+    backgroundColor: '#22c55e',
+    borderRadius: 2,
+    position: 'absolute',
+    left: 6,
+    top: 4,
+  },
+  methodInfo: {
+    flex: 1,
+  },
+  methodName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginBottom: 4,
+  },
+  methodDetails: {
+    fontSize: 14,
+    color: '#64748b',
+  },
+  methodArrow: {
+    fontSize: 20,
+    color: '#64748b',
+  },
+  withdrawCard: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
+  },
+  withdrawTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    padding: 12,
+    borderRadius: 8,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  withdrawButton: {
+    backgroundColor: '#10b981',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  withdrawButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: '#9ca3af',
+  },
 });

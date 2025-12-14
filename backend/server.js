@@ -148,6 +148,12 @@ app.use('/api/chat', require('./routes/chat'));
 app.use('/api/admin', require('./routes/admin-assignment'));
 app.use('/api/admin-decisions', require('./routes/admin-decisions'));
 app.use('/api/rates', require('./routes/rates'));
+app.use('/api/email', require('./routes/email'));
+app.use('/api/sasapay-test', require('./routes/sasapay-test'));
+app.use('/api/sasapay', require('./routes/sasapay'));
+app.use('/api/luno', require('./routes/luno'));
+app.use('/api/auto-email', require('./routes/auto-email'));
+app.use('/api/demo', require('./routes/demo'));
 
 // Health check
 app.get('/health', (req, res) => {

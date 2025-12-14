@@ -24,6 +24,20 @@ const depositMethods: DepositMethod[] = [
     ]
   },
   {
+    id: 'ke_sasapay',
+    type: 'automated',
+    name: 'SasaPay (Instant)',
+    details: 'Automated M-Pesa deposit via SasaPay',
+    country: 'KE',
+    instructions: [
+      'Enter your M-Pesa phone number',
+      'Confirm the deposit amount',
+      'Check your phone for M-Pesa prompt',
+      'Enter your M-Pesa PIN to complete',
+      'Funds credited instantly upon payment'
+    ]
+  },
+  {
     id: 'ke_bank',
     type: 'bank_transfer', 
     name: 'Bank Transfer',
@@ -39,8 +53,8 @@ const depositMethods: DepositMethod[] = [
   {
     id: 'ke_mpesa',
     type: 'mobile_money',
-    name: 'M-Pesa',
-    details: 'Send money via M-Pesa',
+    name: 'M-Pesa (Manual)',
+    details: 'Send money via M-Pesa manually',
     country: 'KE',
     instructions: [
       'Go to M-Pesa menu on your phone',
@@ -78,6 +92,8 @@ export const DepositScreen: React.FC<Props> = ({ userCountry, onClose, onSuccess
   const [paymentReference, setPaymentReference] = useState('');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const availableMethods = depositMethods.filter(method => method.country === userCountry);
   const currency = userCountry === 'NG' ? '₦' : 'KSh';
@@ -126,6 +142,49 @@ export const DepositScreen: React.FC<Props> = ({ userCountry, onClose, onSuccess
     );
   };
 
+  const handleAutomatedDeposit = async () => {
+    if (!amount || !phoneNumber) {
+      Alert.alert('Error', 'Please enter amount and phone number');
+      return;
+    }
+
+    if (parseFloat(amount) < 100) {
+      Alert.alert('Error', 'Minimum deposit is KSh 100');
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+      // Call your backend API to initiate SasaPay deposit
+      const response = await fetch('/api/sasapay/deposit/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: 'current_user_id', // Replace with actual user ID
+          amount: parseFloat(amount),
+          phoneNumber: phoneNumber
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        Alert.alert(
+          'M-Pesa Prompt Sent!',
+          'Check your phone for the M-Pesa payment prompt. Enter your PIN to complete the deposit.',
+          [{ text: 'OK', onPress: onSuccess }]
+        );
+      } else {
+        Alert.alert('Error', result.error || 'Failed to initiate deposit');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Network error. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   if (!selectedMethod) {
     return (
       <View style={styles.container}>
@@ -147,7 +206,8 @@ export const DepositScreen: React.FC<Props> = ({ userCountry, onClose, onSuccess
             >
               <View style={[styles.methodIcon, 
                 method.type === 'bank_transfer' && styles.bankIcon,
-                method.type === 'mobile_money' && styles.mobileIcon
+                method.type === 'mobile_money' && styles.mobileIcon,
+                method.type === 'automated' && styles.automatedIcon
               ]}>
                 {method.type === 'bank_transfer' ? (
                   <View style={styles.bankIconContainer}>
@@ -156,6 +216,12 @@ export const DepositScreen: React.FC<Props> = ({ userCountry, onClose, onSuccess
                     <View style={styles.bankPillar2} />
                     <View style={styles.bankPillar3} />
                     <View style={styles.bankRoof} />
+                  </View>
+                ) : method.type === 'automated' ? (
+                  <View style={styles.automatedIconContainer}>
+                    <View style={styles.lightningBolt} />
+                    <View style={styles.phoneBody} />
+                    <View style={styles.phoneScreen} />
                   </View>
                 ) : (
                   <View style={styles.phoneIconContainer}>
@@ -271,12 +337,46 @@ export const DepositScreen: React.FC<Props> = ({ userCountry, onClose, onSuccess
               </View>
             )}
 
-            <TouchableOpacity 
-              style={styles.continueButton}
-              onPress={() => setShowUpload(true)}
-            >
-              <Text style={styles.continueButtonText}>I've Made the Payment</Text>
-            </TouchableOpacity>
+            {selectedMethod.type === 'automated' ? (
+              <View style={styles.automatedCard}>
+                <Text style={styles.automatedTitle}>Instant M-Pesa Deposit</Text>
+                
+                <Text style={styles.fieldLabel}>Amount to Deposit</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter amount in KSh"
+                  value={amount}
+                  onChangeText={setAmount}
+                  keyboardType="numeric"
+                />
+                
+                <Text style={styles.fieldLabel}>M-Pesa Phone Number</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="254712345678"
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  keyboardType="phone-pad"
+                />
+                
+                <TouchableOpacity 
+                  style={[styles.automatedButton, isProcessing && styles.disabledButton]}
+                  onPress={handleAutomatedDeposit}
+                  disabled={isProcessing}
+                >
+                  <Text style={styles.automatedButtonText}>
+                    {isProcessing ? 'Processing...' : 'Send M-Pesa Prompt'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity 
+                style={styles.continueButton}
+                onPress={() => setShowUpload(true)}
+              >
+                <Text style={styles.continueButtonText}>I've Made the Payment</Text>
+              </TouchableOpacity>
+            )}
           </>
         ) : (
           <>
@@ -420,6 +520,56 @@ const styles = StyleSheet.create({
   },
   mobileIcon: {
     backgroundColor: '#dcfce7',
+  },
+  automatedIcon: {
+    backgroundColor: '#fef3c7',
+  },
+  automatedIconContainer: {
+    width: 28,
+    height: 28,
+    position: 'relative',
+  },
+  lightningBolt: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderBottomWidth: 12,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#f59e0b',
+    position: 'absolute',
+    top: 2,
+    left: 8,
+    transform: [{ rotate: '15deg' }],
+  },
+  automatedCard: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  automatedTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  automatedButton: {
+    backgroundColor: '#f59e0b',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  automatedButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: '#9ca3af',
   },
   bankIconContainer: {
     width: 28,

@@ -85,10 +85,30 @@ export const SellCryptoScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
     return assignedAdmin || getBestAvailableAdmin();
   };
   
-  const companyWallets = {
-    BTC: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-    ETH: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d4d4',
-    USDT: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d4d4'
+  const [companyAddress, setCompanyAddress] = useState<string>('');
+  
+  // Get Luno deposit address for selected crypto
+  const getDepositAddress = async () => {
+    try {
+      const response = await fetch('/api/luno/deposit/address', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          userId: 'current_user_id', // Replace with actual user ID
+          currency: selectedCrypto
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        setCompanyAddress(result.address);
+      }
+    } catch (error) {
+      console.error('Failed to get deposit address:', error);
+    }
   };
 
   const handleCreateEscrow = async () => {
@@ -480,15 +500,27 @@ export const SellCryptoScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
           <Text style={styles.transferTitle}>Send Your Crypto</Text>
           
           <View style={styles.walletInfo}>
-            <Text style={styles.walletLabel}>Send {selectedCrypto} to:</Text>
+            <Text style={styles.walletLabel}>Send {selectedCrypto} to our Luno wallet:</Text>
             <View style={styles.walletAddress}>
-              <Text style={styles.addressText}>{companyWallets[selectedCrypto]}</Text>
+              <Text style={styles.addressText}>
+                {companyAddress || 'Loading address...'}
+              </Text>
             </View>
             
             <Text style={styles.walletWarning}>
               IMPORTANT: Only send {selectedCrypto} to this address.
               Sending other coins will result in permanent loss.
+              Deposits are automatically credited via Luno.
             </Text>
+            
+            {!companyAddress && (
+              <TouchableOpacity 
+                style={styles.refreshButton}
+                onPress={getDepositAddress}
+              >
+                <Text style={styles.refreshButtonText}>Get Deposit Address</Text>
+              </TouchableOpacity>
+            )}
           </View>
           
           <TouchableOpacity 
@@ -496,7 +528,7 @@ export const SellCryptoScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
             onPress={() => {
               setOrderStep('waiting');
               onNotification(
-                `Transfer initiated for ${parseFloat(amount).toFixed(8)} ${selectedCrypto} - awaiting confirmation`,
+                `Transfer initiated for ${parseFloat(amount).toFixed(8)} ${selectedCrypto} - Luno will auto-detect deposit`,
                 'info'
               );
             }}
@@ -510,8 +542,8 @@ export const SellCryptoScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
         <View style={styles.waitingSection}>
           <Text style={styles.waitingTitle}>Transfer Verification</Text>
           <Text style={styles.waitingText}>
-            Your crypto transfer is being verified by our admin team.
-            You can chat with the assigned admin below.
+            Your crypto transfer will be automatically detected by Luno.
+            Chat with admin if you need assistance or have issues.
           </Text>
           
           <View style={styles.adminAssigned}>
