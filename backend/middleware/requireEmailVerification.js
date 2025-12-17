@@ -1,0 +1,12 @@
+const requireEmailVerification = (req, res, next) => {
+  if (!req.user.verified) {
+    return res.status(403).json({
+      error: 'Email verification required',
+      message: 'Please verify your email address to access this feature. Check your inbox for the verification link.',
+      requiresVerification: true
+    });
+  }
+  next();
+};
+
+module.exports = requireEmailVerification;

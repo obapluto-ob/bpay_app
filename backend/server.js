@@ -133,8 +133,8 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/trade', require('./routes/trade'));
+app.use('/api/auth', require('./routes/auth-fixed'));
+app.use('/api/trade', require('./routes/trade-fixed'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/avatar', require('./routes/avatar'));
@@ -154,6 +154,10 @@ app.use('/api/sasapay', require('./routes/sasapay'));
 app.use('/api/luno', require('./routes/luno'));
 app.use('/api/auto-email', require('./routes/auto-email'));
 app.use('/api/demo', require('./routes/demo'));
+app.use('/api/test', require('./routes/test-routes'));
+app.use('/api/quick', require('./routes/quick-setup'));
+app.use('/api/email-test', require('./routes/email-test'));
+app.use('/api/external', require('./routes/external-apis'));
 
 // Health check
 app.get('/health', (req, res) => {
