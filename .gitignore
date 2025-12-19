@@ -1,16 +1,47 @@
+# Dependencies
 node_modules/
+*/node_modules/
+
+# Environment variables
 .env
-*.log
-.DS_Store
-.expo/
-dist/
+.env.local
+.env.production
+.env.development
+
+# Build outputs
 build/
-*.tgz
-.npm
-.eslintcache
+dist/
+out/
+.next/
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# IDE files
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Next.js
-.next/
-out/
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/

@@ -9,12 +9,12 @@ class EmailService {
     console.log('Pass:', process.env.EMAIL_PASS ? '***SET***' : 'NOT SET');
     
     this.transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST || 'smtp.hmailplus.com',
+      host: process.env.EMAIL_HOST,
       port: parseInt(process.env.EMAIL_PORT) || 587,
       secure: false, // Use STARTTLS for port 587
       auth: {
-        user: process.env.EMAIL_USER || 'support@bpayapp.co.ke',
-        pass: process.env.EMAIL_PASS || 'gT?3!NWLtm!a'
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
       },
       debug: true,
       logger: true
@@ -23,7 +23,7 @@ class EmailService {
 
   async sendSasaPayRequest() {
     const mailOptions = {
-      from: process.env.EMAIL_FROM || 'support@bpayapp.co.ke',
+      from: process.env.EMAIL_FROM,
       to: 'developers@sasapay.app', // SasaPay developer email
       subject: 'API Credentials Request for Merchant Code 53897',
       html: `
@@ -88,7 +88,7 @@ class EmailService {
     console.log('📧 Testing email configuration...');
     
     const mailOptions = {
-      from: process.env.EMAIL_FROM || 'support@bpayapp.co.ke',
+      from: process.env.EMAIL_FROM,
       to: process.env.EMAIL_USER, // Send to yourself
       subject: 'BPay Email Test',
       text: 'HMailPlus Core is working correctly!'
