@@ -1,4 +1,4 @@
-const emailService = require('./email');
+const emailService = require('./email-fallback');
 const crypto = require('crypto');
 
 class EmailVerificationService {
@@ -58,12 +58,7 @@ class EmailVerificationService {
       `
     };
 
-    try {
-      const result = await emailService.transporter.sendMail(mailOptions);
-      return { success: true, messageId: result.messageId };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
+    return await emailService.sendMail(mailOptions);
   }
 
   // Send login verification email
