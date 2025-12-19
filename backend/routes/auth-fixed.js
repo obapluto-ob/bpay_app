@@ -158,9 +158,10 @@ router.post('/login', [
       }
     }
 
-    // Create JWT token
+    // Create JWT token with correct verification status
+    const isVerified = user.email_verified || false;
     const token = jwt.sign(
-      { id: user.id, email: user.email, verified: user.email_verified || false },
+      { id: user.id, email: user.email, verified: isVerified, emailVerified: isVerified },
       process.env.JWT_SECRET || 'fallback-secret',
       { expiresIn: '7d' }
     );
