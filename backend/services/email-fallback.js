@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer');
 class FallbackEmailService {
   constructor() {
     // Try hMailPlus first, fallback to Gmail
-    this.primaryTransporter = nodemailer.createTransporter({
+    this.primaryTransporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: parseInt(process.env.EMAIL_PORT) || 465,
       secure: true,
@@ -15,7 +15,7 @@ class FallbackEmailService {
     });
 
     // Fallback Gmail transporter
-    this.fallbackTransporter = nodemailer.createTransporter({
+    this.fallbackTransporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.GMAIL_USER || 'your-gmail@gmail.com',
