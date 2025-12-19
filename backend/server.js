@@ -161,6 +161,7 @@ app.use('/api/external', require('./routes/external-apis'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/crypto', require('./routes/crypto'));
 app.use('/api/fix', require('./routes/fix-old-users'));
+app.use('/api/migrate', require('./routes/migrate-db'));
 
 // Health check
 app.get('/health', (req, res) => {
