@@ -128,7 +128,7 @@ router.get('/:tradeId/chat', authenticateToken, async (req, res) => {
       [tradeId]
     );
     
-    res.json({ messages: result.rows });
+    res.json(result.rows || []);
   } catch (error) {
     console.error('Get chat error:', error);
     res.status(500).json({ error: 'Failed to fetch messages' });
@@ -157,7 +157,7 @@ router.post('/:tradeId/chat', authenticateToken, async (req, res) => {
       [tradeId, userId, 'user', message]
     );
     
-    res.json({ message: result.rows[0] });
+    res.json(result.rows[0] || {});
   } catch (error) {
     console.error('Send message error:', error);
     res.status(500).json({ error: 'Failed to send message' });
