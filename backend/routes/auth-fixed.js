@@ -118,16 +118,31 @@ router.post('/login', [
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
-    // Send login notification
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const userAgent = req.get('User-Agent');
-    
-    const emailResult = await emailVerification.sendLoginVerification(
-      user.email,
-      `${user.first_name} ${user.last_name}`,
-      ipAddress,
-      userAgent
-    );
+    // Check if user needs verification (old users)
+    if (!user.email_verified && !user.verification_token) {
+      const verificationToken = emailVerification.generateVerificationToken();
+      await pool.query(
+        'UPDATE users SET verification_token = $1 WHERE email = $2',
+        [verificationToken, user.email]
+      );
+      
+      await emailVerification.sendRegistrationVerification(
+        user.email,
+        `${user.first_name} ${user.last_name}`,
+        verificationToken
+      );
+    } else {
+      // Send login notification for verified users
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      const userAgent = req.get('User-Agent');
+      
+      await emailVerification.sendLoginVerification(
+        user.email,
+        `${user.first_name} ${user.last_name}`,
+        ipAddress,
+        userAgent
+      );
+    }
 
     // Create JWT token
     const token = jwt.sign(
@@ -136,14 +151,19 @@ router.post('/login', [
       { expiresIn: '7d' }
     );
 
+    const isVerified = user.email_verified || false;
+    const message = isVerified 
+      ? 'Login successful' 
+      : 'Login successful! Please verify your email to access all features. Check your inbox.';
+    
     res.json({
-      message: 'Login successful',
+      message,
       token,
       user: {
         id: user.id,
         email: user.email,
         fullName: `${user.first_name} ${user.last_name}`,
-        emailVerified: user.email_verified || false,
+        emailVerified: isVerified,
         balances: {
           btc: parseFloat(user.btc_balance || 0),
           eth: parseFloat(user.eth_balance || 0),
@@ -152,11 +172,62 @@ router.post('/login', [
           kes: parseFloat(user.kes_balance || 0)
         }
       },
-      loginNotificationSent: emailResult.success
+      requiresVerification: !isVerified
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Resend verification email
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email required' });
+    }
+    
+    const result = await pool.query(
+      'SELECT id, email, first_name, last_name, email_verified, verification_token FROM users WHERE email = $1',
+      [email]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = result.rows[0];
+    
+    if (user.email_verified) {
+      return res.json({ message: 'Email already verified' });
+    }
+    
+    // Generate new token if user doesn't have one (old users)
+    let verificationToken = user.verification_token;
+    if (!verificationToken) {
+      verificationToken = emailVerification.generateVerificationToken();
+      await pool.query(
+        'UPDATE users SET verification_token = $1 WHERE email = $2',
+        [verificationToken, email]
+      );
+    }
+    
+    // Send verification email
+    const emailResult = await emailVerification.sendRegistrationVerification(
+      user.email,
+      `${user.first_name} ${user.last_name}`,
+      verificationToken
+    );
+    
+    res.json({
+      message: 'Verification email sent! Please check your inbox.',
+      emailSent: emailResult.success
+    });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ error: 'Failed to resend verification' });
   }
 });
 
