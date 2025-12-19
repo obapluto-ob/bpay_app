@@ -1,73 +1,36 @@
 const express = require('express');
+const emailService = require('../services/email');
 const emailVerification = require('../services/email-verification');
 const router = express.Router();
 
-// Test email sending directly
-router.post('/send-verification', async (req, res) => {
+// Test email configuration
+router.get('/test-email', async (req, res) => {
   try {
-    const { email, fullName } = req.body;
-    
-    if (!email || !fullName) {
-      return res.status(400).json({ error: 'Email and fullName required' });
-    }
+    console.log('🔧 Environment Check:');
+    console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
+    console.log('EMAIL_PORT:', process.env.EMAIL_PORT);
+    console.log('EMAIL_SECURE:', process.env.EMAIL_SECURE);
+    console.log('EMAIL_USER:', process.env.EMAIL_USER);
+    console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'SET' : 'NOT SET');
+    console.log('EMAIL_FROM:', process.env.EMAIL_FROM);
 
-    // Generate test token
-    const token = 'test_' + Date.now();
-    
-    // Send verification email
-    const result = await emailVerification.sendRegistrationVerification(email, fullName, token);
-    
-    if (result.success) {
-      res.json({
-        success: true,
-        message: 'Verification email sent successfully!',
-        messageId: result.messageId,
-        email: email
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        error: result.error
-      });
-    }
+    const result = await emailService.testEmail();
+    res.json(result);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Test login notification
-router.post('/send-login-notification', async (req, res) => {
+// Test verification email
+router.post('/test-verification', async (req, res) => {
   try {
-    const { email, fullName } = req.body;
+    const { email, name } = req.body;
+    const token = 'test-token-123';
     
-    if (!email || !fullName) {
-      return res.status(400).json({ error: 'Email and fullName required' });
-    }
-
-    // Send login notification
-    const result = await emailVerification.sendLoginVerification(email, fullName, '127.0.0.1', 'Test Browser');
-    
-    if (result.success) {
-      res.json({
-        success: true,
-        message: 'Login notification sent successfully!',
-        messageId: result.messageId,
-        email: email
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        error: result.error
-      });
-    }
+    const result = await emailVerification.sendRegistrationVerification(email, name, token);
+    res.json(result);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
