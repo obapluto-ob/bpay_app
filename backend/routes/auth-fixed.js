@@ -65,8 +65,13 @@ router.post('/register', [
 
     const user = result.rows[0];
 
-    // Send verification email
-    const emailResult = await emailVerification.sendRegistrationVerification(email, fullName, verificationToken);
+    // Send verification email (continue even if it fails)
+    let emailResult = { success: false };
+    try {
+      emailResult = await emailVerification.sendRegistrationVerification(email, fullName, verificationToken);
+    } catch (error) {
+      console.log('Email sending failed, continuing registration:', error.message);
+    }
 
     // Create JWT token
     const token = jwt.sign(
@@ -75,8 +80,12 @@ router.post('/register', [
       { expiresIn: '7d' }
     );
 
+    const message = emailResult.success 
+      ? 'Account created successfully! Please verify your email to access all features.'
+      : 'Account created successfully! Email verification temporarily unavailable. Contact support for manual verification.';
+    
     res.status(201).json({
-      message: 'Account created successfully! Please verify your email to access all features.',
+      message,
       token,
       user: {
         id: user.id,
@@ -85,7 +94,8 @@ router.post('/register', [
         emailVerified: false
       },
       emailSent: emailResult.success,
-      requiresVerification: true
+      requiresVerification: true,
+      manualVerificationAvailable: !emailResult.success
     });
   } catch (error) {
     console.error('Registration error:', error);
