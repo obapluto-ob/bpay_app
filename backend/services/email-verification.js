@@ -1,6 +1,26 @@
 const emailService = require('./email-fallback');
 const crypto = require('crypto');
 
+// Netlify email service
+const sendViaNetlify = async (mailOptions) => {
+  try {
+    const response = await fetch('https://bpayapp.netlify.app/.netlify/functions/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        html: mailOptions.html
+      })
+    });
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
 class EmailVerificationService {
   // Generate verification token
   generateVerificationToken() {
@@ -58,7 +78,13 @@ class EmailVerificationService {
       `
     };
 
-    return await emailService.sendMail(mailOptions);
+    // Try Netlify function first, then fallback to direct SMTP
+    let result = await sendViaNetlify(mailOptions);
+    if (!result.success) {
+      console.log('Netlify failed, trying direct SMTP:', result.error);
+      result = await emailService.sendMail(mailOptions);
+    }
+    return result;
   }
 
   // Send login verification email
