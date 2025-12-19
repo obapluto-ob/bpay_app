@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import NotificationPanel from '../../components/NotificationPanel';
+import { useRealTimeNotifications } from '../../hooks/useRealTimeNotifications';
 
 const API_BASE = 'https://bpay-app.onrender.com/api';
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
+  const { showNotification } = useRealTimeNotifications();
   const [stats, setStats] = useState<any>({});
   const [admins, setAdmins] = useState<any[]>([]);
   const [disputes, setDisputes] = useState<any[]>([]);
@@ -31,7 +34,11 @@ export default function SuperAdminDashboard() {
       if (statsRes.ok) {
         const newStats = await statsRes.json();
         if (newStats.pendingTrades > lastOrderCount && lastOrderCount > 0) {
-          alert('New order received!');
+          showNotification({
+            type: 'trade',
+            title: 'New Trade Order!',
+            message: `${newStats.pendingTrades - lastOrderCount} new trade(s) require attention`
+          });
         }
         setLastOrderCount(newStats.pendingTrades);
         setStats(newStats);
@@ -79,7 +86,10 @@ export default function SuperAdminDashboard() {
               <p className="text-xs md:text-sm text-orange-100">Super Admin Dashboard</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="bg-white text-orange-600 px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-orange-50 shadow-lg transition-all">Logout</button>
+          <div className="flex items-center gap-3">
+            <NotificationPanel />
+            <button onClick={handleLogout} className="bg-white text-orange-600 px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-orange-50 shadow-lg transition-all">Logout</button>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-3">
