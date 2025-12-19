@@ -13,10 +13,15 @@ router.get('/test-merchant', async (req, res) => {
 });
 
 // Test STK push structure (will work once you have credentials)
-router.post('/test-stk', async (req, res) => {
+router.get('/test-stk', async (req, res) => {
   try {
-    const { phoneNumber, amount } = req.body;
-    const result = await sasaPayTest.initiateSTKPush(phoneNumber, amount);
+    const result = {
+      success: false,
+      message: 'SasaPay test endpoint working. Waiting for API credentials from SasaPay support.',
+      status: 'credentials_pending',
+      merchantCode: '53897',
+      integration: 'ready'
+    };
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
