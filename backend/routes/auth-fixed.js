@@ -120,30 +120,42 @@ router.post('/login', [
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
-    // Check if user needs verification (old users)
-    if (!user.email_verified && !user.verification_token) {
-      const verificationToken = emailVerification.generateVerificationToken();
-      await pool.query(
-        'UPDATE users SET verification_token = $1 WHERE email = $2',
-        [verificationToken, user.email]
-      );
-      
-      await emailVerification.sendRegistrationVerification(
-        user.email,
-        `${user.first_name} ${user.last_name}`,
-        verificationToken
-      );
-    } else {
+    // Backward compatibility: Handle users with missing columns
+    const emailVerified = user.email_verified || false;
+    const verificationToken = user.verification_token || null;
+    
+    // Auto-migrate old users on login
+    if (!emailVerified && !verificationToken) {
+      try {
+        const newToken = emailVerification.generateVerificationToken();
+        await pool.query(
+          'UPDATE users SET verification_token = $1, email_verified = $2 WHERE email = $3',
+          [newToken, false, user.email]
+        );
+        
+        await emailVerification.sendRegistrationVerification(
+          user.email,
+          `${user.first_name} ${user.last_name}`,
+          newToken
+        );
+      } catch (error) {
+        console.log('Auto-migration failed, continuing login:', error.message);
+      }
+    } else if (emailVerified) {
       // Send login notification for verified users
-      const ipAddress = req.ip || req.connection.remoteAddress;
-      const userAgent = req.get('User-Agent');
-      
-      await emailVerification.sendLoginVerification(
-        user.email,
-        `${user.first_name} ${user.last_name}`,
-        ipAddress,
-        userAgent
-      );
+      try {
+        const ipAddress = req.ip || req.connection.remoteAddress;
+        const userAgent = req.get('User-Agent');
+        
+        await emailVerification.sendLoginVerification(
+          user.email,
+          `${user.first_name} ${user.last_name}`,
+          ipAddress,
+          userAgent
+        );
+      } catch (error) {
+        console.log('Login notification failed, continuing login:', error.message);
+      }
     }
 
     // Create JWT token
@@ -153,7 +165,9 @@ router.post('/login', [
       { expiresIn: '7d' }
     );
 
+    // Backward compatibility: Safe null checks
     const isVerified = user.email_verified || false;
+    const hasVerificationToken = user.verification_token || false;
     const message = isVerified 
       ? 'Login successful' 
       : 'Login successful! Please verify your email to access all features. Check your inbox.';
@@ -164,7 +178,7 @@ router.post('/login', [
       user: {
         id: user.id,
         email: user.email,
-        fullName: `${user.first_name} ${user.last_name}`,
+        fullName: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
         emailVerified: isVerified,
         balances: {
           btc: parseFloat(user.btc_balance || 0),
