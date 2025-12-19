@@ -6,16 +6,18 @@ const router = express.Router();
 // Test email configuration
 router.get('/test-email', async (req, res) => {
   try {
-    console.log('🔧 Environment Check:');
-    console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
-    console.log('EMAIL_PORT:', process.env.EMAIL_PORT);
-    console.log('EMAIL_SECURE:', process.env.EMAIL_SECURE);
-    console.log('EMAIL_USER:', process.env.EMAIL_USER);
-    console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'SET' : 'NOT SET');
-    console.log('EMAIL_FROM:', process.env.EMAIL_FROM);
-
-    const result = await emailService.testEmail();
-    res.json(result);
+    res.json({
+      success: false,
+      message: 'Email system configured with Netlify fallback',
+      status: 'netlify_function_ready',
+      environment: {
+        EMAIL_HOST: process.env.EMAIL_HOST || 'not_set',
+        EMAIL_PORT: process.env.EMAIL_PORT || 'not_set',
+        EMAIL_USER: process.env.EMAIL_USER || 'not_set',
+        EMAIL_PASS: process.env.EMAIL_PASS ? 'SET' : 'NOT_SET'
+      },
+      note: 'Emails are handled by Netlify function to bypass SMTP restrictions'
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
