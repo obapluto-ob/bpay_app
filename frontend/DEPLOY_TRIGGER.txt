@@ -1,0 +1,4 @@
+Deploy trigger: 2025-12-19 11:50:00
+Force rebuild with latest backend changes
+Email verification system updated
+Payment routes added
