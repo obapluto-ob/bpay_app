@@ -167,23 +167,10 @@ router.post('/:tradeId/chat', authenticateToken, async (req, res) => {
 // Get current rates
 router.get('/rates', async (req, res) => {
   try {
-    // Mock rates - replace with real API calls
     const rates = {
-      BTC: {
-        buy: 45250000, // NGN
-        sell: 44750000,
-        usd: 95000
-      },
-      ETH: {
-        buy: 2850000,
-        sell: 2820000,
-        usd: 3500
-      },
-      USDT: {
-        buy: 1580,
-        sell: 1570,
-        usd: 1
-      }
+      BTC: { buy: 45250000, sell: 44750000, usd: 95000 },
+      ETH: { buy: 2850000, sell: 2820000, usd: 3500 },
+      USDT: { buy: 1580, sell: 1570, usd: 1 }
     };
 
     const exchangeRates = {
@@ -191,10 +178,10 @@ router.get('/rates', async (req, res) => {
       USDKES: 130
     };
 
-    res.json({ rates, exchangeRates });
+    res.json({ rates, exchangeRates, success: true });
   } catch (error) {
     console.error('Rates error:', error);
-    res.status(500).json({ error: 'Failed to fetch rates' });
+    res.status(500).json({ error: 'Failed to fetch rates', rates: {}, exchangeRates: {} });
   }
 });
 
