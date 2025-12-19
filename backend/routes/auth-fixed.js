@@ -167,7 +167,6 @@ router.post('/login', [
     );
 
     // Backward compatibility: Safe null checks
-    const isVerified = user.email_verified || false;
     const hasVerificationToken = user.verification_token || false;
     const message = isVerified 
       ? 'Login successful' 
