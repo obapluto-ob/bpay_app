@@ -152,53 +152,70 @@ router.post('/login', [
   }
 });
 
-// Forgot Password - Get Security Question
+// Forgot Password - Send Reset Email
 router.post('/forgot-password', [
   body('email').isEmail().normalizeEmail()
 ], async (req, res) => {
   try {
     const { email } = req.body;
     
-    const result = await db.query('SELECT security_question FROM users WHERE email = $1', [email]);
+    const result = await db.query('SELECT id, first_name, last_name FROM users WHERE email = $1', [email]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
     
     const user = result.rows[0];
-    if (!user.security_question) {
-      return res.status(400).json({ error: 'No security question set for this account' });
-    }
+    const resetToken = emailVerification.generateVerificationToken();
     
-    res.json({ securityQuestion: user.security_question });
+    // Store reset token with expiry (1 hour)
+    await db.query(
+      'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3',
+      [resetToken, new Date(Date.now() + 3600000), email] // 1 hour from now
+    );
+    
+    // Send reset email
+    const emailResult = await emailVerification.sendPasswordReset(
+      email,
+      `${user.first_name} ${user.last_name}`,
+      resetToken
+    );
+    
+    if (emailResult.success) {
+      res.json({ message: 'Password reset email sent successfully' });
+    } else {
+      res.status(500).json({ error: 'Failed to send reset email' });
+    }
   } catch (error) {
     console.error('Forgot password error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Reset Password
+// Reset Password with Token
 router.post('/reset-password', [
-  body('email').isEmail().normalizeEmail(),
-  body('securityAnswer').trim().isLength({ min: 1 }),
+  body('token').exists(),
   body('newPassword').isLength({ min: 6 })
 ], async (req, res) => {
   try {
-    const { email, securityAnswer, newPassword } = req.body;
+    const { token, newPassword } = req.body;
     
-    const result = await db.query('SELECT security_answer FROM users WHERE email = $1', [email]);
+    const result = await db.query(
+      'SELECT id, email FROM users WHERE reset_token = $1 AND reset_token_expires > $2',
+      [token, new Date()]
+    );
+    
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
     }
     
     const user = result.rows[0];
-    const isAnswerCorrect = await bcrypt.compare(securityAnswer.toLowerCase(), user.security_answer);
-    
-    if (!isAnswerCorrect) {
-      return res.status(400).json({ error: 'Incorrect security answer' });
-    }
-    
     const hashedPassword = await bcrypt.hash(newPassword, 12);
-    await db.query('UPDATE users SET password = $1 WHERE email = $2', [hashedPassword, email]);
+    
+    // Update password and clear reset token
+    await db.query(
+      'UPDATE users SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2',
+      [hashedPassword, user.id]
+    );
     
     res.json({ message: 'Password reset successfully' });
   } catch (error) {
@@ -208,9 +225,9 @@ router.post('/reset-password', [
 });
 
 // Verify email address
-router.get('/verify-email', async (req, res) => {
+router.post('/verify-email', async (req, res) => {
   try {
-    const { token } = req.query;
+    const { token } = req.body;
     
     if (!token) {
       return res.status(400).json({ error: 'Verification token required' });
