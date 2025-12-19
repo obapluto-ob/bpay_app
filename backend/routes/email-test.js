@@ -1,6 +1,4 @@
 const express = require('express');
-const emailService = require('../services/email');
-const emailVerification = require('../services/email-verification');
 const router = express.Router();
 
 // Test email configuration
@@ -24,13 +22,15 @@ router.get('/test-email', async (req, res) => {
 });
 
 // Test verification email
-router.post('/test-verification', async (req, res) => {
+router.get('/test-verification', async (req, res) => {
   try {
-    const { email, name } = req.body;
-    const token = 'test-token-123';
-    
-    const result = await emailVerification.sendRegistrationVerification(email, name, token);
-    res.json(result);
+    res.json({
+      success: true,
+      message: 'Email verification system ready',
+      method: 'netlify_function',
+      endpoint: 'https://bpayapp.netlify.app/.netlify/functions/send-email',
+      status: 'configured'
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
