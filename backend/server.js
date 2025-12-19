@@ -158,6 +158,9 @@ app.use('/api/test', require('./routes/test-routes'));
 app.use('/api/quick', require('./routes/quick-setup'));
 app.use('/api/email-test', require('./routes/email-test'));
 app.use('/api/external', require('./routes/external-apis'));
+app.use('/api/payments', require('./routes/payments'));
+app.use('/api/crypto', require('./routes/crypto'));
+app.use('/api/fix', require('./routes/fix-old-users'));
 
 // Health check
 app.get('/health', (req, res) => {
