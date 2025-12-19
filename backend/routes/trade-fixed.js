@@ -85,6 +85,85 @@ router.get('/history', authenticateToken, requireEmailVerification, async (req, 
   }
 });
 
+// Get specific trade
+router.get('/:tradeId', authenticateToken, async (req, res) => {
+  try {
+    const { tradeId } = req.params;
+    const userId = req.user.id;
+    
+    const result = await pool.query(
+      'SELECT * FROM trades WHERE id = $1 AND user_id = $2',
+      [tradeId, userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    
+    res.json({ trade: result.rows[0] });
+  } catch (error) {
+    console.error('Get trade error:', error);
+    res.status(500).json({ error: 'Failed to fetch trade' });
+  }
+});
+
+// Get trade chat messages
+router.get('/:tradeId/chat', authenticateToken, async (req, res) => {
+  try {
+    const { tradeId } = req.params;
+    const userId = req.user.id;
+    
+    // Verify user owns this trade
+    const tradeCheck = await pool.query(
+      'SELECT id FROM trades WHERE id = $1 AND user_id = $2',
+      [tradeId, userId]
+    );
+    
+    if (tradeCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    
+    const result = await pool.query(
+      'SELECT * FROM chat_messages WHERE trade_id = $1 ORDER BY created_at ASC',
+      [tradeId]
+    );
+    
+    res.json({ messages: result.rows });
+  } catch (error) {
+    console.error('Get chat error:', error);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+// Send chat message
+router.post('/:tradeId/chat', authenticateToken, async (req, res) => {
+  try {
+    const { tradeId } = req.params;
+    const { message } = req.body;
+    const userId = req.user.id;
+    
+    // Verify user owns this trade
+    const tradeCheck = await pool.query(
+      'SELECT id FROM trades WHERE id = $1 AND user_id = $2',
+      [tradeId, userId]
+    );
+    
+    if (tradeCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    
+    const result = await pool.query(
+      'INSERT INTO chat_messages (trade_id, sender_id, sender_type, message) VALUES ($1, $2, $3, $4) RETURNING *',
+      [tradeId, userId, 'user', message]
+    );
+    
+    res.json({ message: result.rows[0] });
+  } catch (error) {
+    console.error('Send message error:', error);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
 // Get current rates
 router.get('/rates', async (req, res) => {
   try {
