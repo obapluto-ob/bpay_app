@@ -50,6 +50,26 @@ async function initDatabase() {
         console.log('Avatar column migration error:', error.message);
       }
       
+      // Add missing columns to users table
+      try {
+        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255);');
+        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;');
+        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);');
+        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;');
+        console.log('✅ User table columns updated');
+        
+        // Update existing users without verification tokens
+        await pool.query(`
+          UPDATE users 
+          SET verification_token = 'legacy_' || id || '_' || EXTRACT(EPOCH FROM NOW())::text,
+              email_verified = false
+          WHERE verification_token IS NULL
+        `);
+        console.log('✅ Existing users updated with verification tokens');
+      } catch (error) {
+        console.log('⚠️ User table migration error:', error.message);
+      }
+      
       // Add chat tables
       try {
         await pool.query(`
