@@ -164,7 +164,7 @@ router.post('/:tradeId/chat', authenticateToken, async (req, res) => {
   }
 });
 
-// Get current rates
+// Get current rates (public endpoint)
 router.get('/rates', async (req, res) => {
   try {
     const rates = {
