@@ -70,7 +70,7 @@ router.post('/create', authenticateToken, requireEmailVerification, async (req, 
 });
 
 // Get user trades
-router.get('/history', authenticateToken, requireEmailVerification, async (req, res) => {
+router.get('/history', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const result = await pool.query(
@@ -78,10 +78,10 @@ router.get('/history', authenticateToken, requireEmailVerification, async (req, 
       [userId]
     );
     
-    res.json({ trades: result.rows });
+    res.json({ trades: result.rows || [], success: true });
   } catch (error) {
     console.error('Trade history error:', error);
-    res.status(500).json({ error: 'Failed to fetch trades' });
+    res.status(500).json({ trades: [], error: 'Failed to fetch trades' });
   }
 });
 
