@@ -164,6 +164,11 @@ router.post('/:tradeId/chat', authenticateToken, async (req, res) => {
   }
 });
 
+// Test endpoint to verify server restart
+router.get('/test-restart', (req, res) => {
+  res.json({ message: 'Server restarted successfully', timestamp: new Date().toISOString() });
+});
+
 // Get current rates (public endpoint)
 router.get('/rates', async (req, res) => {
   try {
