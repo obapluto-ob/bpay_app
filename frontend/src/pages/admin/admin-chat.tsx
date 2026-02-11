@@ -38,7 +38,7 @@ export default function AdminChat() {
       }
 
       // Get all admins
-      const adminsRes = await fetch(`${API_BASE}/admin/list`, {
+      const adminsRes = await fetch(`${API_BASE}/adminAuth/list`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (adminsRes.ok) {
@@ -140,15 +140,15 @@ export default function AdminChat() {
                     <div className="flex items-center space-x-3">
                       <div className="relative">
                         <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                          {admin.username?.[0]?.toUpperCase() || 'A'}
+                          {admin.name?.[0]?.toUpperCase() || admin.email?.[0]?.toUpperCase() || 'A'}
                         </div>
                         <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
                           admin.isOnline ? 'bg-green-500' : 'bg-slate-400'
                         }`}></div>
                       </div>
                       <div className="flex-1">
-                        <p className="font-bold text-white">{admin.username}</p>
-                        <p className="text-xs text-slate-400 capitalize">{admin.role || 'Admin'}</p>
+                        <p className="font-bold text-white">{admin.name || admin.email}</p>
+                        <p className="text-xs text-slate-400 capitalize">{admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}</p>
                         {admin.unreadCount > 0 && (
                           <span className="inline-block mt-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
                             {admin.unreadCount} new
@@ -178,14 +178,14 @@ export default function AdminChat() {
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                      {selectedAdmin.username?.[0]?.toUpperCase() || 'A'}
+                      {selectedAdmin.name?.[0]?.toUpperCase() || selectedAdmin.email?.[0]?.toUpperCase() || 'A'}
                     </div>
                     <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
                       selectedAdmin.isOnline ? 'bg-green-500' : 'bg-slate-400'
                     }`}></div>
                   </div>
                   <div>
-                    <p className="font-bold text-white">{selectedAdmin.username}</p>
+                    <p className="font-bold text-white">{selectedAdmin.name || selectedAdmin.email}</p>
                     <p className="text-xs text-slate-300">
                       {selectedAdmin.isOnline ? 'Online' : 'Offline'}
                     </p>
