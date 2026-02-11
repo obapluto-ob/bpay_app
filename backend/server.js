@@ -153,6 +153,7 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.use('/api/live-rates', require('./routes/live-rates'));
 app.use('/api/debug', require('./routes/debug'));
 app.use('/api/test-db', require('./routes/test-db'));
 app.use('/api/public', require('./routes/public-rates'));
