@@ -8,6 +8,17 @@ const router = express.Router();
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 
+// Check if email exists
+router.get('/check-email', async (req, res) => {
+  try {
+    const { email } = req.query;
+    const result = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    res.json({ exists: result.rows.length > 0 });
+  } catch (error) {
+    res.json({ exists: false });
+  }
+});
+
 // Register
 router.post('/register', [
   body('email').isEmail().normalizeEmail(),

@@ -10,36 +10,60 @@ export default function RegisterScreen({ navigation }: any) {
     phone: '',
     country: 'NG',
     password: '',
-    confirmPassword: '',
-    securityQuestion1: '',
-    securityAnswer1: '',
-    securityQuestion2: '',
-    securityAnswer2: ''
+    confirmPassword: ''
   });
 
-  const securityQuestions = [
-    "What was the name of your first pet?",
-    "What is your mother's maiden name?",
-    "What city were you born in?",
-    "What was the name of your first school?",
-    "What is your favorite food?",
-    "What was your childhood nickname?"
-  ];
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const checkEmailExists = async (email: string) => {
+    if (!email || !email.includes('@')) return;
+    
+    try {
+      const response = await fetch(`https://bpay-app.onrender.com/api/auth/check-email?email=${email}`);
+      const data = await response.json();
+      
+      if (data.exists) {
+        setEmailError('⚠️ This email is already registered');
+      } else {
+        setEmailError('');
+      }
+    } catch (err) {
+      setEmailError('');
+    }
+  };
+
+  const updateField = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    if (field === 'email' && value.includes('@')) {
+      checkEmailExists(value);
+    }
+  };
 
   const handleRegister = async () => {
     setError('');
     
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    if (!formData.firstName || !formData.lastName) {
+      setError('Please enter your first and last name');
       return;
     }
 
-    if (!formData.email || !formData.password || !formData.firstName) {
+    if (!formData.email || !formData.password) {
       setError('Please fill in all required fields');
+      return;
+    }
+
+    if (emailError) {
+      setError('Please use a different email address');
+      return;
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
 
@@ -59,22 +83,18 @@ export default function RegisterScreen({ navigation }: any) {
       const data = await response.json();
 
       if (response.ok) {
-        // Store token and navigate
         navigation.navigate('Dashboard');
       } else {
-        // Show actual error from backend
-        setError(data.error || data.message || 'Registration failed. Please try again.');
+        setError(data.error || data.message || 'Registration failed');
       }
     } catch (err: any) {
-      setError('Network error: ' + (err.message || 'Please check your connection'));
+      setError('Network error: ' + (err.message || 'Check your connection'));
     } finally {
       setLoading(false);
     }
   };
 
-  const updateField = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  const isNamesFilled = formData.firstName && formData.lastName;
 
   return (
     <ScrollView style={styles.container}>
@@ -85,14 +105,14 @@ export default function RegisterScreen({ navigation }: any) {
           
           <View style={styles.nameRow}>
             <TextInput
-              label="First Name"
+              label="First Name *"
               value={formData.firstName}
               onChangeText={(value) => updateField('firstName', value)}
               mode="outlined"
               style={[styles.input, styles.halfInput]}
             />
             <TextInput
-              label="Last Name"
+              label="Last Name *"
               value={formData.lastName}
               onChangeText={(value) => updateField('lastName', value)}
               mode="outlined"
@@ -101,14 +121,17 @@ export default function RegisterScreen({ navigation }: any) {
           </View>
           
           <TextInput
-            label="Email"
+            label="Email *"
             value={formData.email}
             onChangeText={(value) => updateField('email', value)}
             mode="outlined"
             style={styles.input}
             keyboardType="email-address"
             autoCapitalize="none"
+            disabled={!isNamesFilled}
+            error={!!emailError}
           />
+          {emailError ? <Text style={styles.emailError}>{emailError}</Text> : null}
           
           <TextInput
             label="Phone Number"
@@ -117,6 +140,7 @@ export default function RegisterScreen({ navigation }: any) {
             mode="outlined"
             style={styles.input}
             keyboardType="phone-pad"
+            disabled={!isNamesFilled}
           />
           
           <View style={styles.countryContainer}>
@@ -125,12 +149,14 @@ export default function RegisterScreen({ navigation }: any) {
               <TouchableOpacity 
                 style={[styles.countryButton, formData.country === 'NG' && styles.selectedCountry]}
                 onPress={() => updateField('country', 'NG')}
+                disabled={!isNamesFilled}
               >
                 <Text style={[styles.countryText, formData.country === 'NG' && styles.selectedCountryText]}>🇳🇬 Nigeria</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.countryButton, formData.country === 'KE' && styles.selectedCountry]}
                 onPress={() => updateField('country', 'KE')}
+                disabled={!isNamesFilled}
               >
                 <Text style={[styles.countryText, formData.country === 'KE' && styles.selectedCountryText]}>🇰🇪 Kenya</Text>
               </TouchableOpacity>
@@ -138,12 +164,13 @@ export default function RegisterScreen({ navigation }: any) {
           </View>
           
           <TextInput
-            label="Password"
+            label="Password *"
             value={formData.password}
             onChangeText={(value) => updateField('password', value)}
             mode="outlined"
             style={styles.input}
             secureTextEntry={!showPassword}
+            disabled={!isNamesFilled}
             right={
               <TextInput.Icon 
                 icon={showPassword ? "eye-off" : "eye"}
@@ -153,41 +180,19 @@ export default function RegisterScreen({ navigation }: any) {
           />
           
           <TextInput
-            label="Confirm Password"
+            label="Confirm Password *"
             value={formData.confirmPassword}
             onChangeText={(value) => updateField('confirmPassword', value)}
             mode="outlined"
             style={styles.input}
             secureTextEntry={!showConfirmPassword}
+            disabled={!isNamesFilled}
             right={
               <TextInput.Icon 
                 icon={showConfirmPassword ? "eye-off" : "eye"}
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
               />
             }
-          />
-          
-          <Text style={styles.sectionTitle}>Security Questions</Text>
-          <Text style={styles.sectionSubtitle}>Answer these questions for account recovery</Text>
-          
-          <Text style={styles.questionText}>What was the name of your first pet?</Text>
-          <TextInput
-            label="Your Answer"
-            value={formData.securityAnswer1}
-            onChangeText={(value) => updateField('securityAnswer1', value)}
-            mode="outlined"
-            style={styles.input}
-            placeholder="Enter your answer"
-          />
-          
-          <Text style={styles.questionText}>What is your mother's maiden name?</Text>
-          <TextInput
-            label="Your Answer"
-            value={formData.securityAnswer2}
-            onChangeText={(value) => updateField('securityAnswer2', value)}
-            mode="outlined"
-            style={styles.input}
-            placeholder="Enter your answer"
           />
           
           {error ? (
@@ -201,7 +206,7 @@ export default function RegisterScreen({ navigation }: any) {
             onPress={handleRegister}
             style={styles.registerButton}
             loading={loading}
-            disabled={loading}
+            disabled={loading || !isNamesFilled || !!emailError}
           >
             {loading ? 'Creating Account...' : 'Create Account'}
           </Button>
@@ -219,147 +224,25 @@ export default function RegisterScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    paddingTop: 50,
-  },
-  registerCard: {
-    margin: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  input: {
-    marginBottom: 15,
-  },
-  halfInput: {
-    width: '48%',
-  },
-  registerButton: {
-    marginBottom: 20,
-    backgroundColor: '#f97316',
-  },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  loginText: {
-    color: '#666',
-  },
-  loginLink: {
-    color: '#f97316',
-    fontWeight: 'bold',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 5,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 15,
-  },
-  questionText: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  questionContainer: {
-    marginBottom: 20,
-  },
-  questionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 10,
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 15,
-    marginBottom: 10,
-    backgroundColor: '#f9f9f9',
-    minHeight: 50,
-  },
-  pickerText: {
-    fontSize: 16,
-    color: '#333',
-    flexWrap: 'wrap',
-  },
-  questionOption: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
-  },
-  questionOptionText: {
-    fontSize: 14,
-    color: '#333',
-    flexWrap: 'wrap',
-    lineHeight: 20,
-  },
-  countryContainer: {
-    marginBottom: 15,
-  },
-  countryLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 8,
-    color: '#333',
-  },
-  countryButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  countryButton: {
-    flex: 1,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-  },
-  selectedCountry: {
-    backgroundColor: '#f97316',
-    borderColor: '#f97316',
-  },
-  countryText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  selectedCountryText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  errorContainer: {
-    backgroundColor: '#fee2e2',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 15,
-    borderLeftWidth: 4,
-    borderLeftColor: '#ef4444',
-  },
-  errorText: {
-    color: '#dc2626',
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5', paddingTop: 50 },
+  registerCard: { margin: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 5 },
+  subtitle: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 30 },
+  nameRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  input: { marginBottom: 15 },
+  halfInput: { width: '48%' },
+  registerButton: { marginBottom: 20, backgroundColor: '#f97316' },
+  loginContainer: { flexDirection: 'row', justifyContent: 'center' },
+  loginText: { color: '#666' },
+  loginLink: { color: '#f97316', fontWeight: 'bold' },
+  countryContainer: { marginBottom: 15 },
+  countryLabel: { fontSize: 16, fontWeight: '500', marginBottom: 8, color: '#333' },
+  countryButtons: { flexDirection: 'row', gap: 10 },
+  countryButton: { flex: 1, padding: 12, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, alignItems: 'center', backgroundColor: '#f9f9f9' },
+  selectedCountry: { backgroundColor: '#f97316', borderColor: '#f97316' },
+  countryText: { fontSize: 14, color: '#333' },
+  selectedCountryText: { color: 'white', fontWeight: 'bold' },
+  errorContainer: { backgroundColor: '#fee2e2', padding: 12, borderRadius: 8, marginBottom: 15, borderLeftWidth: 4, borderLeftColor: '#ef4444' },
+  errorText: { color: '#dc2626', fontSize: 14, fontWeight: '500' },
+  emailError: { color: '#dc2626', fontSize: 12, marginTop: -10, marginBottom: 10 }
 });
