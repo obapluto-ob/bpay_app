@@ -28,12 +28,41 @@ router.post('/register', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      const firstError = errors.array()[0];
+      if (firstError.path === 'email') return res.status(400).json({ error: 'Please enter a valid email address' });
+      if (firstError.path === 'password') return res.status(400).json({ error: 'Password must be at least 6 characters' });
+      if (firstError.path === 'fullName') return res.status(400).json({ error: 'Please enter your full name' });
+      return res.status(400).json({ error: 'Please check your information and try again' });
     }
 
-    const { email, password, fullName } = req.body;
+    const { email, password, fullName, cfToken } = req.body;
+    
+    // Verify Cloudflare Turnstile
+    if (cfToken) {
+      try {
+        const cfResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            secret: process.env.CLOUDFLARE_SECRET_KEY,
+            response: cfToken
+          })
+        });
+        const cfData = await cfResponse.json();
+        if (!cfData.success) {
+          return res.status(400).json({ error: 'Security verification failed. Please try again.' });
+        }
+      } catch (error) {
+        console.log('Cloudflare verification failed:', error.message);
+      }
+    }
+
     const [firstName, ...lastNameParts] = fullName.split(' ');
-    const lastName = lastNameParts.join(' ') || firstName;
+    const lastName = lastNameParts.join(' ');
+    
+    if (!lastName) {
+      return res.status(400).json({ error: 'Please enter both first and last name' });
+    }
 
     // Ensure users table exists
     await pool.query(`
@@ -60,7 +89,7 @@ router.post('/register', [
     // Check if user exists
     const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existingUser.rows.length > 0) {
-      return res.status(400).json({ error: 'User already exists' });
+      return res.status(400).json({ error: 'This email is already registered. Please login instead.' });
     }
 
     // Hash password
@@ -111,7 +140,10 @@ router.post('/register', [
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Server error' });
+    if (error.code === '23505') {
+      return res.status(400).json({ error: 'This email is already registered. Please login instead.' });
+    }
+    res.status(500).json({ error: 'Registration failed. Please try again later.' });
   }
 });
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Button, TextInput, Card } from 'react-native-paper';
+import { WebView } from 'react-native-webview';
 
 export default function RegisterScreen({ navigation }: any) {
   const [formData, setFormData] = useState({
@@ -18,6 +19,7 @@ export default function RegisterScreen({ navigation }: any) {
   const [emailError, setEmailError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [cfToken, setCfToken] = useState('');
 
   const checkEmailExists = async (email: string) => {
     if (!email || !email.includes('@')) return;
@@ -47,23 +49,43 @@ export default function RegisterScreen({ navigation }: any) {
   const handleRegister = async () => {
     setError('');
     
-    if (!formData.firstName || !formData.lastName) {
-      setError('Please enter your first and last name');
+    if (!formData.firstName.trim()) {
+      setError('❌ Please enter your first name');
+      return;
+    }
+    
+    if (!formData.lastName.trim()) {
+      setError('❌ Please enter your last name');
       return;
     }
 
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all required fields');
+    if (!formData.email.trim()) {
+      setError('❌ Please enter your email address');
+      return;
+    }
+    
+    if (!formData.email.includes('@') || !formData.email.includes('.')) {
+      setError('❌ Please enter a valid email address');
       return;
     }
 
     if (emailError) {
-      setError('Please use a different email address');
+      setError('❌ This email is already registered. Please login instead.');
+      return;
+    }
+    
+    if (!formData.password) {
+      setError('❌ Please enter a password');
+      return;
+    }
+    
+    if (formData.password.length < 6) {
+      setError('❌ Password must be at least 6 characters');
       return;
     }
     
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('❌ Passwords do not match');
       return;
     }
 
@@ -73,10 +95,11 @@ export default function RegisterScreen({ navigation }: any) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: formData.email,
+          email: formData.email.trim(),
           password: formData.password,
-          fullName: `${formData.firstName} ${formData.lastName}`,
-          country: formData.country
+          fullName: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+          country: formData.country,
+          cfToken
         })
       });
 
@@ -85,10 +108,11 @@ export default function RegisterScreen({ navigation }: any) {
       if (response.ok) {
         navigation.navigate('Dashboard');
       } else {
-        setError(data.error || data.message || 'Registration failed');
+        const errorMsg = data.error || data.message || 'Registration failed';
+        setError(`❌ ${errorMsg}`);
       }
     } catch (err: any) {
-      setError('Network error: ' + (err.message || 'Check your connection'));
+      setError('❌ Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -201,12 +225,39 @@ export default function RegisterScreen({ navigation }: any) {
             </View>
           ) : null}
           
+          <View style={styles.turnstileContainer}>
+            <WebView
+              source={{ html: `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+                </head>
+                <body style="margin:0;display:flex;justify-content:center;align-items:center;height:80px;">
+                  <div class="cf-turnstile" 
+                    data-sitekey="0x4AAAAAAAzLr3LwFRj_PQVZ" 
+                    data-callback="onTurnstileSuccess"
+                    data-theme="light"></div>
+                  <script>
+                    function onTurnstileSuccess(token) {
+                      window.ReactNativeWebView.postMessage(token);
+                    }
+                  </script>
+                </body>
+                </html>
+              ` }}
+              style={styles.turnstile}
+              onMessage={(event) => setCfToken(event.nativeEvent.data)}
+              javaScriptEnabled={true}
+            />
+          </View>
+          
           <Button 
             mode="contained" 
             onPress={handleRegister}
             style={styles.registerButton}
             loading={loading}
-            disabled={loading || !isNamesFilled || !!emailError}
+            disabled={loading || !isNamesFilled || !!emailError || !cfToken}
           >
             {loading ? 'Creating Account...' : 'Create Account'}
           </Button>
@@ -244,5 +295,7 @@ const styles = StyleSheet.create({
   selectedCountryText: { color: 'white', fontWeight: 'bold' },
   errorContainer: { backgroundColor: '#fee2e2', padding: 12, borderRadius: 8, marginBottom: 15, borderLeftWidth: 4, borderLeftColor: '#ef4444' },
   errorText: { color: '#dc2626', fontSize: 14, fontWeight: '500' },
-  emailError: { color: '#dc2626', fontSize: 12, marginTop: -10, marginBottom: 10 }
+  emailError: { color: '#dc2626', fontSize: 12, marginTop: -10, marginBottom: 10 },
+  turnstileContainer: { height: 80, marginBottom: 15, overflow: 'hidden' },
+  turnstile: { height: 80, backgroundColor: 'transparent' }
 });
