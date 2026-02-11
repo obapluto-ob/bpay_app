@@ -111,7 +111,7 @@ export default function SuperAdminDashboard() {
           <button onClick={() => router.push('/admin/withdrawals')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">Withdrawals</button>
           <button onClick={() => router.push('/admin/system-health')} className="bg-purple-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-purple-600 shadow-lg transition-all">System Health</button>
           {adminUser?.role === 'super_admin' && (
-            <button onClick={() => router.push('/admin/create-admin')} className="bg-green-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-green-600 shadow-lg transition-all">+ New Admin</button>
+            <button onClick={() => router.push('/admin/manage-admins')} className="bg-green-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-green-600 shadow-lg transition-all">Manage Admins</button>
           )}
         </div>
 

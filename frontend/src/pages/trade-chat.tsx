@@ -112,13 +112,13 @@ export default function TradeChatScreen() {
   };
 
   const sendOrderDetails = async (tradeData: any) => {
-    const orderDetails = `📋 NEW ORDER CREATED
+    const orderDetails = `NEW ORDER CREATED
 
 Order ID: #${tradeData.id}
 Type: ${tradeData.type.toUpperCase()}
 Crypto: ${tradeData.crypto}
 Amount: ${tradeData.crypto_amount} ${tradeData.crypto}
-Fiat: ${tradeData.country === 'NG' ? '₦' : 'KSh'}${parseFloat(tradeData.fiat_amount).toLocaleString()}
+Fiat: ${tradeData.country === 'NG' ? 'NGN' : 'KES'} ${parseFloat(tradeData.fiat_amount).toLocaleString()}
 Payment Method: ${tradeData.payment_method}
 Time: ${new Date(tradeData.created_at).toLocaleString()}
 
@@ -129,26 +129,26 @@ Status: Waiting for payment`;
 
   const sendPaymentDetails = async () => {
     const paymentDetails = trade.country === 'NG' 
-      ? `💳 PAYMENT DETAILS (Nigeria)
+      ? `PAYMENT DETAILS (Nigeria)
 
 Bank: GLOBUS BANK
 Account: 1000461745
 Name: GLOBAL BURGERS NIGERIA LIMITED
 
-Amount to Pay: ₦${parseFloat(trade.fiat_amount).toLocaleString()}
+Amount to Pay: NGN ${parseFloat(trade.fiat_amount).toLocaleString()}
 
-⚠️ Use Order ID as reference: ${trade.id}
-⏰ Complete payment within 15 minutes`
-      : `💳 PAYMENT DETAILS (Kenya)
+Use Order ID as reference: ${trade.id}
+Complete payment within 15 minutes`
+      : `PAYMENT DETAILS (Kenya)
 
 Paybill: 756756
 Account: 53897
 Business: BPay Kenya
 
-Amount to Pay: KSh${parseFloat(trade.fiat_amount).toLocaleString()}
+Amount to Pay: KES ${parseFloat(trade.fiat_amount).toLocaleString()}
 
-⚠️ Use Order ID as reference: ${trade.id}
-⏰ Complete payment within 15 minutes`;
+Use Order ID as reference: ${trade.id}
+Complete payment within 15 minutes`;
 
     sendMessage(paymentDetails, 'system');
   };
@@ -184,7 +184,7 @@ Amount to Pay: KSh${parseFloat(trade.fiat_amount).toLocaleString()}
   };
 
   const handleMarkAsPaid = async () => {
-    await sendMessage('✅ I have completed the payment', 'text');
+    await sendMessage('I have completed the payment', 'text');
     setShowProofUpload(true);
   };
 
@@ -194,7 +194,7 @@ Amount to Pay: KSh${parseFloat(trade.fiat_amount).toLocaleString()}
       return;
     }
 
-    await sendMessage(`📸 Payment Proof Uploaded`, 'image');
+    await sendMessage(`Payment Proof Uploaded`, 'image');
     
     // Send proof to backend
     try {
@@ -222,7 +222,7 @@ Amount to Pay: KSh${parseFloat(trade.fiat_amount).toLocaleString()}
       return;
     }
 
-    await sendMessage(`🚨 DISPUTE RAISED: ${disputeReason}`, 'text');
+    await sendMessage(`DISPUTE RAISED: ${disputeReason}`, 'text');
     
     try {
       const token = localStorage.getItem('token');
@@ -364,7 +364,7 @@ Amount to Pay: KSh${parseFloat(trade.fiat_amount).toLocaleString()}
             onClick={handleMarkAsPaid}
             className="w-full bg-green-500 text-white py-3 rounded-xl font-bold"
           >
-            ✓ I Have Paid
+            I Have Paid
           </button>
         </div>
       )}
@@ -375,7 +375,7 @@ Amount to Pay: KSh${parseFloat(trade.fiat_amount).toLocaleString()}
           <p className="text-sm text-slate-600 font-semibold">Upload Payment Proof:</p>
           {!proofImage ? (
             <label className="block bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:bg-slate-200">
-              <span className="text-slate-600">📷 Take Photo or Choose File</span>
+              <span className="text-slate-600">Take Photo or Choose File</span>
               <input
                 type="file"
                 accept="image/*"
