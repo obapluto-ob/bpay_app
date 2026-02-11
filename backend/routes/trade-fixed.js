@@ -73,11 +73,11 @@ router.post('/create', authenticateToken, async (req, res) => {
       )
     `);
 
-    const paymentMethodDisplay = country === 'NG' 
-      ? (paymentMethod === 'balance' ? 'Wallet Balance' : 'Bank Transfer')
-      : (paymentMethod === 'balance' ? 'Wallet Balance' : 'M-Pesa');
+    const paymentMethodDisplay = paymentMethod === 'balance' 
+      ? 'Wallet Balance' 
+      : (country === 'NG' ? 'Bank Transfer' : 'M-Pesa');
 
-    const orderMessage = `NEW ${type.toUpperCase()} ORDER\n\nOrder ID: #${tradeId}\nCrypto: ${crypto}\nAmount: ${cryptoAmount} ${crypto}\nFiat: ${currency} ${parseFloat(fiatAmount).toLocaleString()}\nPayment: ${paymentMethodDisplay}\nCountry: ${country === 'NG' ? 'Nigeria' : 'Kenya'}\n\nWaiting for admin response...`;
+    const orderMessage = `NEW ${type.toUpperCase()} ORDER\n\nOrder ID: #${tradeId}\nCrypto: ${crypto}\nAmount: ${cryptoAmount} ${crypto}\nFiat: ${currency} ${parseFloat(fiatAmount).toLocaleString()}\nPayment Method: ${paymentMethodDisplay}\nCountry: ${country === 'NG' ? 'Nigeria' : 'Kenya'}\n\nWaiting for admin response...`;
 
     await pool.query(
       'INSERT INTO chat_messages (trade_id, sender_id, sender_type, message, message_type) VALUES ($1, $2, $3, $4, $5)',

@@ -171,6 +171,7 @@ Complete payment within 15 minutes`;
 
       if (response.ok) {
         setNewMessage('');
+        fetchMessages(); // Refresh immediately
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
             type: 'chat_message',
@@ -178,7 +179,6 @@ Complete payment within 15 minutes`;
             message
           }));
         }
-        fetchMessages();
       }
     } catch (error) {
       console.error('Failed to send message:', error);

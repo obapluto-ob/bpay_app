@@ -76,7 +76,7 @@ export default function TradeManagement() {
         body: JSON.stringify({ message: newMessage })
       });
       setNewMessage('');
-      fetchMessages();
+      fetchMessages(); // Refresh immediately
     } catch (error) {
       alert('Failed to send message');
     }
