@@ -129,7 +129,7 @@ export default function AuthPage() {
     <>
       <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
       <div className="min-h-screen bg-[#1a365d]">
-      <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen">
         {/* Header */}
         <div className="text-center pt-8 md:pt-16 pb-6 md:pb-8 px-4">
           <div className="w-20 h-20 md:w-24 md:h-24 rounded-full mx-auto mb-4 md:mb-6 shadow-lg overflow-hidden">
