@@ -165,6 +165,7 @@ app.use('/api/user', require('./routes/user'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/avatar', require('./routes/avatar'));
 app.use('/api/adminAuth', require('./routes/admin-auth'));
+app.use('/api/adminChat', require('./routes/admin-chat-routes'));
 app.use('/api/deposit', require('./routes/deposit'));
 app.use('/api/price-alerts', require('./routes/priceAlerts'));
 app.use('/api/referrals', require('./routes/referrals'));
