@@ -235,7 +235,7 @@ export default function RegisterScreen({ navigation }: any) {
                 </head>
                 <body style="margin:0;display:flex;justify-content:center;align-items:center;height:80px;">
                   <div class="cf-turnstile" 
-                    data-sitekey="0x4AAAAAAAzLr3LwFRj_PQVZ" 
+                    data-sitekey="0x4AAAAAACawPmhEiXDCJ3ZY" 
                     data-callback="onTurnstileSuccess"
                     data-theme="light"></div>
                   <script>

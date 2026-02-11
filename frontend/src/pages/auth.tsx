@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import Script from 'next/script';
+import { useEffect } from 'react';
 
 export default function AuthPage() {
   const [isSignup, setIsSignup] = useState(false);
@@ -14,6 +16,8 @@ export default function AuthPage() {
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [country, setCountry] = useState('');
+  const [cfToken, setCfToken] = useState('');
+  const [error, setError] = useState('');
   
   const securityQuestions = [
     'What is your mother\'s maiden name?',
@@ -23,20 +27,44 @@ export default function AuthPage() {
     'What is your favorite movie?'
   ];
   const router = useRouter();
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).setCfToken = setCfToken;
+    }
+  }, []);
 
   const handleAuth = async () => {
+    setError('');
+    
     if (!email || !password) {
-      alert('Please fill in all fields');
+      setError('❌ Please fill in all fields');
       return;
     }
     
     if (isSignup) {
-      if (!fullName || !securityAnswer || password !== confirmPassword) {
-        alert('Please fill all fields including security answer');
+      if (!fullName.trim()) {
+        setError('❌ Please enter your full name');
+        return;
+      }
+      if (!fullName.includes(' ')) {
+        setError('❌ Please enter both first and last name');
+        return;
+      }
+      if (!securityAnswer) {
+        setError('❌ Please answer the security question');
         return;
       }
       if (password.length < 6) {
-        alert('Password must be at least 6 characters');
+        setError('❌ Password must be at least 6 characters');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('❌ Passwords do not match');
+        return;
+      }
+      if (!cfToken) {
+        setError('❌ Please complete security verification');
         return;
       }
     }
@@ -54,19 +82,22 @@ export default function AuthPage() {
             password, 
             fullName,
             securityQuestion,
-            securityAnswer
+            securityAnswer,
+            cfToken
           })
         });
         
         if (response.ok) {
+          setError('');
           alert('Account created successfully! Please login.');
           setIsSignup(false);
           setPassword('');
           setConfirmPassword('');
           setFullName('');
+          setCfToken('');
         } else {
           const error = await response.json();
-          alert(error.message || 'Registration failed');
+          setError(`❌ ${error.error || error.message || 'Registration failed'}`);
         }
       } else {
         // Login existing user (syncs with mobile accounts)
@@ -84,18 +115,20 @@ export default function AuthPage() {
           router.push('/dashboard');
         } else {
           const error = await response.json();
-          alert(error.message || 'Login failed');
+          setError(`❌ ${error.error || error.message || 'Login failed'}`);
         }
       }
     } catch (error) {
-      alert('Network error. Please try again.');
+      setError('❌ Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#1a365d]">
+    <>
+      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+      <div className="min-h-screen bg-[#1a365d]">
       <div className="flex flex-col min-h-screen">
         {/* Header */}
         <div className="text-center pt-8 md:pt-16 pb-6 md:pb-8 px-4">
@@ -195,9 +228,26 @@ export default function AuthPage() {
               )}
             </div>
             
+            {error && (
+              <div className="mt-4 p-3 bg-red-50 border-l-4 border-red-500 rounded">
+                <p className="text-red-700 text-sm">{error}</p>
+              </div>
+            )}
+            
+            {isSignup && (
+              <div className="mt-4 flex justify-center">
+                <div 
+                  className="cf-turnstile" 
+                  data-sitekey="0x4AAAAAACawPmhEiXDCJ3ZY"
+                  data-callback="onTurnstileSuccess"
+                  data-theme="light"
+                />
+              </div>
+            )}
+            
             <button
               onClick={handleAuth}
-              disabled={loading}
+              disabled={loading || (isSignup && !cfToken)}
               className="w-full bg-[#f59e0b] text-white p-3 md:p-4 rounded-xl text-base md:text-lg font-bold mt-6 mb-4 hover:bg-[#d97706] disabled:opacity-50 transition-colors shadow-lg"
             >
               {loading ? 'Please wait...' : (isSignup ? 'Create Account' : 'Login')}
@@ -347,6 +397,16 @@ export default function AuthPage() {
           </div>
         </div>
       </div>
-    </div>
+      <script dangerouslySetInnerHTML={{ __html: `
+        function onTurnstileSuccess(token) {
+          window.cfToken = token;
+          const event = new CustomEvent('cfTokenReady', { detail: token });
+          window.dispatchEvent(event);
+        }
+        window.addEventListener('cfTokenReady', (e) => {
+          if (window.setCfToken) window.setCfToken(e.detail);
+        });
+      ` }} />
+    </>
   );
 }
