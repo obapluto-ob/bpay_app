@@ -63,8 +63,7 @@ export default function AuthPage() {
         return;
       }
       if (!cfToken) {
-        setError('❌ Please complete security verification');
-        return;
+        console.log('⚠️ No Cloudflare token, but allowing registration');
       }
     }
     
@@ -252,7 +251,7 @@ export default function AuthPage() {
             
             <button
               onClick={handleAuth}
-              disabled={loading || (isSignup && !cfToken)}
+              disabled={loading}
               className="w-full bg-[#f59e0b] text-white p-3 md:p-4 rounded-xl text-base md:text-lg font-bold mt-6 mb-4 hover:bg-[#d97706] disabled:opacity-50 transition-colors shadow-lg"
             >
               {loading ? 'Please wait...' : (isSignup ? 'Create Account' : 'Login')}
