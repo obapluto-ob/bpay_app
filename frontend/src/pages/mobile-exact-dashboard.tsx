@@ -26,7 +26,7 @@ const TradeHistoryScreen = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setTrades(data || []);
+        setTrades(Array.isArray(data.trades) ? data.trades : []);
       }
     } catch (error) {
       console.error('Failed to fetch trades:', error);
