@@ -25,7 +25,7 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Create trade
-router.post('/create', authenticateToken, requireEmailVerification, async (req, res) => {
+router.post('/create', authenticateToken, async (req, res) => {
   try {
     // Ensure trades table exists
     await pool.query(`
