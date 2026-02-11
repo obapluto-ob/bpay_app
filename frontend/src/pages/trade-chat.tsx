@@ -13,6 +13,7 @@ export default function TradeChatScreen() {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [proofImage, setProofImage] = useState('');
   const [showProofUpload, setShowProofUpload] = useState(false);
+  const [proofUploaded, setProofUploaded] = useState(false);
   const [showDispute, setShowDispute] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
   const [orderDetailsSent, setOrderDetailsSent] = useState(false);
@@ -212,6 +213,13 @@ Complete payment within 15 minutes`;
       
       setShowProofUpload(false);
       setProofImage('');
+      setProofUploaded(true);
+      
+      // Auto-send reminder to admin
+      setTimeout(() => {
+        sendMessage('Please verify my payment proof and complete the transaction', 'text');
+      }, 1000);
+      
       alert('Payment proof submitted! Admin will verify shortly.');
     } catch (error) {
       alert('Failed to upload proof');
@@ -353,8 +361,8 @@ Complete payment within 15 minutes`;
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Mark as Paid Button - Only show after admin replies */}
-      {trade?.status === 'pending' && !showProofUpload && adminReplied && (
+      {/* Mark as Paid Button - Only show after admin replies and proof not uploaded */}
+      {trade?.status === 'pending' && !showProofUpload && !proofUploaded && adminReplied && (
         <div className="p-4 bg-white border-t">
           <button
             onClick={handleMarkAsPaid}

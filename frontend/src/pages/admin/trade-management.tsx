@@ -175,7 +175,7 @@ export default function TradeManagement() {
             </div>
           ) : (
             <>
-              {/* Trade Details */}
+              {/* Trade Details - Removed approve/reject buttons from top */}
               <div className="bg-slate-800 p-4 border-b border-slate-700">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                   <div>
@@ -184,14 +184,6 @@ export default function TradeManagement() {
                       {selectedTrade.crypto_amount} {selectedTrade.crypto} = {selectedTrade.country === 'NG' ? '₦' : 'KSh'}{parseFloat(selectedTrade.fiat_amount).toLocaleString()}
                     </p>
                     <p className="text-xs text-slate-400">Payment: {selectedTrade.payment_method}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={approveTrade} className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-bold">
-                      Approve
-                    </button>
-                    <button onClick={() => setShowRejectModal(true)} className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold">
-                      Reject
-                    </button>
                   </div>
                 </div>
               </div>
@@ -205,7 +197,19 @@ export default function TradeManagement() {
                       msg.message_type === 'system' ? 'bg-blue-900 text-blue-100' : 'bg-slate-700 text-white'
                     }`}>
                       {msg.message_type === 'image' ? (
-                        <img src={msg.message} alt="Proof" className="rounded max-w-full" />
+                        <>
+                          <img src={msg.message} alt="Proof" className="rounded max-w-full mb-2" />
+                          {msg.sender_type === 'user' && (
+                            <div className="mt-3 pt-3 border-t border-slate-600 flex gap-2">
+                              <button onClick={approveTrade} className="flex-1 bg-green-500 text-white px-3 py-2 rounded-lg text-sm font-bold">
+                                Approve
+                              </button>
+                              <button onClick={() => setShowRejectModal(true)} className="flex-1 bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-bold">
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
                       )}

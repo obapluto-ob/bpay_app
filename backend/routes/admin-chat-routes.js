@@ -70,17 +70,35 @@ router.post('/trades/:tradeId/approve', authenticateAdmin, async (req, res) => {
     const { tradeId } = req.params;
     const adminId = req.admin.id;
     
-    const result = await pool.query(
-      'UPDATE trades SET status = $1, admin_id = $2 WHERE id = $3 RETURNING *',
-      ['completed', adminId, tradeId]
-    );
-    
-    if (result.rows.length === 0) {
+    // Get trade details
+    const tradeResult = await pool.query('SELECT * FROM trades WHERE id = $1', [tradeId]);
+    if (tradeResult.rows.length === 0) {
       return res.status(404).json({ error: 'Trade not found' });
     }
     
-    res.json({ success: true, trade: result.rows[0] });
+    const trade = tradeResult.rows[0];
+    
+    // Update trade status
+    await pool.query(
+      'UPDATE trades SET status = $1, admin_id = $2 WHERE id = $3',
+      ['completed', adminId, tradeId]
+    );
+    
+    // Credit user balance if buy order
+    if (trade.type === 'buy') {
+      const crypto = trade.crypto;
+      const amount = parseFloat(trade.crypto_amount);
+      
+      // Update user crypto balance
+      await pool.query(
+        `UPDATE users SET ${crypto.toLowerCase()}_balance = COALESCE(${crypto.toLowerCase()}_balance, 0) + $1 WHERE id = $2`,
+        [amount, trade.user_id]
+      );
+    }
+    
+    res.json({ success: true });
   } catch (error) {
+    console.error('Approve error:', error);
     res.status(500).json({ error: 'Failed to approve trade' });
   }
 });
