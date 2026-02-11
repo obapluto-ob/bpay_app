@@ -15,6 +15,8 @@ export default function TradeChatScreen() {
   const [showProofUpload, setShowProofUpload] = useState(false);
   const [showDispute, setShowDispute] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
+  const [orderDetailsSent, setOrderDetailsSent] = useState(false);
+  const [adminReplied, setAdminReplied] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -104,6 +106,11 @@ export default function TradeChatScreen() {
       if (response.ok) {
         const data = await response.json();
         setMessages(data);
+        
+        // Check if admin replied
+        const hasAdminReply = data.some((msg: any) => msg.sender_type === 'admin');
+        setAdminReplied(hasAdminReply);
+        
         scrollToBottom();
       }
     } catch (error) {
@@ -112,6 +119,8 @@ export default function TradeChatScreen() {
   };
 
   const sendOrderDetails = async (tradeData: any) => {
+    if (orderDetailsSent) return;
+    
     const orderDetails = `NEW ORDER CREATED
 
 Order ID: #${tradeData.id}
@@ -122,9 +131,10 @@ Fiat: ${tradeData.country === 'NG' ? 'NGN' : 'KES'} ${parseFloat(tradeData.fiat_
 Payment Method: ${tradeData.payment_method}
 Time: ${new Date(tradeData.created_at).toLocaleString()}
 
-Status: Waiting for payment`;
+Status: Waiting for admin to send payment details`;
 
-    sendMessage(orderDetails, 'system');
+    await sendMessage(orderDetails, 'system');
+    setOrderDetailsSent(true);
   };
 
   const sendPaymentDetails = async () => {
@@ -194,9 +204,7 @@ Complete payment within 15 minutes`;
       return;
     }
 
-    await sendMessage(`Payment Proof Uploaded`, 'image');
-    
-    // Send proof to backend
+    // Send proof to backend first
     try {
       const token = localStorage.getItem('token');
       await fetch(`${API_BASE}/trade/${tradeId}/proof`, {
@@ -207,6 +215,9 @@ Complete payment within 15 minutes`;
         },
         body: JSON.stringify({ proof: proofImage })
       });
+      
+      // Send image link in chat
+      await sendMessage(proofImage, 'image');
       
       setShowProofUpload(false);
       setProofImage('');
@@ -357,8 +368,8 @@ Complete payment within 15 minutes`;
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Mark as Paid Button */}
-      {trade?.status === 'pending' && !showProofUpload && (
+      {/* Mark as Paid Button - Only show after admin replies */}
+      {trade?.status === 'pending' && !showProofUpload && adminReplied && (
         <div className="p-4 bg-white border-t">
           <button
             onClick={handleMarkAsPaid}
