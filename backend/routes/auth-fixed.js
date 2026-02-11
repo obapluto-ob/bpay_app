@@ -65,24 +65,26 @@ router.post('/register', [
 
     const user = result.rows[0];
 
-    // Send verification email (continue even if it fails)
-    let emailResult = { success: false };
-    try {
-      emailResult = await emailVerification.sendRegistrationVerification(email, fullName, verificationToken);
-    } catch (error) {
-      console.log('Email sending failed, continuing registration:', error.message);
-    }
+    // Email sending disabled temporarily - hMailPlus suspended
+    let emailResult = { success: false, error: 'Email service temporarily unavailable' };
+    
+    // Skip email sending for now
+    // try {
+    //   emailResult = await emailVerification.sendRegistrationVerification(email, fullName, verificationToken);
+    // } catch (error) {
+    //   console.log('Email sending failed, continuing registration:', error.message);
+    // }
 
-    // Create JWT token
+    // Create JWT token with verified status (email service down)
     const token = jwt.sign(
-      { id: user.id, email: user.email, verified: false },
+      { id: user.id, email: user.email, verified: true },
       process.env.JWT_SECRET || 'fallback-secret',
       { expiresIn: '7d' }
     );
 
     const message = emailResult.success 
       ? 'Account created successfully! Please verify your email to access all features.'
-      : 'Account created successfully! Email verification temporarily unavailable. Contact support for manual verification.';
+      : 'Account created successfully! Email verification temporarily unavailable.';
     
     res.status(201).json({
       message,
@@ -91,11 +93,10 @@ router.post('/register', [
         id: user.id,
         email: user.email,
         fullName: `${user.first_name} ${user.last_name}`,
-        emailVerified: false
+        emailVerified: true // Auto-verify since email is down
       },
-      emailSent: emailResult.success,
-      requiresVerification: true,
-      manualVerificationAvailable: !emailResult.success
+      emailSent: false,
+      requiresVerification: false
     });
   } catch (error) {
     console.error('Registration error:', error);
