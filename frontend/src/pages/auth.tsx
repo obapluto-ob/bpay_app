@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Script from 'next/script';
-import { useEffect } from 'react';
 
 export default function AuthPage() {
   const [isSignup, setIsSignup] = useState(false);
@@ -73,7 +72,6 @@ export default function AuthPage() {
     
     try {
       if (isSignup) {
-        // Register new user
         const response = await fetch('https://bpay-app.onrender.com/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -100,7 +98,6 @@ export default function AuthPage() {
           setError(`❌ ${error.error || error.message || 'Registration failed'}`);
         }
       } else {
-        // Login existing user (syncs with mobile accounts)
         const response = await fetch('https://bpay-app.onrender.com/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -126,11 +123,20 @@ export default function AuthPage() {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-[#1a365d]">
       <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
-      <div className="min-h-screen bg-[#1a365d]">
-        <div className="flex flex-col min-h-screen">
-        {/* Header */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        function onTurnstileSuccess(token) {
+          window.cfToken = token;
+          const event = new CustomEvent('cfTokenReady', { detail: token });
+          window.dispatchEvent(event);
+        }
+        window.addEventListener('cfTokenReady', (e) => {
+          if (window.setCfToken) window.setCfToken(e.detail);
+        });
+      ` }} />
+      
+      <div className="flex flex-col min-h-screen">
         <div className="text-center pt-8 md:pt-16 pb-6 md:pb-8 px-4">
           <div className="w-20 h-20 md:w-24 md:h-24 rounded-full mx-auto mb-4 md:mb-6 shadow-lg overflow-hidden">
             <img 
@@ -154,7 +160,6 @@ export default function AuthPage() {
           </div>
         </div>
 
-        {/* Form */}
         <div className="flex-1 bg-[#f8fafc] rounded-t-3xl p-4 md:p-6">
           <div className="max-w-md mx-auto w-full">
             <h2 className="text-xl md:text-2xl font-bold text-[#1a365d] text-center mb-6 md:mb-8">
@@ -286,127 +291,9 @@ export default function AuthPage() {
                 <span>🌐 Web Platform</span>
               </div>
             </div>
-            
-            {/* Forgot Password Modal */}
-            {showForgotPassword && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                  <h3 className="text-lg font-semibold mb-4">Reset Password</h3>
-                  
-                  {!securityQuestion ? (
-                    <>
-                      <input
-                        type="email"
-                        placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-xl mb-4"
-                      />
-                      <div className="flex space-x-3">
-                        <button
-                          onClick={() => setShowForgotPassword(false)}
-                          className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={async () => {
-                            try {
-                              const response = await fetch('https://bpay-app.onrender.com/api/auth/forgot-password', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ email })
-                              });
-                              const data = await response.json();
-                              if (response.ok) {
-                                setSecurityQuestion(data.securityQuestion);
-                              } else {
-                                alert(data.error || 'This account was created before security questions were added. Please contact support.');
-                              }
-                            } catch (error) {
-                              alert('Network error');
-                            }
-                          }}
-                          className="flex-1 bg-orange-500 text-white py-2 rounded-md"
-                        >
-                          Get Question
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm text-gray-600 mb-4">{securityQuestion}</p>
-                      <input
-                        type="text"
-                        placeholder="Your answer"
-                        value={securityAnswer}
-                        onChange={(e) => setSecurityAnswer(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-xl mb-4"
-                      />
-                      <input
-                        type="password"
-                        placeholder="New password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-xl mb-4"
-                      />
-                      <div className="flex space-x-3">
-                        <button
-                          onClick={() => {
-                            setShowForgotPassword(false);
-                            setSecurityQuestion('');
-                            setSecurityAnswer('');
-                            setNewPassword('');
-                          }}
-                          className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={async () => {
-                            try {
-                              const response = await fetch('https://bpay-app.onrender.com/api/auth/reset-password', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ email, securityAnswer, newPassword })
-                              });
-                              const data = await response.json();
-                              if (response.ok) {
-                                alert('Password reset successfully!');
-                                setShowForgotPassword(false);
-                                setSecurityQuestion('');
-                                setSecurityAnswer('');
-                                setNewPassword('');
-                              } else {
-                                alert(data.error);
-                              }
-                            } catch (error) {
-                              alert('Network error');
-                            }
-                          }}
-                          className="flex-1 bg-orange-500 text-white py-2 rounded-md"
-                        >
-                          Reset Password
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
-      <script dangerouslySetInnerHTML={{ __html: `
-        function onTurnstileSuccess(token) {
-          window.cfToken = token;
-          const event = new CustomEvent('cfTokenReady', { detail: token });
-          window.dispatchEvent(event);
-        }
-        window.addEventListener('cfTokenReady', (e) => {
-          if (window.setCfToken) window.setCfToken(e.detail);
-        });
-      ` }} />
-    </>
+    </div>
   );
 }
