@@ -60,6 +60,30 @@ router.post('/create', authenticateToken, async (req, res) => {
       [tradeId, userId, type, crypto, cryptoAmount, fiatAmount, currency, country, paymentMethod, JSON.stringify(bankDetails || {}), 'pending']
     );
 
+    // Auto-create order details message for admin
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY,
+        trade_id VARCHAR(255) NOT NULL,
+        sender_id VARCHAR(255) NOT NULL,
+        sender_type VARCHAR(20) NOT NULL,
+        message TEXT NOT NULL,
+        message_type VARCHAR(20) DEFAULT 'text',
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    const paymentMethodDisplay = country === 'NG' 
+      ? (paymentMethod === 'balance' ? 'Wallet Balance' : 'Bank Transfer')
+      : (paymentMethod === 'balance' ? 'Wallet Balance' : 'M-Pesa');
+
+    const orderMessage = `NEW ${type.toUpperCase()} ORDER\n\nOrder ID: #${tradeId}\nCrypto: ${crypto}\nAmount: ${cryptoAmount} ${crypto}\nFiat: ${currency} ${parseFloat(fiatAmount).toLocaleString()}\nPayment: ${paymentMethodDisplay}\nCountry: ${country === 'NG' ? 'Nigeria' : 'Kenya'}\n\nWaiting for admin response...`;
+
+    await pool.query(
+      'INSERT INTO chat_messages (trade_id, sender_id, sender_type, message, message_type) VALUES ($1, $2, $3, $4, $5)',
+      [tradeId, userId, 'system', orderMessage, 'system']
+    );
+
     res.json({
       success: true,
       trade: result.rows[0],
