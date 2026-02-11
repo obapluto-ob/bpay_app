@@ -139,10 +139,9 @@ router.get('/:tradeId/chat', authenticateToken, async (req, res) => {
 router.post('/:tradeId/chat', authenticateToken, async (req, res) => {
   try {
     const { tradeId } = req.params;
-    const { message } = req.body;
+    const { message, type } = req.body;
     const userId = req.user.id;
     
-    // Verify user owns this trade
     const tradeCheck = await pool.query(
       'SELECT id FROM trades WHERE id = $1 AND user_id = $2',
       [tradeId, userId]
@@ -153,14 +152,60 @@ router.post('/:tradeId/chat', authenticateToken, async (req, res) => {
     }
     
     const result = await pool.query(
-      'INSERT INTO chat_messages (trade_id, sender_id, sender_type, message) VALUES ($1, $2, $3, $4) RETURNING *',
-      [tradeId, userId, 'user', message]
+      'INSERT INTO chat_messages (trade_id, sender_id, sender_type, message, message_type) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [tradeId, userId, 'user', message, type || 'text']
     );
     
     res.json(result.rows[0] || {});
   } catch (error) {
     console.error('Send message error:', error);
     res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+// Upload payment proof
+router.post('/:tradeId/proof', authenticateToken, async (req, res) => {
+  try {
+    const { tradeId } = req.params;
+    const { proof } = req.body;
+    const userId = req.user.id;
+    
+    const result = await pool.query(
+      'UPDATE trades SET payment_proof = $1, status = $2 WHERE id = $3 AND user_id = $4 RETURNING *',
+      [proof, 'verifying', tradeId, userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    
+    res.json({ success: true, trade: result.rows[0] });
+  } catch (error) {
+    console.error('Upload proof error:', error);
+    res.status(500).json({ error: 'Failed to upload proof' });
+  }
+});
+
+// Raise dispute
+router.post('/:tradeId/dispute', authenticateToken, async (req, res) => {
+  try {
+    const { tradeId } = req.params;
+    const { reason } = req.body;
+    const userId = req.user.id;
+    
+    const result = await pool.query(
+      'UPDATE trades SET status = $1, admin_notes = $2 WHERE id = $3 AND user_id = $4 RETURNING *',
+      ['disputed', reason, tradeId, userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    
+    res.json({ success: true, trade: result.rows[0] });
+  } catch (error) {
+    console.error('Dispute error:', error);
+    res.status(500).json({ error: 'Failed to raise dispute' });
   }
 });
 
