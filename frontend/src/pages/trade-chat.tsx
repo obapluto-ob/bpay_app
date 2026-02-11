@@ -1,50 +1,97 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 
 const API_BASE = 'https://bpay-app.onrender.com/api';
+const WS_URL = 'wss://bpay-app.onrender.com/ws';
 
-export default function TradeChat() {
+export default function TradeChatScreen() {
   const router = useRouter();
   const { tradeId } = router.query;
-  const [trade, setTrade] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [paymentProofUploaded, setPaymentProofUploaded] = useState(false);
-  const [adminOnline, setAdminOnline] = useState(false);
+  const [trade, setTrade] = useState<any>(null);
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [proofImage, setProofImage] = useState('');
+  const [showProofUpload, setShowProofUpload] = useState(false);
+  const [showDispute, setShowDispute] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!tradeId) return;
-    
+
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/auth');
       return;
     }
 
-    fetchTradeDetails();
-    fetchMessages();
+    // Fetch trade details
+    fetchTrade();
+
+    // Connect WebSocket
+    const websocket = new WebSocket(WS_URL);
     
-    // Poll for new messages every 3 seconds
-    const interval = setInterval(fetchMessages, 3000);
-    return () => clearInterval(interval);
+    websocket.onopen = () => {
+      console.log('WebSocket connected');
+      websocket.send(JSON.stringify({
+        type: 'auth',
+        token,
+        userType: 'user'
+      }));
+      
+      websocket.send(JSON.stringify({
+        type: 'join_trade_chat',
+        tradeId
+      }));
+    };
+
+    websocket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'new_chat_message') {
+        setMessages(prev => [...prev, data.message]);
+        scrollToBottom();
+      }
+    };
+
+    websocket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    setWs(websocket);
+
+    // Fetch existing messages
+    fetchMessages();
+
+    // Poll for updates every 5 seconds
+    const interval = setInterval(() => {
+      fetchMessages();
+      fetchTrade();
+    }, 5000);
+
+    return () => {
+      websocket.close();
+      clearInterval(interval);
+    };
   }, [tradeId]);
 
-  const fetchTradeDetails = async () => {
+  const fetchTrade = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/trade/${tradeId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
       if (response.ok) {
         const data = await response.json();
-        setTrade(data);
+        setTrade(data.trade);
+        
+        // Auto-send order details when trade is first loaded
+        if (data.trade && messages.length === 0) {
+          sendOrderDetails(data.trade);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch trade:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -54,19 +101,61 @@ export default function TradeChat() {
       const response = await fetch(`${API_BASE}/trade/${tradeId}/chat`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
       if (response.ok) {
         const data = await response.json();
-        setMessages(data.messages || []);
+        setMessages(data);
+        scrollToBottom();
       }
     } catch (error) {
       console.error('Failed to fetch messages:', error);
     }
   };
 
-  const sendMessage = async () => {
-    if (!newMessage.trim()) return;
-    
+  const sendOrderDetails = async (tradeData: any) => {
+    const orderDetails = `📋 NEW ORDER CREATED
+
+Order ID: #${tradeData.id}
+Type: ${tradeData.type.toUpperCase()}
+Crypto: ${tradeData.crypto}
+Amount: ${tradeData.crypto_amount} ${tradeData.crypto}
+Fiat: ${tradeData.country === 'NG' ? '₦' : 'KSh'}${parseFloat(tradeData.fiat_amount).toLocaleString()}
+Payment Method: ${tradeData.payment_method}
+Time: ${new Date(tradeData.created_at).toLocaleString()}
+
+Status: Waiting for payment`;
+
+    sendMessage(orderDetails, 'system');
+  };
+
+  const sendPaymentDetails = async () => {
+    const paymentDetails = trade.country === 'NG' 
+      ? `💳 PAYMENT DETAILS (Nigeria)
+
+Bank: GLOBUS BANK
+Account: 1000461745
+Name: GLOBAL BURGERS NIGERIA LIMITED
+
+Amount to Pay: ₦${parseFloat(trade.fiat_amount).toLocaleString()}
+
+⚠️ Use Order ID as reference: ${trade.id}
+⏰ Complete payment within 15 minutes`
+      : `💳 PAYMENT DETAILS (Kenya)
+
+Paybill: 756756
+Account: 53897
+Business: BPay Kenya
+
+Amount to Pay: KSh${parseFloat(trade.fiat_amount).toLocaleString()}
+
+⚠️ Use Order ID as reference: ${trade.id}
+⏰ Complete payment within 15 minutes`;
+
+    sendMessage(paymentDetails, 'system');
+  };
+
+  const sendMessage = async (message: string, type: string = 'text') => {
+    if (!message.trim() && type === 'text') return;
+
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/trade/${tradeId}/chat`, {
@@ -75,11 +164,18 @@ export default function TradeChat() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ message: newMessage })
+        body: JSON.stringify({ message, type })
       });
-      
+
       if (response.ok) {
         setNewMessage('');
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'chat_message',
+            tradeId,
+            message
+          }));
+        }
         fetchMessages();
       }
     } catch (error) {
@@ -87,57 +183,147 @@ export default function TradeChat() {
     }
   };
 
-  if (loading) {
+  const handleMarkAsPaid = async () => {
+    await sendMessage('✅ I have completed the payment', 'text');
+    setShowProofUpload(true);
+  };
+
+  const handleUploadProof = async () => {
+    if (!proofImage) {
+      alert('Please upload payment proof');
+      return;
+    }
+
+    await sendMessage(`📸 Payment Proof Uploaded`, 'image');
+    
+    // Send proof to backend
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_BASE}/trade/${tradeId}/proof`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ proof: proofImage })
+      });
+      
+      setShowProofUpload(false);
+      setProofImage('');
+      alert('Payment proof submitted! Admin will verify shortly.');
+    } catch (error) {
+      alert('Failed to upload proof');
+    }
+  };
+
+  const handleDispute = async () => {
+    if (!disputeReason.trim()) {
+      alert('Please enter dispute reason');
+      return;
+    }
+
+    await sendMessage(`🚨 DISPUTE RAISED: ${disputeReason}`, 'text');
+    
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_BASE}/trade/${tradeId}/dispute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ reason: disputeReason })
+      });
+      
+      setShowDispute(false);
+      setDisputeReason('');
+      alert('Dispute raised. Admin will investigate.');
+    } catch (error) {
+      alert('Failed to raise dispute');
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Success screen when trade is completed
+  if (trade?.status === 'completed') {
     return (
-      <div className="min-h-screen bg-slate-800 flex items-center justify-center">
-        <div className="text-white">Loading chat...</div>
+      <div className="min-h-screen bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center p-5">
+        <div className="bg-white rounded-3xl p-8 text-center max-w-md w-full shadow-2xl">
+          <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+            <span className="text-4xl text-white">✓</span>
+          </div>
+          
+          <h1 className="text-3xl font-bold text-slate-900 mb-3">Success!</h1>
+          <p className="text-lg text-slate-600 mb-6">
+            {trade.crypto_amount} {trade.crypto} added to your wallet
+          </p>
+          
+          <div className="bg-slate-50 rounded-2xl p-6 mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-slate-600">Order ID</span>
+              <span className="font-bold text-slate-900">#{trade.id}</span>
+            </div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-slate-600">Amount</span>
+              <span className="font-bold text-slate-900">{trade.crypto_amount} {trade.crypto}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600">Paid</span>
+              <span className="font-bold text-slate-900">
+                {trade.country === 'NG' ? '₦' : 'KSh'}{parseFloat(trade.fiat_amount).toLocaleString()}
+              </span>
+            </div>
+          </div>
+          
+          <button
+            onClick={() => router.push('/mobile-exact-dashboard')}
+            className="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg mb-3 hover:bg-green-600"
+          >
+            View My Wallet
+          </button>
+          
+          <button
+            onClick={() => router.push('/mobile-exact-dashboard')}
+            className="w-full bg-slate-100 text-slate-700 py-3 rounded-xl font-semibold"
+          >
+            Back to Dashboard
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-800 flex flex-col">
+    <div className="min-h-screen bg-slate-100 flex flex-col">
       {/* Header */}
-      <div className="bg-slate-900 p-4 flex items-center justify-between">
-        <button
-          onClick={() => router.push('/mobile-exact-dashboard')}
-          className="text-white"
-        >
-          ← Back
-        </button>
-        <div className="text-center flex-1">
-          <h1 className="text-white font-bold">
-            {trade?.type?.toUpperCase()} {trade?.crypto}
-          </h1>
-          <p className="text-slate-400 text-sm">
-            {trade?.status === 'pending' ? '⏳ Pending' : 
-             trade?.status === 'completed' ? '✅ Completed' : 
-             trade?.status === 'cancelled' ? '❌ Cancelled' : trade?.status}
-          </p>
-          <p className="text-xs text-slate-300">
-            Order: #{trade?.id?.slice(-8) || 'N/A'}
-          </p>
-        </div>
-        <div className="w-16"></div>
-      </div>
-
-      {/* Trade Details */}
-      <div className="bg-white p-4 border-b">
-        <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+      <div className="bg-orange-500 p-4 flex items-center justify-between shadow-lg">
+        <div className="flex items-center space-x-3">
+          <button onClick={() => router.back()} className="text-white">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
           <div>
-            <p className="text-slate-600">Amount</p>
-            <p className="font-bold">{trade?.fiatAmount} {trade?.country === 'NG' ? 'NGN' : 'KES'}</p>
-          </div>
-          <div>
-            <p className="text-slate-600">Crypto</p>
-            <p className="font-bold">{parseFloat(trade?.cryptoAmount || 0).toFixed(6)} {trade?.crypto}</p>
+            <h1 className="text-white font-bold text-lg">Trade Chat</h1>
+            <p className="text-orange-100 text-xs">Order #{trade?.id}</p>
           </div>
         </div>
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500">Admin Status:</span>
-          <span className={`font-semibold ${adminOnline ? 'text-green-600' : 'text-red-600'}`}>
-            {adminOnline ? '🟢 Online' : '🔴 Offline'}
-          </span>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => sendPaymentDetails()}
+            className="bg-white bg-opacity-20 text-white px-3 py-1 rounded-lg text-xs font-semibold"
+          >
+            Payment Info
+          </button>
+          <button
+            onClick={() => setShowDispute(true)}
+            className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-semibold"
+          >
+            Dispute
+          </button>
         </div>
       </div>
 
@@ -146,262 +332,138 @@ export default function TradeChat() {
         {messages.map((msg, index) => (
           <div
             key={index}
-            className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[80%] p-3 rounded-lg ${
-                msg.sender === 'system'
-                  ? 'bg-yellow-100 text-yellow-900 text-center w-full'
-                  : msg.sender === 'user'
+              className={`max-w-[80%] rounded-2xl p-3 ${
+                msg.sender_type === 'user'
                   ? 'bg-orange-500 text-white'
+                  : msg.message_type === 'system'
+                  ? 'bg-blue-50 text-blue-900 border border-blue-200'
                   : 'bg-white text-slate-900'
               }`}
             >
-              <p className="text-sm">{msg.message}</p>
-              {msg.imageData && (
-                <div className="mt-2">
-                  <img 
-                    src={msg.imageData} 
-                    alt="Payment proof" 
-                    className="max-w-full h-auto rounded-lg cursor-pointer border-2 border-white"
-                    onClick={() => window.open(msg.imageData, '_blank')}
-                  />
-                  <p className="text-xs mt-1 opacity-70">Click to view full size</p>
-                </div>
+              {msg.message_type === 'image' ? (
+                <img src={msg.message} alt="Proof" className="rounded-lg max-w-full" />
+              ) : (
+                <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
               )}
               <p className="text-xs opacity-70 mt-1">
-                {new Date(msg.timestamp).toLocaleTimeString()}
+                {new Date(msg.created_at).toLocaleTimeString()}
               </p>
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Action Buttons */}
-      {trade?.status === 'pending' && (
-        <>
-          <div className="bg-slate-100 p-3 border-t space-y-2">
-          {!paymentProofUploaded ? (
-            <div className="flex space-x-2">
-              <label className="flex-1 bg-blue-500 text-white py-2 rounded-lg font-bold text-sm text-center cursor-pointer">
-                Take Photo
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = async (event) => {
-                        const imageData = event.target?.result as string;
-                        try {
-                          const token = localStorage.getItem('token');
-                          const response = await fetch(`${API_BASE}/trade/${tradeId}/chat`, {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              Authorization: `Bearer ${token}`
-                            },
-                            body: JSON.stringify({ 
-                              message: `📸 PAYMENT PROOF UPLOADED\n\nI have completed the payment. Please verify and approve my order.`,
-                              imageData
-                            })
-                          });
-                          if (response.ok) {
-                            setPaymentProofUploaded(true);
-                            alert('Payment proof uploaded! Admin will verify shortly.');
-                            fetchMessages();
-                          }
-                        } catch (error) {
-                          alert('Failed to upload payment proof');
-                        }
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                  className="hidden"
-                />
-              </label>
-              <label className="flex-1 bg-green-500 text-white py-2 rounded-lg font-bold text-sm text-center cursor-pointer">
-                Choose Photo
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = async (event) => {
-                        const imageData = event.target?.result as string;
-                        try {
-                          const token = localStorage.getItem('token');
-                          const response = await fetch(`${API_BASE}/trade/${tradeId}/chat`, {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              Authorization: `Bearer ${token}`
-                            },
-                            body: JSON.stringify({ 
-                              message: `📸 PAYMENT PROOF UPLOADED\n\nI have completed the payment. Please verify and approve my order.`,
-                              imageData
-                            })
-                          });
-                          if (response.ok) {
-                            setPaymentProofUploaded(true);
-                            alert('Payment proof uploaded! Admin will verify shortly.');
-                            fetchMessages();
-                          }
-                        } catch (error) {
-                          alert('Failed to upload payment proof');
-                        }
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                  className="hidden"
-                />
-              </label>
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                const adminMessage = `🔔 ADMIN ALERT\n\nHello admin, I have uploaded my payment proof. Please verify and approve my order. Thank you!`;
-                const token = localStorage.getItem('token');
-                fetch(`${API_BASE}/trade/${tradeId}/chat`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                  },
-                  body: JSON.stringify({ message: adminMessage })
-                }).then(() => {
-                  alert('Admin has been notified!');
-                  fetchMessages();
-                });
-              }}
-              className="w-full bg-orange-500 text-white py-2 rounded-lg font-bold text-sm"
-            >
-              🔔 Alert Admin
-            </button>
-          )}
-            <button
-              onClick={() => {
-                const modal = document.createElement('div');
-                modal.innerHTML = `
-                  <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999">
-                    <div style="background:white;padding:24px;border-radius:12px;max-width:500px;width:90%">
-                      <h3 style="font-size:18px;font-weight:bold;margin-bottom:16px;color:#1e293b">Raise Dispute</h3>
-                      <p style="font-size:14px;color:#64748b;margin-bottom:16px">Order ID: ${trade?.id}</p>
-                      
-                      <label style="display:block;font-weight:bold;margin-bottom:8px;color:#1e293b">Reason for Dispute *</label>
-                      <select id="disputeReason" style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:16px">
-                        <option value="">Select reason...</option>
-                        <option value="payment_not_received">Payment not received</option>
-                        <option value="crypto_not_received">Crypto not received</option>
-                        <option value="wrong_amount">Wrong amount sent</option>
-                        <option value="admin_unresponsive">Admin not responding</option>
-                        <option value="other">Other issue</option>
-                      </select>
-                      
-                      <label style="display:block;font-weight:bold;margin-bottom:8px;color:#1e293b">Transaction Reference/Proof *</label>
-                      <input id="txRef" type="text" placeholder="Bank reference, TxID, or receipt number" style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:16px" />
-                      
-                      <label style="display:block;font-weight:bold;margin-bottom:8px;color:#1e293b">Detailed Explanation *</label>
-                      <textarea id="disputeDetails" rows="4" placeholder="Explain what happened and provide evidence..." style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:16px"></textarea>
-                      
-                      <div style="background:#fef3c7;padding:12px;border-radius:8px;border-left:4px solid #f59e0b;margin-bottom:16px">
-                        <p style="font-size:12px;color:#92400e">⚠️ False disputes may result in account suspension. Only raise disputes for genuine issues.</p>
-                      </div>
-                      
-                      <div style="display:flex;gap:8px">
-                        <button id="cancelDispute" style="flex:1;padding:12px;background:#f1f5f9;color:#64748b;border:none;border-radius:8px;font-weight:bold;cursor:pointer">Cancel</button>
-                        <button id="submitDispute" style="flex:1;padding:12px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer">Submit Dispute</button>
-                      </div>
-                    </div>
-                  </div>
-                `;
-                document.body.appendChild(modal);
-                
-                document.getElementById('cancelDispute')!.onclick = () => modal.remove();
-                document.getElementById('submitDispute')!.onclick = async () => {
-                  const reason = (document.getElementById('disputeReason') as HTMLSelectElement).value;
-                  const txRef = (document.getElementById('txRef') as HTMLInputElement).value;
-                  const details = (document.getElementById('disputeDetails') as HTMLTextAreaElement).value;
-                  
-                  if (!reason || !txRef || !details) {
-                    alert('Please fill all required fields');
-                    return;
-                  }
-                  
-                  if (details.length < 20) {
-                    alert('Please provide more detailed explanation (minimum 20 characters)');
-                    return;
-                  }
-                  
-                  try {
-                    const token = localStorage.getItem('token');
-                    const evidence = `Transaction Ref: ${txRef}\n\nDetails: ${details}`;
-                    const response = await fetch(`${API_BASE}/trade/${tradeId}/dispute`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`
-                      },
-                      body: JSON.stringify({ reason, evidence })
-                    });
-                    
-                    const data = await response.json();
-                    if (response.ok) {
-                      alert('Dispute raised successfully! Admin will review within 24 hours.');
-                      modal.remove();
-                      fetchTradeDetails();
-                      fetchMessages();
-                    } else {
-                      alert(data.error || 'Failed to raise dispute');
-                    }
-                  } catch (error) {
-                    alert('Network error. Please try again.');
-                  }
-                };
-              }}
-              className="flex-1 bg-red-500 text-white py-2 rounded-lg font-bold text-sm"
-            >
-              ⚠ Raise Dispute
-            </button>
-          </div>
-          <div className="bg-red-50 p-3 rounded-lg border-l-4 border-red-500">
-            <h4 className="font-bold text-red-800 text-xs mb-1">⚠️ IMPORTANT WARNINGS</h4>
-            <div className="text-xs text-red-700 space-y-1">
-              <p>• Upload REAL payment proof only</p>
-              <p>• Fake screenshots = Account suspension</p>
-              <p>• Wait for admin approval - DO NOT self-complete</p>
-              <p>• False disputes may result in permanent ban</p>
-              <p>• Only raise disputes for genuine payment issues</p>
-            </div>
-          </div>
-        </>
+      {/* Mark as Paid Button */}
+      {trade?.status === 'pending' && !showProofUpload && (
+        <div className="p-4 bg-white border-t">
+          <button
+            onClick={handleMarkAsPaid}
+            className="w-full bg-green-500 text-white py-3 rounded-xl font-bold"
+          >
+            ✓ I Have Paid
+          </button>
+        </div>
       )}
 
-      {/* Input */}
-      <div className="bg-white p-4 border-t">
-        <div className="flex space-x-2">
+      {/* Proof Upload */}
+      {showProofUpload && (
+        <div className="p-4 bg-white border-t space-y-3">
+          <p className="text-sm text-slate-600 font-semibold">Upload Payment Proof:</p>
+          {!proofImage ? (
+            <label className="block bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:bg-slate-200">
+              <span className="text-slate-600">📷 Take Photo or Choose File</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      setProofImage(event.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="hidden"
+              />
+            </label>
+          ) : (
+            <div className="relative">
+              <img src={proofImage} alt="Proof" className="w-full rounded-xl" />
+              <button
+                onClick={() => setProofImage('')}
+                className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <button
+            onClick={handleUploadProof}
+            disabled={!proofImage}
+            className="w-full bg-orange-500 text-white py-3 rounded-xl font-bold disabled:opacity-50"
+          >
+            Submit Proof
+          </button>
+        </div>
+      )}
+
+      {/* Message Input */}
+      {!showProofUpload && (
+        <div className="p-4 bg-white border-t flex items-center space-x-2">
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+            onKeyPress={(e) => e.key === 'Enter' && sendMessage(newMessage)}
             placeholder="Type a message..."
-            className="flex-1 p-3 border border-slate-300 rounded-lg"
+            className="flex-1 border border-slate-300 rounded-full px-4 py-2"
           />
           <button
-            onClick={sendMessage}
-            className="bg-orange-500 text-white px-6 py-3 rounded-lg font-bold"
+            onClick={() => sendMessage(newMessage)}
+            className="bg-orange-500 text-white rounded-full w-10 h-10 flex items-center justify-center"
           >
-            Send
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+            </svg>
           </button>
         </div>
-      </div>
+      )}
+
+      {/* Dispute Modal */}
+      {showDispute && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">Raise Dispute</h3>
+            <textarea
+              value={disputeReason}
+              onChange={(e) => setDisputeReason(e.target.value)}
+              placeholder="Describe the issue..."
+              rows={4}
+              className="w-full border border-slate-300 rounded-lg p-3 mb-4"
+            />
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowDispute(false)}
+                className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-lg font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDispute}
+                className="flex-1 bg-red-500 text-white py-3 rounded-lg font-semibold"
+              >
+                Submit Dispute
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
