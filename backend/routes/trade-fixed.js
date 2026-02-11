@@ -50,7 +50,7 @@ router.post('/create', authenticateToken, async (req, res) => {
 
     const { type, crypto, cryptoAmount, fiatAmount, paymentMethod, bankDetails, country } = req.body;
     const userId = req.user.id;
-    const tradeId = 'trade_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const tradeId = Math.random().toString(36).substr(2, 5).toUpperCase();
     
     const currency = country === 'NG' ? 'NGN' : 'KES';
 
@@ -152,6 +152,19 @@ router.post('/:tradeId/chat', authenticateToken, async (req, res) => {
     if (tradeCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Trade not found' });
     }
+    
+    // Ensure chat_messages table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY,
+        trade_id VARCHAR(255) NOT NULL,
+        sender_id VARCHAR(255) NOT NULL,
+        sender_type VARCHAR(20) NOT NULL,
+        message TEXT NOT NULL,
+        message_type VARCHAR(20) DEFAULT 'text',
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
     
     const result = await pool.query(
       'INSERT INTO chat_messages (trade_id, sender_id, sender_type, message, message_type) VALUES ($1, $2, $3, $4, $5) RETURNING *',
