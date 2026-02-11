@@ -28,8 +28,9 @@ export default function TradeChatScreen() {
       return;
     }
 
-    // Fetch trade details
+    // Fetch trade details and messages once
     fetchTrade();
+    fetchMessages();
 
     // Connect WebSocket
     const websocket = new WebSocket(WS_URL);
@@ -62,18 +63,8 @@ export default function TradeChatScreen() {
 
     setWs(websocket);
 
-    // Fetch existing messages
-    fetchMessages();
-
-    // Poll for updates every 5 seconds
-    const interval = setInterval(() => {
-      fetchMessages();
-      fetchTrade();
-    }, 5000);
-
     return () => {
       websocket.close();
-      clearInterval(interval);
     };
   }, [tradeId]);
 
@@ -86,11 +77,6 @@ export default function TradeChatScreen() {
       if (response.ok) {
         const data = await response.json();
         setTrade(data.trade);
-        
-        // Auto-send order details when trade is first loaded
-        if (data.trade && messages.length === 0) {
-          sendOrderDetails(data.trade);
-        }
       }
     } catch (error) {
       console.error('Failed to fetch trade:', error);
@@ -110,6 +96,11 @@ export default function TradeChatScreen() {
         // Check if admin replied
         const hasAdminReply = data.some((msg: any) => msg.sender_type === 'admin');
         setAdminReplied(hasAdminReply);
+        
+        // Send order details only once if no messages exist
+        if (data.length === 0 && !orderDetailsSent && trade) {
+          sendOrderDetails(trade);
+        }
         
         scrollToBottom();
       }
@@ -308,30 +299,24 @@ Complete payment within 15 minutes`;
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-100 flex flex-col max-w-2xl mx-auto">
       {/* Header */}
-      <div className="bg-orange-500 p-4 flex items-center justify-between shadow-lg">
+      <div className="bg-orange-500 p-3 md:p-4 flex items-center justify-between shadow-lg sticky top-0 z-10">
         <div className="flex items-center space-x-3">
-          <button onClick={() => router.back()} className="text-white">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button onClick={() => router.back()} className="text-white p-1">
+            <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div>
-            <h1 className="text-white font-bold text-lg">Trade Chat</h1>
-            <p className="text-orange-100 text-xs">Order #{trade?.id}</p>
+            <h1 className="text-white font-bold text-base md:text-lg">Trade Chat</h1>
+            <p className="text-orange-100 text-xs">#{trade?.id?.slice(0, 15)}...</p>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => sendPaymentDetails()}
-            className="bg-white bg-opacity-20 text-white px-3 py-1 rounded-lg text-xs font-semibold"
-          >
-            Payment Info
-          </button>
+        <div className="flex items-center space-x-1 md:space-x-2">
           <button
             onClick={() => setShowDispute(true)}
-            className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-semibold"
+            className="bg-red-500 text-white px-2 md:px-3 py-1 rounded-lg text-xs font-semibold"
           >
             Dispute
           </button>
@@ -339,7 +324,7 @@ Complete payment within 15 minutes`;
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
         {messages.map((msg, index) => (
           <div
             key={index}

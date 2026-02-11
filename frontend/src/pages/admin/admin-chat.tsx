@@ -19,23 +19,17 @@ export default function AdminChat() {
       return;
     }
 
+    const adminUser = localStorage.getItem('adminUser');
+    if (adminUser) {
+      setCurrentAdmin(JSON.parse(adminUser));
+    }
+
     fetchAdmins();
-    const interval = setInterval(fetchAdmins, 5000);
-    return () => clearInterval(interval);
   }, []);
 
   const fetchAdmins = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      
-      // Get current admin info
-      const profileRes = await fetch(`${API_BASE}/admin/profile`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (profileRes.ok) {
-        const profile = await profileRes.json();
-        setCurrentAdmin(profile);
-      }
 
       // Get all admins
       const adminsRes = await fetch(`${API_BASE}/adminAuth/list`, {
