@@ -9,14 +9,20 @@ export default function CreateAdmin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('trade_admin');
-  const [superAdminToken, setSuperAdminToken] = useState('');
+  const [superAdminEmail, setSuperAdminEmail] = useState('');
+  const [superAdminPassword, setSuperAdminPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
+    const adminUser = localStorage.getItem('adminUser');
+    if (adminUser) {
+      const user = JSON.parse(adminUser);
+      if (user.role !== 'super_admin') {
+        router.push('/admin/dashboard');
+      }
+    } else {
       router.push('/admin/login');
     }
   }, [router]);
@@ -31,7 +37,7 @@ export default function CreateAdmin() {
       const response = await fetch(`${API_BASE}/adminAuth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role, superAdminToken })
+        body: JSON.stringify({ name, email, password, role, superAdminEmail, superAdminPassword })
       });
 
       const data = await response.json();
@@ -41,7 +47,7 @@ export default function CreateAdmin() {
         setName('');
         setEmail('');
         setPassword('');
-        setSuperAdminToken('');
+        setSuperAdminPassword('');
       } else {
         setError(data.error || 'Failed to create admin');
       }
@@ -90,10 +96,19 @@ export default function CreateAdmin() {
               )}
 
               <input
+                type="email"
+                placeholder="🔑 Your Super Admin Email"
+                value={superAdminEmail}
+                onChange={(e) => setSuperAdminEmail(e.target.value)}
+                required
+                className="w-full p-3 md:p-4 bg-slate-700 border border-slate-600 rounded-xl text-sm md:text-base text-white placeholder-slate-400 focus:border-orange-500 focus:outline-none"
+              />
+
+              <input
                 type="password"
-                placeholder="🔑 Super Admin Secret Token"
-                value={superAdminToken}
-                onChange={(e) => setSuperAdminToken(e.target.value)}
+                placeholder="🔑 Your Super Admin Password"
+                value={superAdminPassword}
+                onChange={(e) => setSuperAdminPassword(e.target.value)}
                 required
                 className="w-full p-3 md:p-4 bg-slate-700 border border-slate-600 rounded-xl text-sm md:text-base text-white placeholder-slate-400 focus:border-orange-500 focus:outline-none"
               />
@@ -146,8 +161,8 @@ export default function CreateAdmin() {
             </form>
 
             <div className="mt-4 md:mt-6 bg-yellow-900 p-3 md:p-4 rounded-xl border-l-4 border-yellow-500">
-              <p className="text-xs md:text-sm text-yellow-200 font-semibold mb-2">🔐 Super Admin Secret Token Required</p>
-              <p className="text-xs text-yellow-300">You must enter the correct secret token to create admin accounts. Only super admins have access to this token.</p>
+              <p className="text-xs md:text-sm text-yellow-200 font-semibold mb-2">🔐 Super Admin Verification Required</p>
+              <p className="text-xs text-yellow-300">You must verify your super admin credentials to create new admin accounts.</p>
             </div>
           </div>
         </div>

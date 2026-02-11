@@ -15,13 +15,16 @@ export default function SuperAdminDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'disputes'>('overview');
   const [unreadChats, setUnreadChats] = useState(0);
   const [lastOrderCount, setLastOrderCount] = useState(0);
+  const [adminUser, setAdminUser] = useState<any>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
+    const user = localStorage.getItem('adminUser');
     if (!token) {
       router.push('/admin/login');
       return;
     }
+    if (user) setAdminUser(JSON.parse(user));
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
@@ -107,7 +110,9 @@ export default function SuperAdminDashboard() {
           </button>
           <button onClick={() => router.push('/admin/withdrawals')} className="bg-white bg-opacity-20 backdrop-blur-sm text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold hover:bg-opacity-30 transition-all">Withdrawals</button>
           <button onClick={() => router.push('/admin/system-health')} className="bg-purple-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-purple-600 shadow-lg transition-all">System Health</button>
-          <button onClick={() => router.push('/admin/create-admin')} className="bg-green-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-green-600 shadow-lg transition-all">+ New Admin</button>
+          {adminUser?.role === 'super_admin' && (
+            <button onClick={() => router.push('/admin/create-admin')} className="bg-green-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-green-600 shadow-lg transition-all">+ New Admin</button>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
