@@ -48,14 +48,16 @@ router.post('/create', authenticateToken, async (req, res) => {
       )
     `);
 
-    const { type, crypto, cryptoAmount, fiatAmount, currency, country, paymentMethod, bankDetails } = req.body;
+    const { type, crypto, cryptoAmount, fiatAmount, paymentMethod, bankDetails, country } = req.body;
     const userId = req.user.id;
     const tradeId = 'trade_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    const currency = country === 'NG' ? 'NGN' : 'KES';
 
     // Create trade
     const result = await pool.query(
       'INSERT INTO trades (id, user_id, type, crypto, crypto_amount, fiat_amount, currency, country, payment_method, bank_details, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
-      [tradeId, userId, type, crypto, cryptoAmount, fiatAmount, currency, country, paymentMethod, JSON.stringify(bankDetails), 'pending']
+      [tradeId, userId, type, crypto, cryptoAmount, fiatAmount, currency, country, paymentMethod, JSON.stringify(bankDetails || {}), 'pending']
     );
 
     res.json({
@@ -65,7 +67,7 @@ router.post('/create', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Create trade error:', error);
-    res.status(500).json({ error: 'Failed to create trade' });
+    res.status(500).json({ error: 'Failed to create trade', details: error.message });
   }
 });
 
@@ -220,7 +222,9 @@ router.get('/rates', async (req, res) => {
     const rates = {
       BTC: { buy: 45250000, sell: 44750000, usd: 95000 },
       ETH: { buy: 2850000, sell: 2820000, usd: 3500 },
-      USDT: { buy: 1580, sell: 1570, usd: 1 }
+      USDT: { buy: 1580, sell: 1570, usd: 1 },
+      XRP: { buy: 4000, sell: 3950, usd: 2.5 },
+      SOL: { buy: 320000, sell: 316000, usd: 200 }
     };
 
     const exchangeRates = {

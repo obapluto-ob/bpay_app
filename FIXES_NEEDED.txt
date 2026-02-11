@@ -1,0 +1,36 @@
+FIXES FOR MOBILE DASHBOARD:
+
+1. In BuyCryptoWeb component (line ~140):
+   Change: const [selectedCrypto, setSelectedCrypto] = useState<'BTC' | 'ETH' | 'USDT'>('BTC');
+   To: const [selectedCrypto, setSelectedCrypto] = useState<'BTC' | 'ETH' | 'USDT' | 'XRP' | 'SOL'>('BTC');
+
+2. In BuyCryptoWeb component (line ~150):
+   Change: const limits = {
+     BTC: { minUSD: 10, maxUSD: 50000 },
+     ETH: { minUSD: 5, maxUSD: 30000 },
+     USDT: { minUSD: 1, maxUSD: 100000 }
+   };
+   To: const limits = {
+     BTC: { minUSD: 10, maxUSD: 50000 },
+     ETH: { minUSD: 5, maxUSD: 30000 },
+     USDT: { minUSD: 1, maxUSD: 100000 },
+     XRP: { minUSD: 1, maxUSD: 50000 },
+     SOL: { minUSD: 5, maxUSD: 40000 }
+   };
+
+3. In BuyCryptoWeb component (line ~200):
+   Change: {(['BTC', 'ETH', 'USDT'] as const).map(crypto => (
+   To: {(['BTC', 'ETH', 'USDT', 'XRP', 'SOL'] as const).map(crypto => (
+
+4. In the crypto button image src (line ~208):
+   Change: crypto === 'BTC' ? 'bitcoin' : crypto === 'ETH' ? 'ethereum' : 'tether'
+   To: crypto === 'BTC' ? 'bitcoin' : crypto === 'ETH' ? 'ethereum' : crypto === 'USDT' ? 'tether' : crypto === 'XRP' ? 'xrp' : 'solana'
+
+5. In SellCryptoWeb component - repeat steps 1-4 for sell component
+
+6. In ConvertScreenWeb component - repeat steps 1-4 for convert component
+
+BACKEND FIXES ALREADY DONE:
+- Added XRP and SOL to /api/trade/rates endpoint
+- Fixed country field extraction in /api/trade/create
+- Added error details to trade creation response

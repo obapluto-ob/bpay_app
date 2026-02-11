@@ -18,6 +18,7 @@ export default function ManageAdmins() {
     if (adminUser) {
       const user = JSON.parse(adminUser);
       if (user.role !== 'super_admin') {
+        alert('Access denied. Only super admin can manage admins.');
         router.push('/admin/dashboard');
         return;
       }
@@ -33,7 +34,7 @@ export default function ManageAdmins() {
   const fetchAdmins = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${API_BASE}/admin/list`, {
+      const response = await fetch(`${API_BASE}/adminAuth/list`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
@@ -86,7 +87,7 @@ export default function ManageAdmins() {
 
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${API_BASE}/admin/${adminId}`, {
+      const response = await fetch(`${API_BASE}/adminAuth/${adminId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -255,9 +256,9 @@ export default function ManageAdmins() {
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                   className="w-full p-3 border border-slate-300 rounded-lg"
                 >
-                  <option value="admin">Admin (Trade Support)</option>
-                  <option value="super_admin">Super Admin (Full Access)</option>
+                  <option value="admin">Admin Worker (Trade Support Only)</option>
                 </select>
+                <p className="text-xs text-slate-500 mt-1">Admin workers can approve trades and support users but cannot create new admins</p>
               </div>
 
               <div>

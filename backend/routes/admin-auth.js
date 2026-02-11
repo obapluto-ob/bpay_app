@@ -82,4 +82,53 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// List all admins (super_admin only)
+router.get('/list', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Access token required' });
+    }
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+    
+    if (decoded.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Only super admin can view admins' });
+    }
+
+    const result = await pool.query('SELECT id, email, name, role, created_at FROM admins ORDER BY created_at DESC');
+    res.json({ admins: result.rows });
+  } catch (error) {
+    console.error('List admins error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete admin (super_admin only)
+router.delete('/:adminId', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Access token required' });
+    }
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+    
+    if (decoded.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Only super admin can delete admins' });
+    }
+
+    const { adminId } = req.params;
+    await pool.query('DELETE FROM admins WHERE id = $1 AND role != $2', [adminId, 'super_admin']);
+    res.json({ message: 'Admin deleted successfully' });
+  } catch (error) {
+    console.error('Delete admin error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;
