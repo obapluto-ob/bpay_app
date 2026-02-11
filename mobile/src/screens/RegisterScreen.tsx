@@ -25,16 +25,51 @@ export default function RegisterScreen({ navigation }: any) {
     "What is your favorite food?",
     "What was your childhood nickname?"
   ];
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
+    setError('');
+    
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      setError('Passwords do not match');
       return;
     }
-    // Handle registration logic
-    navigation.navigate('Dashboard');
+
+    if (!formData.email || !formData.password || !formData.firstName) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('https://bpay-app.onrender.com/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          fullName: `${formData.firstName} ${formData.lastName}`,
+          country: formData.country
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store token and navigate
+        navigation.navigate('Dashboard');
+      } else {
+        // Show actual error from backend
+        setError(data.error || data.message || 'Registration failed. Please try again.');
+      }
+    } catch (err: any) {
+      setError('Network error: ' + (err.message || 'Please check your connection'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateField = (field: string, value: string) => {
@@ -155,12 +190,20 @@ export default function RegisterScreen({ navigation }: any) {
             placeholder="Enter your answer"
           />
           
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
+          
           <Button 
             mode="contained" 
             onPress={handleRegister}
             style={styles.registerButton}
+            loading={loading}
+            disabled={loading}
           >
-            Create Account
+            {loading ? 'Creating Account...' : 'Create Account'}
           </Button>
           
           <View style={styles.loginContainer}>
@@ -305,5 +348,18 @@ const styles = StyleSheet.create({
   selectedCountryText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  errorContainer: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ef4444',
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
