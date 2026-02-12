@@ -321,6 +321,29 @@ router.post('/:tradeId/dispute', authenticateToken, async (req, res) => {
   }
 });
 
+// Cancel order
+router.post('/:tradeId/cancel', authenticateToken, async (req, res) => {
+  try {
+    const { tradeId } = req.params;
+    const { reason } = req.body;
+    const userId = req.user.id;
+    
+    const result = await pool.query(
+      'UPDATE trades SET status = $1, admin_notes = $2 WHERE id = $3 AND user_id = $4 RETURNING *',
+      ['cancelled', reason, tradeId, userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    
+    res.json({ success: true, trade: result.rows[0] });
+  } catch (error) {
+    console.error('Cancel error:', error);
+    res.status(500).json({ error: 'Failed to cancel order' });
+  }
+});
+
 // Test endpoint to verify server restart
 router.get('/test-restart', (req, res) => {
   res.json({ message: 'Server restarted successfully', timestamp: new Date().toISOString() });

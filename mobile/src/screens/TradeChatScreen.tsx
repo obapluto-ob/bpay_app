@@ -54,6 +54,8 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
   const [paymentProof, setPaymentProof] = useState<string | null>(null);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Listen for admin approval/decline messages
@@ -120,6 +122,37 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
       Alert.alert('Error', 'Failed to upload proof. Please try again.');
     } finally {
       setUploadingProof(false);
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!cancelReason.trim()) {
+      Alert.alert('Error', 'Please provide a reason for cancellation');
+      return;
+    }
+
+    try {
+      // Update trade status
+      await fetch(`https://bpay-app.onrender.com/api/trade/${trade.id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${userToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason: cancelReason })
+      });
+
+      // Send cancellation message
+      sendMessage(`Order cancelled by user. Reason: ${cancelReason}`);
+      
+      setShowCancelModal(false);
+      Alert.alert('Order Cancelled', 'Your order has been cancelled successfully.');
+      
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to cancel order. Please try again.');
     }
   };
 
@@ -261,12 +294,21 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
         {!hasPaid && trade.status === 'pending' && (
-          <TouchableOpacity 
-            style={styles.paidButton}
-            onPress={handleMarkPaid}
-          >
-            <Text style={styles.paidButtonText}>I Have Paid</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity 
+              style={styles.paidButton}
+              onPress={handleMarkPaid}
+            >
+              <Text style={styles.paidButtonText}>I Have Paid</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.cancelOrderButton}
+              onPress={() => setShowCancelModal(true)}
+            >
+              <Text style={styles.cancelOrderButtonText}>Cancel Order</Text>
+            </TouchableOpacity>
+          </>
         )}
         
         {hasPaid && !paymentProof && (
@@ -371,6 +413,44 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
                 onPress={submitDispute}
               >
                 <Text style={styles.submitButtonText}>Submit Dispute</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Cancel Order Modal */}
+      <Modal visible={showCancelModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Cancel Order</Text>
+            <Text style={styles.modalSubtitle}>Please provide a reason for cancellation:</Text>
+            
+            <TextInput
+              style={styles.disputeInput}
+              value={cancelReason}
+              onChangeText={setCancelReason}
+              placeholder="Reason for cancellation..."
+              multiline
+              numberOfLines={4}
+              maxLength={500}
+            />
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowCancelModal(false);
+                  setCancelReason('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Keep Order</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.submitButton}
+                onPress={handleCancelOrder}
+              >
+                <Text style={styles.submitButtonText}>Cancel Order</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -567,6 +647,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 16,
     gap: 12,
+  },
+  cancelOrderButton: {
+    flex: 1,
+    backgroundColor: '#ef4444',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelOrderButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   paidButton: {
     flex: 1,
