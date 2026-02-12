@@ -2304,24 +2304,25 @@ export default function MobileExactDashboard() {
   };
 
   const checkPriceAlerts = () => {
-    const btcPrice = usdRates.BTC || 0;
-    const usdtKesRate = (usdRates.USDT || 1) * exchangeRates.USDKES;
+    const btcPrice = usdRates.BTC?.price || 0;
+    const usdtPrice = usdRates.USDT?.price || 1;
+    const usdtKesRate = usdtPrice * exchangeRates.USDKES;
     
     if (btcPrice >= 100000) {
       addNotification(
-        `MILESTONE ALERT: Bitcoin hits $${btcPrice.toLocaleString()}! Historic $100K breakthrough!`,
+        `MILESTONE: Bitcoin hits $${btcPrice.toLocaleString()}! Historic $100K breakthrough!`,
         'success'
       );
     }
     
-    if (usdtKesRate >= 129) {
+    if (usdtKesRate >= 150) {
       addNotification(
-        `USDT Alert: Rate hits KSh ${usdtKesRate.toFixed(2)} - High end of target range!`,
+        `USDT Alert: Rate hits KSh ${usdtKesRate.toFixed(2)} - High target reached!`,
         'warning'
       );
     } else if (usdtKesRate <= 128) {
       addNotification(
-        `USDT Alert: Rate drops to KSh ${usdtKesRate.toFixed(2)} - Low end of target range!`,
+        `USDT Alert: Rate drops to KSh ${usdtKesRate.toFixed(2)} - Low target reached!`,
         'info'
       );
     }
