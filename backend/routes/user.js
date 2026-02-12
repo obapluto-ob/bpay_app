@@ -139,6 +139,39 @@ router.post('/deposit', authenticateToken, async (req, res) => {
   }
 });
 
+// Submit withdrawal
+router.post('/withdraw', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { asset, amount, destination, type } = req.body;
+    
+    // Check balance
+    const balanceQuery = `SELECT ${asset.toLowerCase()}_balance FROM users WHERE id = $1`;
+    const balanceResult = await pool.query(balanceQuery, [userId]);
+    const currentBalance = parseFloat(balanceResult.rows[0]?.[`${asset.toLowerCase()}_balance`] || 0);
+    
+    if (currentBalance < amount) {
+      return res.status(400).json({ error: 'Insufficient balance' });
+    }
+    
+    // Create withdrawal record
+    const withdrawalId = 'wd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    await pool.query(`
+      INSERT INTO withdrawals (id, user_id, amount, currency, wallet_address, status, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `, [withdrawalId, userId, amount, asset, destination, 'pending', new Date().toISOString()]);
+    
+    res.json({ 
+      success: true, 
+      message: 'Withdrawal request submitted',
+      withdrawalId
+    });
+  } catch (error) {
+    console.error('Withdrawal error:', error);
+    res.status(500).json({ error: 'Failed to submit withdrawal' });
+  }
+});
+
 // Get crypto wallets
 router.get('/crypto-wallets', authenticateToken, async (req, res) => {
   try {
