@@ -191,6 +191,7 @@ app.use('/api/crypto', require('./routes/crypto'));
 app.use('/api/fix', require('./routes/fix-old-users'));
 app.use('/api/migrate', require('./routes/migrate-db'));
 app.use('/api/admin-verify', require('./routes/admin-verify'));
+app.use('/api/admin-rates', require('./routes/admin-rates'));
 
 // Health check
 app.get('/health', (req, res) => {

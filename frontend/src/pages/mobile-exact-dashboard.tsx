@@ -188,7 +188,7 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
   const buyMargin = 0.02;
   const currentRate = lockedRate || Math.round(baseRate * (1 + buyMargin));
   const cryptoAmount = parseFloat(amount || '0') / currentRate;
-  const availableBalance = selectedCurrency === 'NGN' ? userBalance?.NGN || 0 : userBalance?.KES || 0;
+  const availableBalance = selectedCurrency === 'NGN' ? (userBalance?.NGN || 0) : (userBalance?.KES || 0);
 
   const limits = {
     BTC: { minUSD: 10, maxUSD: 50000 },
@@ -2163,10 +2163,17 @@ export default function MobileExactDashboard() {
           setUserAvatar('');
         }
 
-        const ratesRes = await fetch(`${API_BASE}/trade/rates`);
+        const ratesRes = await fetch(`${API_BASE}/admin-rates/rates`);
         if (ratesRes.ok) {
           const ratesData = await ratesRes.json();
-          setRates(ratesData);
+          const formattedRates = {
+            BTC: { NGN: ratesData.BTC?.ngn || 0, KES: ratesData.BTC?.kes || 0 },
+            ETH: { NGN: ratesData.ETH?.ngn || 0, KES: ratesData.ETH?.kes || 0 },
+            USDT: { NGN: ratesData.USDT?.ngn || 0, KES: ratesData.USDT?.kes || 0 },
+            XRP: { NGN: ratesData.XRP?.ngn || 0, KES: ratesData.XRP?.kes || 0 },
+            SOL: { NGN: ratesData.SOL?.ngn || 0, KES: ratesData.SOL?.kes || 0 }
+          };
+          setRates(formattedRates);
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -2563,16 +2570,19 @@ export default function MobileExactDashboard() {
                     <span className="text-2xl mr-2">🇳🇬</span>
                     <span className="text-slate-600 font-semibold">NGN</span>
                   </div>
-                  <span className="text-3xl font-bold text-slate-900">₦{balance.NGN?.toLocaleString() || '0'}</span>
-                  <div className="mt-3 pt-3 border-t border-slate-200">
+                  <div className="mb-3">
+                    <p className="text-sm text-slate-500">Fiat Balance:</p>
+                    <span className="text-3xl font-bold text-slate-900">₦{(balance.NGN || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="pt-3 border-t border-slate-200">
                     <p className="text-xs text-slate-500 mb-2">Crypto Value in NGN:</p>
                     <div className="space-y-1 text-sm">
                       <p className="text-slate-700">BTC: ₦{((balance.BTC || 0) * (usdRates.BTC?.price || 0) * exchangeRates.USDNGN).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
                       <p className="text-slate-700">ETH: ₦{((balance.ETH || 0) * (usdRates.ETH?.price || 0) * exchangeRates.USDNGN).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
                       <p className="text-slate-700">USDT: ₦{((balance.USDT || 0) * (usdRates.USDT?.price || 0) * exchangeRates.USDNGN).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
                     </div>
-                    <p className="text-sm font-bold text-orange-600 mt-2">Total: ₦{(
-                      balance.NGN + 
+                    <p className="text-sm font-bold text-orange-600 mt-2">Total Portfolio: ₦{(
+                      (balance.NGN || 0) + 
                       (balance.BTC || 0) * (usdRates.BTC?.price || 0) * exchangeRates.USDNGN +
                       (balance.ETH || 0) * (usdRates.ETH?.price || 0) * exchangeRates.USDNGN +
                       (balance.USDT || 0) * (usdRates.USDT?.price || 0) * exchangeRates.USDNGN +
@@ -2589,16 +2599,19 @@ export default function MobileExactDashboard() {
                     <span className="text-2xl mr-2">🇰🇪</span>
                     <span className="text-slate-600 font-semibold">KES</span>
                   </div>
-                  <span className="text-3xl font-bold text-slate-900">KSh{balance.KES?.toLocaleString() || '0'}</span>
-                  <div className="mt-3 pt-3 border-t border-slate-200">
+                  <div className="mb-3">
+                    <p className="text-sm text-slate-500">Fiat Balance:</p>
+                    <span className="text-3xl font-bold text-slate-900">KSh{(balance.KES || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="pt-3 border-t border-slate-200">
                     <p className="text-xs text-slate-500 mb-2">Crypto Value in KES:</p>
                     <div className="space-y-1 text-sm">
                       <p className="text-slate-700">BTC: KSh{((balance.BTC || 0) * (usdRates.BTC?.price || 0) * exchangeRates.USDKES).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
                       <p className="text-slate-700">ETH: KSh{((balance.ETH || 0) * (usdRates.ETH?.price || 0) * exchangeRates.USDKES).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
                       <p className="text-slate-700">USDT: KSh{((balance.USDT || 0) * (usdRates.USDT?.price || 0) * exchangeRates.USDKES).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
                     </div>
-                    <p className="text-sm font-bold text-orange-600 mt-2">Total: KSh{(
-                      balance.KES + 
+                    <p className="text-sm font-bold text-orange-600 mt-2">Total Portfolio: KSh{(
+                      (balance.KES || 0) + 
                       (balance.BTC || 0) * (usdRates.BTC?.price || 0) * exchangeRates.USDKES +
                       (balance.ETH || 0) * (usdRates.ETH?.price || 0) * exchangeRates.USDKES +
                       (balance.USDT || 0) * (usdRates.USDT?.price || 0) * exchangeRates.USDKES +
