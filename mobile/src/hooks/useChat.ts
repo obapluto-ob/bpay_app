@@ -21,7 +21,7 @@ export const useChat = (tradeId: string, userToken: string) => {
   const loadMessages = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`https://bpay-app.onrender.com/api/chat/trade/${tradeId}/messages`, {
+      const response = await fetch(`https://bpay-app.onrender.com/api/trade/${tradeId}/chat`, {
         headers: {
           'Authorization': `Bearer ${userToken}`,
           'Content-Type': 'application/json'
@@ -49,28 +49,42 @@ export const useChat = (tradeId: string, userToken: string) => {
   }, [tradeId, userToken]);
 
   // Send message
-  const sendMessage = useCallback((message: string) => {
-    if (!message.trim() || !websocketService.isConnected()) {
-      // Fallback to REST API if WebSocket not connected
-      fetch(`https://bpay-app.onrender.com/api/chat/trade/${tradeId}/message`, {
+  const sendMessage = useCallback(async (message: string) => {
+    if (!message.trim()) return;
+    
+    try {
+      // Send via REST API
+      const response = await fetch(`https://bpay-app.onrender.com/api/trade/${tradeId}/chat`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${userToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ message })
-      }).catch(error => {
-        console.error('Failed to send message via REST:', error);
+        body: JSON.stringify({ message, type: 'text' })
       });
-      return;
+      
+      if (response.ok) {
+        // Reload messages to show the new one
+        loadMessages();
+      }
+      
+      // Also send via WebSocket if connected
+      if (websocketService.isConnected()) {
+        websocketService.sendChatMessage(tradeId, message);
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
     }
-
-    websocketService.sendChatMessage(tradeId, message);
-  }, [tradeId, userToken]);
+  }, [tradeId, userToken, loadMessages]);
 
   useEffect(() => {
     // Load initial messages
     loadMessages();
+
+    // Poll for new messages every 3 seconds
+    const pollInterval = setInterval(() => {
+      loadMessages();
+    }, 3000);
 
     // Join trade chat room
     websocketService.joinTradeChat(tradeId);
@@ -108,6 +122,7 @@ export const useChat = (tradeId: string, userToken: string) => {
     websocketService.onMessage('new_chat_message', handleNewMessage);
 
     return () => {
+      clearInterval(pollInterval);
       clearInterval(connectionInterval);
       websocketService.offMessage('new_chat_message', handleNewMessage);
     };
