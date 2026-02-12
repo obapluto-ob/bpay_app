@@ -211,12 +211,11 @@ router.get('/:tradeId', authenticateToken, async (req, res) => {
 router.get('/:tradeId/chat', authenticateToken, async (req, res) => {
   try {
     const { tradeId } = req.params;
-    const userId = req.user.id;
     
-    // Verify user owns this trade
+    // Just verify trade exists (allow both user and admin to see messages)
     const tradeCheck = await pool.query(
-      'SELECT id FROM trades WHERE id = $1 AND user_id = $2',
-      [tradeId, userId]
+      'SELECT id FROM trades WHERE id = $1',
+      [tradeId]
     );
     
     if (tradeCheck.rows.length === 0) {
