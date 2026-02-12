@@ -54,7 +54,68 @@ router.post('/create', authenticateToken, async (req, res) => {
     
     const currency = country === 'NG' ? 'NGN' : 'KES';
 
-    // Create trade
+    // Auto-complete if wallet balance payment
+    if (type === 'buy' && paymentMethod === 'balance') {
+      // Check user balance
+      const userBalance = await pool.query(
+        `SELECT ${currency.toLowerCase()}_balance FROM users WHERE id = $1`,
+        [userId]
+      );
+
+      const balance = parseFloat(userBalance.rows[0]?.[`${currency.toLowerCase()}_balance`] || 0);
+      const requiredAmount = parseFloat(fiatAmount);
+
+      if (balance < requiredAmount) {
+        return res.status(400).json({ error: 'Insufficient balance' });
+      }
+
+      // Deduct fiat balance
+      await pool.query(
+        `UPDATE users SET ${currency.toLowerCase()}_balance = ${currency.toLowerCase()}_balance - $1 WHERE id = $2`,
+        [requiredAmount, userId]
+      );
+
+      // Credit crypto (with 2% platform profit already included in rate)
+      await pool.query(
+        `UPDATE users SET ${crypto.toLowerCase()}_balance = COALESCE(${crypto.toLowerCase()}_balance, 0) + $1 WHERE id = $2`,
+        [cryptoAmount, userId]
+      );
+
+      // Create completed trade
+      const result = await pool.query(
+        'INSERT INTO trades (id, user_id, type, crypto, crypto_amount, fiat_amount, currency, country, payment_method, status, admin_notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
+        [tradeId, userId, type, crypto, cryptoAmount, fiatAmount, currency, country, paymentMethod, 'completed', 'Auto-completed: Wallet Balance']
+      );
+
+      // Auto-create success message
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id SERIAL PRIMARY KEY,
+          trade_id VARCHAR(255) NOT NULL,
+          sender_id VARCHAR(255) NOT NULL,
+          sender_type VARCHAR(20) NOT NULL,
+          message TEXT NOT NULL,
+          message_type VARCHAR(20) DEFAULT 'text',
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+
+      const successMessage = `PAYMENT CONFIRMED\n\nYour ${crypto} has been credited to your wallet.\nTransaction completed instantly using wallet balance!`;
+
+      await pool.query(
+        'INSERT INTO chat_messages (trade_id, sender_id, sender_type, message, message_type) VALUES ($1, $2, $3, $4, $5)',
+        [tradeId, 'system', 'system', successMessage, 'system']
+      );
+
+      return res.json({
+        success: true,
+        trade: result.rows[0],
+        message: 'Purchase completed instantly!',
+        autoCompleted: true
+      });
+    }
+
+    // Regular flow for bank/mpesa payments
     const result = await pool.query(
       'INSERT INTO trades (id, user_id, type, crypto, crypto_amount, fiat_amount, currency, country, payment_method, bank_details, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
       [tradeId, userId, type, crypto, cryptoAmount, fiatAmount, currency, country, paymentMethod, JSON.stringify(bankDetails || {}), 'pending']

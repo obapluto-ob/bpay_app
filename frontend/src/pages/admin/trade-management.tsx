@@ -91,8 +91,20 @@ export default function TradeManagement() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
-        alert('Trade approved successfully!');
-        setSelectedTrade(null);
+        // Send confirmation message
+        await fetch(`${API_BASE}/adminChat/trades/${selectedTrade.id}/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ 
+            message: `PAYMENT CONFIRMED\n\nYour ${selectedTrade.crypto} has been credited to your wallet.\nTransaction completed successfully!`,
+            type: 'system'
+          })
+        });
+        alert('Trade approved and user notified!');
+        fetchMessages();
         fetchTrades();
       }
     } catch (error) {
@@ -116,10 +128,22 @@ export default function TradeManagement() {
         body: JSON.stringify({ reason: rejectReason })
       });
       if (response.ok) {
-        alert('Trade rejected');
+        // Send rejection message
+        await fetch(`${API_BASE}/adminChat/trades/${selectedTrade.id}/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ 
+            message: `PAYMENT REJECTED\n\nReason: ${rejectReason}\n\nPlease contact support if you believe this is an error.`,
+            type: 'system'
+          })
+        });
+        alert('Trade rejected and user notified');
         setShowRejectModal(false);
         setRejectReason('');
-        setSelectedTrade(null);
+        fetchMessages();
         fetchTrades();
       }
     } catch (error) {

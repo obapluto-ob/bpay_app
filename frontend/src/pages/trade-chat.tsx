@@ -260,15 +260,33 @@ Complete payment within 15 minutes`;
   // Success screen when trade is completed
   if (trade?.status === 'completed') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center p-5">
-        <div className="bg-white rounded-3xl p-8 text-center max-w-md w-full shadow-2xl">
+      <div className="min-h-screen bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center p-5 relative overflow-hidden">
+        {/* Confetti Animation */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-bounce"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `-${Math.random() * 20}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${2 + Math.random() * 3}s`
+              }}
+            >
+              <span className="text-2xl">{['🎉', '✨', '💰', '🚀', '⭐'][Math.floor(Math.random() * 5)]}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white rounded-3xl p-8 text-center max-w-md w-full shadow-2xl relative z-10">
           <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
             <span className="text-4xl text-white">✓</span>
           </div>
           
           <h1 className="text-3xl font-bold text-slate-900 mb-3">Success!</h1>
           <p className="text-lg text-slate-600 mb-6">
-            {trade.crypto_amount} {trade.crypto} added to your wallet
+            {trade.crypto_amount} {trade.crypto} credited to your wallet
           </p>
           
           <div className="bg-slate-50 rounded-2xl p-6 mb-6">
@@ -292,7 +310,7 @@ Complete payment within 15 minutes`;
             onClick={() => router.push('/mobile-exact-dashboard')}
             className="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg mb-3 hover:bg-green-600"
           >
-            View My Wallet
+            View My Assets
           </button>
           
           <button
