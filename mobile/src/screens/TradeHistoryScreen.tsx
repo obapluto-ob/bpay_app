@@ -24,11 +24,24 @@ export const TradeHistoryScreen: React.FC<Props> = ({ token, userCountry, onClos
   }, []);
 
   const loadTrades = async () => {
+    setLoading(true);
     try {
-      const data = await apiService.getTradeHistory(token);
-      setTrades(data);
+      const response = await fetch(`https://bpay-app.onrender.com/api/trade/history`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setTrades(data.trades || data || []);
+      } else {
+        setTrades([]);
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to load trade history');
+      console.error('Failed to load trades:', error);
+      setTrades([]);
     } finally {
       setLoading(false);
     }
@@ -75,8 +88,16 @@ export const TradeHistoryScreen: React.FC<Props> = ({ token, userCountry, onClos
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading trades...</Text>
+      <View style={styles.container}>
+        <TouchableOpacity onPress={onClose} style={styles.closeButtonContainer}>
+          <Text style={styles.closeButton}>✕</Text>
+        </TouchableOpacity>
+        <View style={styles.header}>
+          <Text style={styles.title}>Trade History</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
       </View>
     );
   }

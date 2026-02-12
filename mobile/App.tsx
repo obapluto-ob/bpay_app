@@ -11,6 +11,7 @@ import { TradeHistoryScreen } from './src/screens/TradeHistoryScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { DepositScreen } from './src/screens/DepositScreen';
 import { CryptoWalletScreen } from './src/screens/CryptoWalletScreen';
+import { WithdrawScreen } from './src/screens/WithdrawScreen';
 import { ConvertScreen } from './src/screens/ConvertScreen';
 import { AdminLoginScreen } from './src/screens/AdminLoginScreen';
 import { AdminDashboardScreen } from './src/screens/AdminDashboardScreen';
@@ -294,6 +295,7 @@ export default function App() {
   const [userKycStatus, setUserKycStatus] = useState<'pending' | 'processing' | 'verified' | 'rejected'>('pending');
   const [isVerified, setIsVerified] = useState(false);
   const [showDepositScreen, setShowDepositScreen] = useState(false);
+  const [showWithdrawScreen, setShowWithdrawScreen] = useState(false);
   const [lockedRates, setLockedRates] = useState<Record<string, { rate: number; timestamp: number }>>({});
   const [priceAlerts, setPriceAlerts] = useState({
     BTC_100K: { triggered: false, target: 100000 },
@@ -912,11 +914,11 @@ export default function App() {
                   <Text style={styles.compactText}>Buy Crypto</Text>
                 </TouchableOpacity>
                 
-                <TouchableOpacity style={styles.compactButton} onPress={() => setShowDepositScreen(true)}>
-                  <View style={[styles.compactIconCircle, { backgroundColor: '#fef3c7' }]}>
-                    <Text style={[styles.compactIconText, { color: '#f59e0b' }]}>A</Text>
+                <TouchableOpacity style={styles.compactButton} onPress={() => setShowWithdrawScreen(true)}>
+                  <View style={[styles.compactIconCircle, { backgroundColor: '#fee2e2' }]}>
+                    <Text style={[styles.compactIconText, { color: '#ef4444' }]}>W</Text>
                   </View>
-                  <Text style={styles.compactText}>Add Funds</Text>
+                  <Text style={styles.compactText}>Withdraw</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -1209,6 +1211,20 @@ export default function App() {
               addNotification('Crypto conversion completed successfully', 'success');
             }}
             userToken={userToken}
+          />
+        </Modal>
+        
+        <Modal visible={showWithdrawScreen} animationType="slide">
+          <WithdrawScreen
+            balance={balance}
+            userCountry={activeCountry}
+            userToken={userToken}
+            onClose={() => setShowWithdrawScreen(false)}
+            onSuccess={() => {
+              setShowWithdrawScreen(false);
+              loadBalance(userToken);
+              addNotification('Withdrawal request submitted', 'success');
+            }}
           />
         </Modal>
         
