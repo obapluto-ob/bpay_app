@@ -240,8 +240,13 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
       }
       
       const trade = response.trade;
+      const tradeId = trade.id || response.tradeId;
       
-      // Get assigned admin (or schedule if none available)
+      if (!tradeId) {
+        throw new Error('No trade ID received');
+      }
+      
+      // Get assigned admin
       const bestAdmin = await getBestAvailableAdmin();
       setAssignedAdmin(bestAdmin);
 
@@ -260,12 +265,6 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
         createdAt: Date.now()
       };
       await storage.setItem('activeBuyOrder', JSON.stringify(orderData));
-      
-      const tradeId = trade.id || response.tradeId;
-      
-      if (!tradeId) {
-        throw new Error('No trade ID received');
-      }
       
       // Send first message to admin via API
       const firstMessage = `New ${selectedCrypto} buy order created\n\nOrder ID: #${tradeId}\nAmount: ${cryptoAmountCalculated.toFixed(8)} ${selectedCrypto}\nFiat: ${userCountry === 'NG' ? '₦' : 'KSh'}${amount.toLocaleString()}\nPayment Method: ${paymentMethod === 'balance' ? 'Wallet Balance' : (userCountry === 'NG' ? 'Bank Transfer' : 'M-Pesa')}\nCountry: ${userCountry === 'NG' ? 'Nigeria' : 'Kenya'}\n\nWaiting for payment details...`;
