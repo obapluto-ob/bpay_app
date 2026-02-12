@@ -62,12 +62,10 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage && lastMessage.senderType === 'admin') {
-      if (lastMessage.message.toLowerCase().includes('approved') || 
-          lastMessage.message.toLowerCase().includes('credited')) {
-        // Show success screen
-        setTimeout(() => {
-          setShowSuccess(true);
-        }, 1000);
+      const msg = lastMessage.message.toLowerCase();
+      if (msg.includes('credited') || msg.includes('approved') || msg.includes('confirmed')) {
+        // Show success screen immediately
+        setShowSuccess(true);
       }
     }
   }, [messages]);
