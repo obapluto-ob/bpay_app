@@ -624,15 +624,60 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
               setSubmittingPayment(true);
               onNotification('Submitting payment proof...', 'info');
               
-              // Simulate upload delay
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              
-              updateOrderStep('waiting');
-              setSubmittingPayment(false);
-              onNotification(
-                `Payment submitted for ${cryptoAmount.toFixed(8)} ${selectedCrypto} - awaiting confirmation`,
-                'success'
-              );
+              try {
+                // Upload payment proof to server
+                if (paymentProof && escrowId) {
+                  await apiService.uploadPaymentProof(escrowId, paymentProof, token);
+                }
+                
+                // Get assigned admin BEFORE moving to waiting
+                const bestAdmin = await getBestAvailableAdmin();
+                setAssignedAdmin(bestAdmin);
+                
+                // Move to waiting step
+                await updateOrderStep('waiting');
+                
+                // Auto-open chat immediately
+                const tradeData = {
+                  id: escrowId,
+                  type: 'buy',
+                  crypto: selectedCrypto,
+                  amount: cryptoAmount,
+                  fiatAmount: parseFloat(fiatAmount),
+                  currency: userCountry === 'NG' ? 'NGN' : 'KES',
+                  status: 'processing',
+                  assignedAdmin: bestAdmin.id,
+                  adminName: bestAdmin.name,
+                  adminEmail: bestAdmin.email,
+                  adminRating: bestAdmin.averageRating,
+                  chatMessages: []
+                };
+                
+                setCurrentTrade(tradeData);
+                setShowChat(true);
+                
+                // Send first message to admin via API
+                const firstMessage = `NEW BUY ORDER\n\nOrder ID: #${escrowId}\nCrypto: ${selectedCrypto}\nAmount: ${cryptoAmount.toFixed(8)} ${selectedCrypto}\nFiat: ${userCountry === 'NG' ? '₦' : 'KSh'}${parseFloat(fiatAmount).toLocaleString()}\nPayment Method: ${paymentMethod === 'balance' ? 'Wallet Balance' : (userCountry === 'NG' ? 'Bank Transfer' : 'M-Pesa')}\n\nPayment proof submitted. Please verify.`;
+                
+                await fetch(`https://bpay-app.onrender.com/api/trade/${escrowId}/chat`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ message: firstMessage, type: 'text' })
+                });
+                
+                onNotification(
+                  `Chat opened with ${bestAdmin.name} - payment verification in progress`,
+                  'success'
+                );
+              } catch (error) {
+                console.error('Submit payment error:', error);
+                Alert.alert('Error', 'Failed to submit payment. Please try again.');
+              } finally {
+                setSubmittingPayment(false);
+              }
             }}
             disabled={paymentMethod === 'bank' && !paymentProof || submittingPayment}
           >
