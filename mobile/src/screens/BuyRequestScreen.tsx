@@ -268,43 +268,51 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
       };
       await storage.setItem('activeBuyOrder', JSON.stringify(orderData));
       
-      // Send first message to admin
+      // Send first message to admin via API
       const firstMessage = `New ${selectedCrypto} buy order created\n\nOrder ID: #${trade.id}\nAmount: ${cryptoAmountCalculated.toFixed(8)} ${selectedCrypto}\nFiat: ${userCountry === 'NG' ? '₦' : 'KSh'}${amount.toLocaleString()}\nPayment Method: ${paymentMethod === 'balance' ? 'Wallet Balance' : (userCountry === 'NG' ? 'Bank Transfer' : 'M-Pesa')}\nCountry: ${userCountry === 'NG' ? 'Nigeria' : 'Kenya'}\n\nWaiting for payment details...`;
       
-      await fetch(`https://bpay-app.onrender.com/api/trade/${trade.id}/chat`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message: firstMessage, type: 'text' })
-      });
+      try {
+        await fetch(`https://bpay-app.onrender.com/api/trade/${trade.id}/chat`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ message: firstMessage, type: 'text' })
+        });
+        console.log('First message sent successfully');
+      } catch (msgError) {
+        console.error('Failed to send first message:', msgError);
+      }
       
-      // Auto-redirect to chat
-      const tradeData = {
-        id: trade.id,
-        type: 'buy',
-        crypto: selectedCrypto,
-        amount: cryptoAmountCalculated,
-        fiatAmount: amount,
-        currency: userCountry === 'NG' ? 'NGN' : 'KES',
-        status: 'pending',
-        assignedAdmin: bestAdmin.id,
-        adminName: bestAdmin.name,
-        adminEmail: bestAdmin.email,
-        adminRating: bestAdmin.averageRating,
-        paymentMethod,
-        chatMessages: []
-      };
-      
-      setCurrentTrade(tradeData);
-      setOrderStep('waiting');
-      setShowChat(true);
-      
-      onNotification(
-        `Order created - Chat opened with ${bestAdmin.name}`,
-        'success'
-      );
+      // Auto-redirect to chat with small delay to ensure message is saved
+      setTimeout(() => {
+        const tradeData = {
+          id: trade.id,
+          type: 'buy',
+          crypto: selectedCrypto,
+          amount: cryptoAmountCalculated,
+          fiatAmount: amount,
+          currency: userCountry === 'NG' ? 'NGN' : 'KES',
+          status: 'pending',
+          assignedAdmin: bestAdmin.id,
+          adminName: bestAdmin.name,
+          adminEmail: bestAdmin.email,
+          adminRating: bestAdmin.averageRating,
+          paymentMethod,
+          createdAt: Date.now(),
+          chatMessages: []
+        };
+        
+        setCurrentTrade(tradeData);
+        setOrderStep('waiting');
+        setShowChat(true);
+        
+        onNotification(
+          `Order created - Chat opened with ${bestAdmin.name}`,
+          'success'
+        );
+      }, 500);
       
     } catch (error) {
       console.error('Trade creation error:', error);

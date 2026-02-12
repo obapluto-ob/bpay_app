@@ -56,7 +56,27 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [timeRemaining, setTimeRemaining] = useState(3600); // 1 hour in seconds
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Countdown timer
+  useEffect(() => {
+    if (trade.status === 'pending' || trade.status === 'processing') {
+      const timer = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            Alert.alert('Trade Expired', 'This trade has been automatically cancelled due to inactivity.');
+            onClose();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [trade.status]);
 
   // Listen for admin approval/decline messages
   useEffect(() => {
@@ -154,6 +174,12 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
     }
   };
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
 
@@ -198,17 +224,28 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
         <TouchableOpacity onPress={onClose} style={styles.backButton}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Trade Chat</Text>
-          <Text style={styles.headerSubtitle}>
-            {trade.type.toUpperCase()} {trade.amount} {trade.crypto}
-          </Text>
-          <Text style={[styles.connectionStatus, isConnected ? styles.connected : styles.disconnected]}>
-            {isConnected ? '🟢 Live' : '🔴 Offline'}
-          </Text>
+        
+        <View style={styles.adminProfile}>
+          <View style={styles.adminAvatar}>
+            <Text style={styles.adminAvatarText}>{trade.adminName?.[0] || 'A'}</Text>
+          </View>
+          <View style={styles.adminInfo}>
+            <Text style={styles.adminName}>{trade.adminName || 'Admin'}</Text>
+            {trade.adminRating && (
+              <Text style={styles.adminRating}>★ {trade.adminRating.toFixed(1)}</Text>
+            )}
+          </View>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
-          <Text style={styles.statusText}>{trade.status}</Text>
+        
+        <View style={styles.headerRight}>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
+            <Text style={styles.statusText}>{trade.status}</Text>
+          </View>
+          {(trade.status === 'pending' || trade.status === 'processing') && (
+            <View style={styles.timerBadge}>
+              <Text style={styles.timerText}>{formatTime(timeRemaining)}</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -494,6 +531,54 @@ const styles = StyleSheet.create({
   backText: {
     color: 'white',
     fontSize: 24,
+    fontWeight: 'bold',
+  },
+  adminProfile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 12,
+  },
+  adminAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f59e0b',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  adminAvatarText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  adminInfo: {
+    flex: 1,
+  },
+  adminName: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  adminRating: {
+    color: '#fbbf24',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  timerBadge: {
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  timerText: {
+    color: 'white',
+    fontSize: 12,
     fontWeight: 'bold',
   },
   headerInfo: {
