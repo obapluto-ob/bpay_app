@@ -894,13 +894,6 @@ export default function App() {
                   </View>
                   <Text style={styles.compactText}>Buy Crypto</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.compactButton} onPress={() => setShowWithdrawScreen(true)}>
-                  <View style={[styles.compactIconCircle, { backgroundColor: '#fee2e2' }]}>
-                    <Text style={[styles.compactIconText, { color: '#ef4444' }]}>W</Text>
-                  </View>
-                  <Text style={styles.compactText}>Withdraw</Text>
-                </TouchableOpacity>
               </>
             )}
           </View>

@@ -22,7 +22,7 @@ interface Props {
 }
 
 export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRates, token, userCountry, onClose, onSuccess, onLockRate, userBalance, onNotification }) => {
-  const [selectedCrypto, setSelectedCrypto] = useState<'BTC' | 'ETH' | 'USDT'>('BTC');
+  const [selectedCrypto, setSelectedCrypto] = useState<'BTC' | 'ETH' | 'USDT' | 'XRP' | 'SOL'>('BTC');
   const [fiatAmount, setFiatAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [lockedRate, setLockedRate] = useState<number | null>(null);
@@ -153,18 +153,11 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
     
     // Define limits based on crypto and country
     const limits = {
-      BTC: {
-        minUSD: 10, // $10 minimum
-        maxUSD: 50000 // $50k maximum
-      },
-      ETH: {
-        minUSD: 5, // $5 minimum
-        maxUSD: 30000 // $30k maximum
-      },
-      USDT: {
-        minUSD: 1, // $1 minimum as specified
-        maxUSD: 100000 // $100k maximum
-      }
+      BTC: { minUSD: 10, maxUSD: 50000 },
+      ETH: { minUSD: 5, maxUSD: 30000 },
+      USDT: { minUSD: 1, maxUSD: 100000 },
+      XRP: { minUSD: 1, maxUSD: 50000 },
+      SOL: { minUSD: 1, maxUSD: 50000 }
     };
     
     const exchangeRate = userCountry === 'NG' ? exchangeRates.USDNGN : exchangeRates.USDKES;
@@ -472,7 +465,7 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
       </View>
 
       <View style={styles.cryptoSelector}>
-        {(['BTC', 'ETH', 'USDT'] as const).map(crypto => (
+        {(['BTC', 'ETH', 'USDT', 'XRP', 'SOL'] as const).map(crypto => (
           <TouchableOpacity
             key={crypto}
             style={[styles.cryptoOption, selectedCrypto === crypto && styles.selectedCrypto]}
