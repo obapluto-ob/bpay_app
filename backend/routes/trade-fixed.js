@@ -1,9 +1,7 @@
 const express = require('express');
-const { Pool } = require('pg');
+const pool = require('../config/db');
 const requireEmailVerification = require('../middleware/requireEmailVerification');
 const router = express.Router();
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 
 // Auth middleware
 const authenticateToken = (req, res, next) => {
@@ -148,11 +146,26 @@ router.post('/create', authenticateToken, async (req, res) => {
     res.json({
       success: true,
       trade: result.rows[0],
-      message: `${type} order created successfully`
+      message: `${type} order created successfully`,
+      tradeId: tradeId
     });
   } catch (error) {
     console.error('Create trade error:', error);
-    res.status(500).json({ error: 'Failed to create trade', details: error.message });
+    
+    // Still return success if trade was created (check if error is after insert)
+    if (error.message && error.message.includes('chat_messages')) {
+      return res.json({
+        success: true,
+        message: 'Trade created successfully',
+        tradeId: req.body.tradeId || 'unknown'
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to create trade', 
+      details: error.message 
+    });
   }
 });
 

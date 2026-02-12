@@ -106,11 +106,23 @@ class ApiService {
     country?: 'NG' | 'KE';
     bankDetails?: BankDetails;
   }, token: string) {
-    return this.request<{ trade: Trade }>('/trade/create', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify(data),
-    });
+    try {
+      const response = await this.request<{ success: boolean; trade: Trade; tradeId?: string }>('/trade/create', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      });
+      
+      // Ensure we have a valid response
+      if (!response.success) {
+        throw new Error('Trade creation failed');
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Create trade API error:', error);
+      throw error;
+    }
   }
 
   async uploadPaymentProof(tradeId: string, proof: string, token: string) {

@@ -241,6 +241,11 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
       };
       
       const response = await apiService.createTrade(tradeData, token);
+      
+      if (!response || !response.trade) {
+        throw new Error('Invalid response from server');
+      }
+      
       const trade = response.trade;
       
       // Get assigned admin
