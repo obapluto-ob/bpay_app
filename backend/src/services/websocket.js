@@ -101,6 +101,9 @@ class WebSocketService {
       case 'auth':
         this.authenticateClient(ws, data);
         break;
+      case 'ping':
+        ws.send(JSON.stringify({ type: 'pong' }));
+        break;
       case 'chat_message':
         this.handleChatMessage(ws, data);
         break;

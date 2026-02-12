@@ -5,6 +5,8 @@ class WebSocketService {
   private reconnectInterval = 3000;
   private messageHandlers: Map<string, Function[]> = new Map();
   private isAuthenticated = false;
+  private pingInterval: NodeJS.Timeout | null = null;
+  private pongTimeout: NodeJS.Timeout | null = null;
 
   connect(token: string, userType: 'user' | 'admin' = 'user') {
     const wsUrl = 'wss://api.bpayapp.co.ke/ws';
@@ -22,6 +24,9 @@ class WebSocketService {
           token,
           userType
         });
+        
+        // Start heartbeat
+        this.startHeartbeat();
       };
 
       this.ws.onmessage = (event) => {
@@ -36,6 +41,7 @@ class WebSocketService {
       this.ws.onclose = () => {
         console.log('WebSocket disconnected');
         this.isAuthenticated = false;
+        this.stopHeartbeat();
         this.attemptReconnect(token, userType);
       };
 
@@ -61,6 +67,34 @@ class WebSocketService {
     }
   }
 
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    
+    // Send ping every 25 seconds
+    this.pingInterval = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.send({ type: 'ping' });
+        
+        // Expect pong within 5 seconds
+        this.pongTimeout = setTimeout(() => {
+          console.log('Pong timeout, reconnecting...');
+          this.ws?.close();
+        }, 5000);
+      }
+    }, 25000);
+  }
+
+  private stopHeartbeat() {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+    if (this.pongTimeout) {
+      clearTimeout(this.pongTimeout);
+      this.pongTimeout = null;
+    }
+  }
+
   private handleMessage(data: any) {
     switch (data.type) {
       case 'auth_success':
@@ -69,6 +103,13 @@ class WebSocketService {
         break;
       case 'auth_error':
         console.error('WebSocket authentication failed:', data.message);
+        break;
+      case 'pong':
+        // Clear pong timeout
+        if (this.pongTimeout) {
+          clearTimeout(this.pongTimeout);
+          this.pongTimeout = null;
+        }
         break;
       default:
         // Trigger registered handlers
@@ -128,6 +169,7 @@ class WebSocketService {
   }
 
   disconnect() {
+    this.stopHeartbeat();
     if (this.ws) {
       this.ws.close();
       this.ws = null;
