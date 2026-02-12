@@ -1,11 +1,6 @@
 const WebSocket = require('ws');
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+const pool = require('../../config/db');
 
 class WebSocketService {
   constructor() {
@@ -263,18 +258,22 @@ class WebSocketService {
 
   async storeChatMessage(message) {
     try {
-      // Ensure sender_id is not null
       if (!message.senderId) {
         console.error('Cannot store message: sender_id is null');
         return;
       }
 
-      await pool.query(`
-        INSERT INTO chat_messages (trade_id, sender_id, sender_type, message, message_type)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [message.tradeId, message.senderId, message.senderType || 'user', message.message, message.type || 'text']);
-      
-      console.log('Message stored in database');
+      const client = await pool.connect();
+      try {
+        await client.query(`
+          INSERT INTO chat_messages (trade_id, sender_id, sender_type, message, message_type)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [message.tradeId, message.senderId, message.senderType || 'user', message.message, message.type || 'text']);
+        
+        console.log('Message stored in database');
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error('Failed to store message:', error);
     }

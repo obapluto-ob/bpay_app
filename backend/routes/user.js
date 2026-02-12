@@ -1,12 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Pool } = require('pg');
-
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+const pool = require('../config/db');
 
 // Auth middleware
 const authenticateToken = (req, res, next) => {
