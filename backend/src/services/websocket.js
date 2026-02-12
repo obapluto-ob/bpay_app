@@ -185,10 +185,16 @@ class WebSocketService {
 
   async storeChatMessage(message) {
     try {
+      // Ensure sender_id is not null
+      if (!message.senderId) {
+        console.error('Cannot store message: sender_id is null');
+        return;
+      }
+
       await pool.query(`
         INSERT INTO chat_messages (trade_id, sender_id, sender_type, message, message_type)
         VALUES ($1, $2, $3, $4, $5)
-      `, [message.tradeId, message.senderId, message.senderType, message.message, message.type]);
+      `, [message.tradeId, message.senderId, message.senderType || 'user', message.message, message.type || 'text']);
       
       console.log('Message stored in database');
     } catch (error) {

@@ -20,14 +20,14 @@ export default function TradeManagement() {
     }
 
     fetchTrades();
-    const interval = setInterval(fetchTrades, 5000);
+    const interval = setInterval(fetchTrades, 3000); // Faster refresh
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (selectedTrade) {
       fetchMessages();
-      const interval = setInterval(fetchMessages, 3000);
+      const interval = setInterval(fetchMessages, 2000); // Faster refresh
       return () => clearInterval(interval);
     }
   }, [selectedTrade]);
@@ -173,19 +173,22 @@ export default function TradeManagement() {
               <button
                 key={trade.id}
                 onClick={() => setSelectedTrade(trade)}
-                className={`w-full p-4 text-left border-b border-slate-700 hover:bg-slate-700 ${
-                  selectedTrade?.id === trade.id ? 'bg-slate-700' : ''
+                className={`w-full p-4 text-left border-b border-slate-700 hover:bg-slate-700 transition-colors ${
+                  selectedTrade?.id === trade.id ? 'bg-slate-700 border-l-4 border-orange-500' : ''
                 }`}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <p className="font-bold text-white">{trade.type.toUpperCase()} {trade.crypto}</p>
+                    <p className="font-bold text-white text-lg">{trade.type.toUpperCase()} {trade.crypto}</p>
                     <p className="text-xs text-slate-400">#{trade.id}</p>
                   </div>
-                  <span className="px-2 py-1 bg-yellow-500 text-xs rounded-full">{trade.status}</span>
+                  <span className={`px-2 py-1 text-xs rounded-full font-semibold ${
+                    trade.status === 'pending' ? 'bg-yellow-500 text-black' : 'bg-green-500 text-white'
+                  }`}>{trade.status}</span>
                 </div>
-                <p className="text-sm text-slate-300">{trade.country === 'NG' ? '₦' : 'KSh'}{parseFloat(trade.fiat_amount).toLocaleString()}</p>
+                <p className="text-sm text-slate-300 font-semibold mb-1">{trade.country === 'NG' ? '₦' : 'KSh'}{parseFloat(trade.fiat_amount).toLocaleString()}</p>
                 <p className="text-xs text-slate-400">{trade.user_email}</p>
+                <p className="text-xs text-slate-500 mt-1">{new Date(trade.created_at).toLocaleString()}</p>
               </button>
             ))
           )}
