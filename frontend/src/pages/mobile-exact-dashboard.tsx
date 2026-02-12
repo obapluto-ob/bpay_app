@@ -2666,13 +2666,13 @@ export default function MobileExactDashboard() {
                   </button>
                   <button 
                     onClick={() => {
-                      setShowDepositScreen(true);
-                      setActiveTab('deposit');
+                      // Navigate to withdraw screen
+                      alert('Withdraw feature - Coming soon!');
                     }}
                     className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center min-w-[60px]"
                   >
-                    <span className="text-xl text-orange-500 mb-1">+</span>
-                    <span className="text-xs text-slate-900 font-semibold">Add Funds</span>
+                    <span className="text-xl text-orange-500 mb-1">↓</span>
+                    <span className="text-xs text-slate-900 font-semibold">Withdraw</span>
                   </button>
                 </>
               )}
