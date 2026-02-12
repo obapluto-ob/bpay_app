@@ -252,12 +252,12 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
       const bestAdmin = await getBestAvailableAdmin();
       setAssignedAdmin(bestAdmin);
 
-      setEscrowId(trade.id);
-      setActiveOrderId(trade.id);
+      setEscrowId(tradeId);
+      setActiveOrderId(tradeId);
       
       // Save order to storage
       const orderData = {
-        id: trade.id,
+        id: tradeId,
         crypto: selectedCrypto,
         fiatAmount: amount,
         cryptoAmount: cryptoAmountCalculated,
@@ -268,11 +268,17 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
       };
       await storage.setItem('activeBuyOrder', JSON.stringify(orderData));
       
+      const tradeId = trade.id || response.tradeId;
+      
+      if (!tradeId) {
+        throw new Error('No trade ID received');
+      }
+      
       // Send first message to admin via API
-      const firstMessage = `New ${selectedCrypto} buy order created\n\nOrder ID: #${trade.id}\nAmount: ${cryptoAmountCalculated.toFixed(8)} ${selectedCrypto}\nFiat: ${userCountry === 'NG' ? '₦' : 'KSh'}${amount.toLocaleString()}\nPayment Method: ${paymentMethod === 'balance' ? 'Wallet Balance' : (userCountry === 'NG' ? 'Bank Transfer' : 'M-Pesa')}\nCountry: ${userCountry === 'NG' ? 'Nigeria' : 'Kenya'}\n\nWaiting for payment details...`;
+      const firstMessage = `New ${selectedCrypto} buy order created\n\nOrder ID: #${tradeId}\nAmount: ${cryptoAmountCalculated.toFixed(8)} ${selectedCrypto}\nFiat: ${userCountry === 'NG' ? '₦' : 'KSh'}${amount.toLocaleString()}\nPayment Method: ${paymentMethod === 'balance' ? 'Wallet Balance' : (userCountry === 'NG' ? 'Bank Transfer' : 'M-Pesa')}\nCountry: ${userCountry === 'NG' ? 'Nigeria' : 'Kenya'}\n\nWaiting for payment details...`;
       
       try {
-        await fetch(`https://bpay-app.onrender.com/api/trade/${trade.id}/chat`, {
+        await fetch(`https://bpay-app.onrender.com/api/trade/${tradeId}/chat`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -280,16 +286,15 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
           },
           body: JSON.stringify({ message: firstMessage, type: 'text' })
         });
-        console.log('First message sent successfully');
       } catch (msgError) {
         console.error('Failed to send first message:', msgError);
       }
       
-      // Auto-redirect to chat with small delay to ensure message is saved
+      // Auto-redirect to chat with small delay
       setTimeout(() => {
         const tradeData = {
-          id: trade.id,
-          type: 'buy',
+          id: tradeId,
+          type: 'buy' as const,
           crypto: selectedCrypto,
           amount: cryptoAmountCalculated,
           fiatAmount: amount,
@@ -309,7 +314,7 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
         setShowChat(true);
         
         onNotification(
-          `Order created - Chat opened with ${bestAdmin.name}`,
+          `Order #${tradeId} created - Chat opened`,
           'success'
         );
       }, 500);
