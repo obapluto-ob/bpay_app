@@ -188,6 +188,8 @@ const BuyCryptoWeb = ({ rates, usdRates, exchangeRates, userBalance, selectedCur
   const buyMargin = 0.02;
   const currentRate = lockedRate || Math.round(baseRate * (1 + buyMargin));
   const cryptoAmount = parseFloat(amount || '0') / currentRate;
+  
+  // Get the correct fiat balance based on selected currency
   const availableBalance = selectedCurrency === 'NGN' ? (userBalance?.NGN || 0) : (userBalance?.KES || 0);
 
   const limits = {

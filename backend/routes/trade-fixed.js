@@ -55,7 +55,7 @@ router.post('/create', authenticateToken, async (req, res) => {
     const currency = country === 'NG' ? 'NGN' : 'KES';
 
     // Auto-complete if wallet balance payment
-    if (type === 'buy' && paymentMethod === 'balance') {
+    if (type === 'buy' && paymentMethod && paymentMethod === 'balance') {
       // Check user balance
       const userBalance = await pool.query(
         `SELECT ${currency.toLowerCase()}_balance FROM users WHERE id = $1`,
