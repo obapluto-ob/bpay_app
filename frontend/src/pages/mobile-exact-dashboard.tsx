@@ -2584,7 +2584,7 @@ export default function MobileExactDashboard() {
                   <div className="mt-3 pt-3 border-t border-slate-200">
                     <p className="text-xs text-slate-500 mb-2">Breakdown:</p>
                     <div className="space-y-1 text-sm">
-                      <p className="text-slate-700">Wallet: ₦{(balance.NGN || 0).toLocaleString()}</p>
+                      <p className="text-slate-700">Fiat: ₦{(balance.NGN || 0).toLocaleString()}</p>
                       <p className="text-slate-700">BTC: ₦{Math.round((balance.BTC || 0) * (usdRates.BTC?.price || 0) * exchangeRates.USDNGN).toLocaleString()}</p>
                       <p className="text-slate-700">ETH: ₦{Math.round((balance.ETH || 0) * (usdRates.ETH?.price || 0) * exchangeRates.USDNGN).toLocaleString()}</p>
                       <p className="text-slate-700">USDT: ₦{Math.round((balance.USDT || 0) * (usdRates.USDT?.price || 0) * exchangeRates.USDNGN).toLocaleString()}</p>
@@ -2612,7 +2612,7 @@ export default function MobileExactDashboard() {
                   <div className="mt-3 pt-3 border-t border-slate-200">
                     <p className="text-xs text-slate-500 mb-2">Breakdown:</p>
                     <div className="space-y-1 text-sm">
-                      <p className="text-slate-700">Wallet: KSh{(balance.KES || 0).toLocaleString()}</p>
+                      <p className="text-slate-700">Fiat: KSh{(balance.KES || 0).toLocaleString()}</p>
                       <p className="text-slate-700">BTC: KSh{Math.round((balance.BTC || 0) * (usdRates.BTC?.price || 0) * exchangeRates.USDKES).toLocaleString()}</p>
                       <p className="text-slate-700">ETH: KSh{Math.round((balance.ETH || 0) * (usdRates.ETH?.price || 0) * exchangeRates.USDKES).toLocaleString()}</p>
                       <p className="text-slate-700">USDT: KSh{Math.round((balance.USDT || 0) * (usdRates.USDT?.price || 0) * exchangeRates.USDKES).toLocaleString()}</p>
