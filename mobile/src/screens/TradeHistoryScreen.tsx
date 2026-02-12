@@ -70,6 +70,8 @@ export const TradeHistoryScreen: React.FC<Props> = ({ token, userCountry, onClos
       case 'payment_uploaded': return '#3b82f6';
       case 'verifying': return '#8b5cf6';
       case 'cancelled': return '#ef4444';
+      case 'pending': return '#f59e0b';
+      case 'processing': return '#3b82f6';
       default: return '#64748b';
     }
   };
@@ -81,6 +83,8 @@ export const TradeHistoryScreen: React.FC<Props> = ({ token, userCountry, onClos
       case 'verifying': return 'Verifying';
       case 'completed': return 'Completed';
       case 'cancelled': return 'Cancelled';
+      case 'pending': return 'Pending';
+      case 'processing': return 'Processing';
       default: return status;
     }
   };
@@ -120,7 +124,7 @@ export const TradeHistoryScreen: React.FC<Props> = ({ token, userCountry, onClos
           <Text style={styles.noTrades}>No trades yet</Text>
         ) : (
           trades.map((trade) => (
-            <View key={trade.id} style={styles.tradeItem}>
+            <View key={trade.id} style={[styles.tradeItem, trade.status === 'cancelled' && styles.cancelledTrade]}>
               <View style={styles.tradeHeader}>
                 <Text style={styles.tradeType}>
                   {trade.type === 'sell' ? 'SELL' : 'BUY'} {trade.crypto}
@@ -147,6 +151,13 @@ export const TradeHistoryScreen: React.FC<Props> = ({ token, userCountry, onClos
               <Text style={styles.tradeDate}>
                 {new Date(trade.created_at).toLocaleDateString()}
               </Text>
+              
+              {trade.status === 'cancelled' && trade.admin_notes && (
+                <View style={styles.cancelReason}>
+                  <Text style={styles.cancelReasonLabel}>Cancellation Reason:</Text>
+                  <Text style={styles.cancelReasonText}>{trade.admin_notes}</Text>
+                </View>
+              )}
 
               <View style={styles.tradeActions}>
                 {trade.status === 'pending_payment' && trade.type === 'buy_request' && (
@@ -367,10 +378,20 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   tradeItem: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'white',
     padding: 15,
     borderRadius: 12,
     marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cancelledTrade: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
   },
   tradeHeader: {
     flexDirection: 'row',
@@ -496,5 +517,24 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  cancelReason: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#ef4444',
+  },
+  cancelReasonLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#991b1b',
+    marginBottom: 4,
+  },
+  cancelReasonText: {
+    fontSize: 14,
+    color: '#7f1d1d',
+    lineHeight: 18,
   },
 });
