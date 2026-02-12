@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
+const jwt = require('jsonwebtoken');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 
@@ -37,7 +38,8 @@ router.post('/rates/update', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'No token' });
 
-    const adminResult = await pool.query('SELECT * FROM admins WHERE id = $1', [req.user?.id || 0]);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const adminResult = await pool.query('SELECT * FROM admins WHERE id = $1', [decoded.id]);
     if (!adminResult.rows[0] || adminResult.rows[0].role !== 'Super Admin') {
       return res.status(403).json({ error: 'Super admin only' });
     }
@@ -59,7 +61,8 @@ router.post('/rates/update', async (req, res) => {
 
     res.json({ success: true, message: `${crypto} rate updated` });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update rate' });
+    console.error('Update error:', error);
+    res.status(500).json({ error: error.message || 'Failed to update rate' });
   }
 });
 
@@ -69,7 +72,8 @@ router.post('/rates/sync', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'No token' });
 
-    const adminResult = await pool.query('SELECT * FROM admins WHERE id = $1', [req.user?.id || 0]);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const adminResult = await pool.query('SELECT * FROM admins WHERE id = $1', [decoded.id]);
     if (!adminResult.rows[0] || adminResult.rows[0].role !== 'Super Admin') {
       return res.status(403).json({ error: 'Super admin only' });
     }
@@ -111,7 +115,8 @@ router.post('/rates/sync', async (req, res) => {
 
     res.json({ success: true, message: 'Rates synced from CoinGecko' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to sync rates' });
+    console.error('Sync error:', error);
+    res.status(500).json({ error: error.message || 'Failed to sync rates' });
   }
 });
 
