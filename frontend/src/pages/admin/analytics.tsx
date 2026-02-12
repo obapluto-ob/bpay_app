@@ -63,7 +63,10 @@ export default function Analytics() {
     );
   }
 
-  const totalVolume = (stats.ngnVolume || 0) + (stats.kesVolume || 0);
+  const ngnTrades = trades.filter(t => t.country === 'NG');
+  const kesTrades = trades.filter(t => t.country === 'KE');
+  const ngnVolume = ngnTrades.reduce((sum, t) => sum + (t.fiat_amount || 0), 0);
+  const kesVolume = kesTrades.reduce((sum, t) => sum + (t.fiat_amount || 0), 0);
   const completedTrades = trades.filter(t => t.status === 'completed').length;
   const successRate = trades.length > 0 ? ((completedTrades / trades.length) * 100).toFixed(1) : 0;
 
@@ -81,35 +84,38 @@ export default function Analytics() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={exportCSV} className="bg-green-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-green-600 shadow-lg transition-all">📥 Export</button>
-            <button onClick={() => router.push('/admin/dashboard')} className="bg-white text-orange-600 px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-orange-50 shadow-lg transition-all">← Back</button>
+            <button onClick={exportCSV} className="bg-green-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-green-600 shadow-lg transition-all">Export CSV</button>
+            <button onClick={() => router.push('/admin/dashboard')} className="bg-white text-orange-600 px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold hover:bg-orange-50 shadow-lg transition-all">Back</button>
           </div>
         </div>
       </div>
 
       <div className="p-3 md:p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 shadow-xl transform hover:scale-105 transition-all">
-            <h3 className="text-white opacity-90 text-sm font-semibold mb-2">💰 Total Volume</h3>
-            <p className="text-3xl font-bold text-white">₦{totalVolume.toLocaleString()}</p>
-            <p className="text-xs text-white opacity-75 mt-1">All time</p>
+            <h3 className="text-white opacity-90 text-sm font-semibold mb-2">NGN Volume</h3>
+            <p className="text-3xl font-bold text-white">₦{ngnVolume.toLocaleString()}</p>
+            <p className="text-xs text-white opacity-75 mt-1">{ngnTrades.length} trades</p>
+          </div>
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 shadow-xl transform hover:scale-105 transition-all">
+            <h3 className="text-white opacity-90 text-sm font-semibold mb-2">KES Volume</h3>
+            <p className="text-3xl font-bold text-white">KSh{kesVolume.toLocaleString()}</p>
+            <p className="text-xs text-white opacity-75 mt-1">{kesTrades.length} trades</p>
           </div>
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 shadow-xl transform hover:scale-105 transition-all">
-            <h3 className="text-white opacity-90 text-sm font-semibold mb-2">📊 Total Trades</h3>
+            <h3 className="text-white opacity-90 text-sm font-semibold mb-2">Total Trades</h3>
             <p className="text-3xl font-bold text-white">{trades.length}</p>
             <p className="text-xs text-white opacity-75 mt-1">{completedTrades} completed</p>
           </div>
           <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 shadow-xl transform hover:scale-105 transition-all">
-            <h3 className="text-white opacity-90 text-sm font-semibold mb-2">✅ Success Rate</h3>
+            <h3 className="text-white opacity-90 text-sm font-semibold mb-2">Success Rate</h3>
             <p className="text-3xl font-bold text-white">{successRate}%</p>
             <p className="text-xs text-white opacity-75 mt-1">Completion rate</p>
           </div>
         </div>
 
         <div className="bg-white bg-opacity-5 backdrop-blur-lg rounded-2xl p-6 border border-white border-opacity-10 shadow-2xl mb-6">
-          <h2 className="text-lg md:text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <span className="text-2xl">📊</span> Trade Distribution
-          </h2>
+          <h2 className="text-lg md:text-xl font-bold text-white mb-4">Trade Distribution</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {['BTC', 'ETH', 'USDT'].map(crypto => {
               const count = trades.filter(t => t.crypto === crypto).length;
@@ -130,9 +136,7 @@ export default function Analytics() {
         </div>
 
         <div className="bg-white bg-opacity-5 backdrop-blur-lg rounded-2xl p-6 border border-white border-opacity-10 shadow-2xl">
-          <h2 className="text-lg md:text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <span className="text-2xl">⏱️</span> Recent Activity
-          </h2>
+          <h2 className="text-lg md:text-xl font-bold text-white mb-4">Recent Activity</h2>
           <div className="space-y-2">
             {trades.slice(0, 10).map((trade) => (
               <div key={trade.id} className="flex items-center justify-between bg-slate-700 rounded-lg p-3">

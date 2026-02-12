@@ -132,20 +132,20 @@ const TradeHistoryScreen = () => {
                 <div>
                   <p className="text-xs text-slate-500">Amount</p>
                   <p className="font-semibold text-slate-900">
-                    {trade.fiatAmount?.toLocaleString()} {trade.country === 'NG' ? 'NGN' : 'KES'}
+                    {trade.fiat_amount ? `${trade.fiat_amount.toLocaleString()} ${trade.country === 'NG' ? 'NGN' : 'KES'}` : 'N/A'}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Crypto</p>
                   <p className="font-semibold text-slate-900">
-                    {parseFloat(trade.cryptoAmount || 0).toFixed(6)} {trade.crypto}
+                    {trade.crypto_amount ? `${parseFloat(trade.crypto_amount).toFixed(6)} ${trade.crypto}` : 'Pending'}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
-                <span>{new Date(trade.createdAt).toLocaleDateString()}</span>
-                <span>{new Date(trade.createdAt).toLocaleTimeString()}</span>
+                <span>{trade.created_at ? new Date(trade.created_at).toLocaleDateString() : 'N/A'}</span>
+                <span>{trade.created_at ? new Date(trade.created_at).toLocaleTimeString() : 'N/A'}</span>
               </div>
 
               {trade.status === 'pending' && (
@@ -2577,18 +2577,20 @@ export default function MobileExactDashboard() {
                   <div className="pt-3 border-t border-slate-200">
                     <p className="text-xs text-slate-500 mb-2">Crypto Value in NGN:</p>
                     <div className="space-y-1 text-sm">
-                      <p className="text-slate-700">BTC: ₦{((balance.BTC || 0) * (usdRates.BTC?.price || 0) * exchangeRates.USDNGN).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
-                      <p className="text-slate-700">ETH: ₦{((balance.ETH || 0) * (usdRates.ETH?.price || 0) * exchangeRates.USDNGN).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
-                      <p className="text-slate-700">USDT: ₦{((balance.USDT || 0) * (usdRates.USDT?.price || 0) * exchangeRates.USDNGN).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
+                      <p className="text-slate-700">BTC: ₦{Math.round((balance.BTC || 0) * (usdRates.BTC?.price || 0) * exchangeRates.USDNGN).toLocaleString()}</p>
+                      <p className="text-slate-700">ETH: ₦{Math.round((balance.ETH || 0) * (usdRates.ETH?.price || 0) * exchangeRates.USDNGN).toLocaleString()}</p>
+                      <p className="text-slate-700">USDT: ₦{Math.round((balance.USDT || 0) * (usdRates.USDT?.price || 0) * exchangeRates.USDNGN).toLocaleString()}</p>
+                      <p className="text-slate-700">XRP: ₦{Math.round((balance.XRP || 0) * (usdRates.XRP?.price || 0) * exchangeRates.USDNGN).toLocaleString()}</p>
+                      <p className="text-slate-700">SOL: ₦{Math.round((balance.SOL || 0) * (usdRates.SOL?.price || 0) * exchangeRates.USDNGN).toLocaleString()}</p>
                     </div>
-                    <p className="text-sm font-bold text-orange-600 mt-2">Total Portfolio: ₦{(
+                    <p className="text-sm font-bold text-orange-600 mt-2 pt-2 border-t border-slate-200">Total Portfolio: ₦{Math.round(
                       (balance.NGN || 0) + 
                       (balance.BTC || 0) * (usdRates.BTC?.price || 0) * exchangeRates.USDNGN +
                       (balance.ETH || 0) * (usdRates.ETH?.price || 0) * exchangeRates.USDNGN +
                       (balance.USDT || 0) * (usdRates.USDT?.price || 0) * exchangeRates.USDNGN +
                       (balance.XRP || 0) * (usdRates.XRP?.price || 0) * exchangeRates.USDNGN +
                       (balance.SOL || 0) * (usdRates.SOL?.price || 0) * exchangeRates.USDNGN
-                    ).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
+                    ).toLocaleString()}</p>
                   </div>
                 </>
               )}
@@ -2606,18 +2608,20 @@ export default function MobileExactDashboard() {
                   <div className="pt-3 border-t border-slate-200">
                     <p className="text-xs text-slate-500 mb-2">Crypto Value in KES:</p>
                     <div className="space-y-1 text-sm">
-                      <p className="text-slate-700">BTC: KSh{((balance.BTC || 0) * (usdRates.BTC?.price || 0) * exchangeRates.USDKES).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
-                      <p className="text-slate-700">ETH: KSh{((balance.ETH || 0) * (usdRates.ETH?.price || 0) * exchangeRates.USDKES).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
-                      <p className="text-slate-700">USDT: KSh{((balance.USDT || 0) * (usdRates.USDT?.price || 0) * exchangeRates.USDKES).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
+                      <p className="text-slate-700">BTC: KSh{Math.round((balance.BTC || 0) * (usdRates.BTC?.price || 0) * exchangeRates.USDKES).toLocaleString()}</p>
+                      <p className="text-slate-700">ETH: KSh{Math.round((balance.ETH || 0) * (usdRates.ETH?.price || 0) * exchangeRates.USDKES).toLocaleString()}</p>
+                      <p className="text-slate-700">USDT: KSh{Math.round((balance.USDT || 0) * (usdRates.USDT?.price || 0) * exchangeRates.USDKES).toLocaleString()}</p>
+                      <p className="text-slate-700">XRP: KSh{Math.round((balance.XRP || 0) * (usdRates.XRP?.price || 0) * exchangeRates.USDKES).toLocaleString()}</p>
+                      <p className="text-slate-700">SOL: KSh{Math.round((balance.SOL || 0) * (usdRates.SOL?.price || 0) * exchangeRates.USDKES).toLocaleString()}</p>
                     </div>
-                    <p className="text-sm font-bold text-orange-600 mt-2">Total Portfolio: KSh{(
+                    <p className="text-sm font-bold text-orange-600 mt-2 pt-2 border-t border-slate-200">Total Portfolio: KSh{Math.round(
                       (balance.KES || 0) + 
                       (balance.BTC || 0) * (usdRates.BTC?.price || 0) * exchangeRates.USDKES +
                       (balance.ETH || 0) * (usdRates.ETH?.price || 0) * exchangeRates.USDKES +
                       (balance.USDT || 0) * (usdRates.USDT?.price || 0) * exchangeRates.USDKES +
                       (balance.XRP || 0) * (usdRates.XRP?.price || 0) * exchangeRates.USDKES +
                       (balance.SOL || 0) * (usdRates.SOL?.price || 0) * exchangeRates.USDKES
-                    ).toLocaleString('en-US', {maximumFractionDigits: 0})}</p>
+                    ).toLocaleString()}</p>
                   </div>
                 </>
               )}
