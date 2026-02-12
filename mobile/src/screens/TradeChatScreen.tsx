@@ -167,7 +167,7 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
                 styles.messageTime,
                 message.senderType === 'user' ? styles.userTime : styles.adminTime
               ]}>
-                {new Date(message.timestamp).toLocaleTimeString()}
+                {message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
               </Text>
             </View>
           </View>

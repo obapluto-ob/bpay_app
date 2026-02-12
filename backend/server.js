@@ -16,32 +16,41 @@ const PORT = process.env.PORT || 3001;
 app.set('trust proxy', 1);
 
 // Auto-migrate database on startup
+let dbPool = null;
+
 async function initDatabase() {
   if (process.env.NODE_ENV === 'production') {
     try {
       console.log('Initializing database...');
-      const pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false }
-      });
+      
+      // Reuse pool if exists
+      if (!dbPool) {
+        dbPool = new Pool({
+          connectionString: process.env.DATABASE_URL,
+          ssl: { rejectUnauthorized: false },
+          max: 20, // Maximum pool size
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 2000,
+        });
+      }
       
       const schemaPath = path.join(__dirname, 'src/database/simple_schema.sql');
       if (fs.existsSync(schemaPath)) {
         // Only create tables if they don't exist (preserves data)
         const schema = fs.readFileSync(schemaPath, 'utf8');
-        await pool.query(schema);
+        await dbPool.query(schema);
         console.log('Database schema initialized (tables created if not exist)');
       }
       
       // Force add avatar column
       try {
-        const checkColumn = await pool.query(`
+        const checkColumn = await dbPool.query(`
           SELECT column_name FROM information_schema.columns 
           WHERE table_name = 'users' AND column_name = 'avatar'
         `);
         
         if (checkColumn.rows.length === 0) {
-          await pool.query('ALTER TABLE users ADD COLUMN avatar TEXT;');
+          await dbPool.query('ALTER TABLE users ADD COLUMN avatar TEXT;');
           console.log('Avatar column added successfully!');
         } else {
           console.log('Avatar column already exists');
@@ -52,14 +61,14 @@ async function initDatabase() {
       
       // Add missing columns to users table
       try {
-        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255);');
-        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;');
-        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);');
-        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;');
+        await dbPool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255);');
+        await dbPool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;');
+        await dbPool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);');
+        await dbPool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;');
         console.log('✅ User table columns updated');
         
         // Update existing users without verification tokens
-        await pool.query(`
+        await dbPool.query(`
           UPDATE users 
           SET verification_token = 'legacy_' || id || '_' || EXTRACT(EPOCH FROM NOW())::text,
               email_verified = false
@@ -72,7 +81,7 @@ async function initDatabase() {
       
       // Add chat tables
       try {
-        await pool.query(`
+        await dbPool.query(`
           CREATE TABLE IF NOT EXISTS chat_messages (
             id SERIAL PRIMARY KEY,
             trade_id VARCHAR(255) NOT NULL,
@@ -84,7 +93,7 @@ async function initDatabase() {
           );
         `);
         
-        await pool.query(`
+        await dbPool.query(`
           CREATE TABLE IF NOT EXISTS admin_chat_messages (
             id SERIAL PRIMARY KEY,
             sender_id VARCHAR(255) NOT NULL,
@@ -96,7 +105,7 @@ async function initDatabase() {
         `);
         
         // Add rates table
-        await pool.query(`
+        await dbPool.query(`
           CREATE TABLE IF NOT EXISTS crypto_rates (
             id SERIAL PRIMARY KEY,
             crypto VARCHAR(10) UNIQUE NOT NULL,
@@ -108,7 +117,7 @@ async function initDatabase() {
         `);
         
         // Insert default rates
-        await pool.query(`
+        await dbPool.query(`
           INSERT INTO crypto_rates (crypto, buy_rate, sell_rate) VALUES
           ('BTC', 45250000, 44750000),
           ('ETH', 2850000, 2820000),
@@ -120,7 +129,9 @@ async function initDatabase() {
       } catch (error) {
         console.log('Tables already exist or error:', error.message);
       }
-      await pool.end();
+      
+      // Don't close the pool - reuse it
+      console.log('Database pool ready for reuse');
     } catch (error) {
       console.log('Database already exists or error:', error.message);
     }
@@ -139,13 +150,15 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500
+  max: 300, // Reduced from 500
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use(limiter);
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '5mb' })); // Reduced from 10mb
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -226,4 +239,32 @@ server.listen(PORT, async () => {
   await initDatabase();
   
   console.log('\n✅ Server ready to accept requests\n');
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  
+  server.close(() => {
+    console.log('HTTP server closed');
+    
+    // Close WebSocket
+    websocketService.shutdown();
+    
+    // Close database pool
+    if (dbPool) {
+      dbPool.end(() => {
+        console.log('Database pool closed');
+        process.exit(0);
+      });
+    } else {
+      process.exit(0);
+    }
+  });
+  
+  // Force close after 10 seconds
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
 });

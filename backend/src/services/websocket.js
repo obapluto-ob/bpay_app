@@ -12,16 +12,37 @@ class WebSocketService {
     this.wss = null;
     this.clients = new Map(); // userId -> WebSocket connection
     this.adminClients = new Map(); // adminId -> WebSocket connection
+    this.maxConnections = 1000; // Limit connections
+    this.cleanupInterval = null;
   }
 
   initialize(server) {
     this.wss = new WebSocket.Server({ 
       server,
-      path: '/ws'
+      path: '/ws',
+      maxPayload: 100 * 1024, // 100KB max message size
+      perMessageDeflate: false // Disable compression to save memory
     });
 
+    // Cleanup dead connections every 30 seconds
+    this.cleanupInterval = setInterval(() => {
+      this.cleanupDeadConnections();
+    }, 30000);
+
     this.wss.on('connection', (ws, req) => {
+      // Limit total connections
+      if (this.clients.size + this.adminClients.size >= this.maxConnections) {
+        ws.close(1008, 'Server at capacity');
+        return;
+      }
+
       console.log('New WebSocket connection');
+      ws.isAlive = true;
+      
+      // Ping-pong for connection health
+      ws.on('pong', () => {
+        ws.isAlive = true;
+      });
       
       ws.on('message', (message) => {
         try {
@@ -38,10 +59,46 @@ class WebSocketService {
 
       ws.on('error', (error) => {
         console.error('WebSocket error:', error);
+        this.handleDisconnection(ws);
       });
     });
 
+    // Ping all connections every 30 seconds
+    setInterval(() => {
+      this.wss.clients.forEach((ws) => {
+        if (ws.isAlive === false) {
+          return ws.terminate();
+        }
+        ws.isAlive = false;
+        ws.ping();
+      });
+    }, 30000);
+
     console.log('WebSocket server initialized');
+  }
+
+  cleanupDeadConnections() {
+    let cleaned = 0;
+    
+    // Clean user connections
+    for (const [userId, ws] of this.clients.entries()) {
+      if (ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+        this.clients.delete(userId);
+        cleaned++;
+      }
+    }
+    
+    // Clean admin connections
+    for (const [adminId, ws] of this.adminClients.entries()) {
+      if (ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+        this.adminClients.delete(adminId);
+        cleaned++;
+      }
+    }
+    
+    if (cleaned > 0) {
+      console.log(`Cleaned ${cleaned} dead connections. Active: ${this.clients.size + this.adminClients.size}`);
+    }
   }
 
   handleMessage(ws, data) {
@@ -182,6 +239,26 @@ class WebSocketService {
         console.log(`User ${ws.userId} disconnected`);
       }
     }
+    
+    // Clear all references
+    ws.userId = null;
+    ws.userType = null;
+    ws.tradeId = null;
+  }
+
+  shutdown() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+    
+    this.clients.clear();
+    this.adminClients.clear();
+    
+    if (this.wss) {
+      this.wss.close();
+    }
+    
+    console.log('WebSocket service shut down');
   }
 
   async storeChatMessage(message) {

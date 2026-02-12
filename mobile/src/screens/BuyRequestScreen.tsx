@@ -33,6 +33,8 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
   const [timeRemaining, setTimeRemaining] = useState(900); // 15 minutes
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [paymentProof, setPaymentProof] = useState<string | null>(null);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [submittingPayment, setSubmittingPayment] = useState(false);
   const [assignedAdmin, setAssignedAdmin] = useState<any>(null);
   const [showChat, setShowChat] = useState(false);
   const [currentTrade, setCurrentTrade] = useState<any>(null);
@@ -312,6 +314,7 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
         return;
       }
 
+      setUploadingProof(true);
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -321,10 +324,12 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
 
       if (!result.canceled && result.assets[0]) {
         setPaymentProof(result.assets[0].uri);
-        onNotification('Payment proof uploaded successfully', 'success');
+        onNotification('Payment proof selected successfully', 'success');
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to select image. Please try again.');
+    } finally {
+      setUploadingProof(false);
     }
   };
 
@@ -573,12 +578,17 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
               <Text style={styles.proofTitle}>Upload Payment Proof</Text>
               <Text style={styles.proofSubtitle}>Take a screenshot of your transfer receipt</Text>
               
-              {paymentProof ? (
+              {uploadingProof ? (
+                <View style={styles.uploadingContainer}>
+                  <Text style={styles.uploadingText}>Loading image...</Text>
+                </View>
+              ) : paymentProof ? (
                 <View style={styles.proofPreview}>
                   <Image source={{ uri: paymentProof }} style={styles.proofImage} />
                   <TouchableOpacity 
                     style={styles.changeProofButton}
                     onPress={selectPaymentProof}
+                    disabled={uploadingProof}
                   >
                     <Text style={styles.changeProofText}>Change Image</Text>
                   </TouchableOpacity>
@@ -587,6 +597,7 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
                 <TouchableOpacity 
                   style={styles.uploadButton}
                   onPress={selectPaymentProof}
+                  disabled={uploadingProof}
                 >
                   <Text style={styles.uploadButtonText}>📷 Upload Screenshot</Text>
                 </TouchableOpacity>
@@ -597,23 +608,31 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
           <TouchableOpacity 
             style={[
               styles.paidButton, 
-              paymentMethod === 'bank' && !paymentProof && styles.disabledButton
+              (paymentMethod === 'bank' && !paymentProof || submittingPayment) && styles.disabledButton
             ]}
-            onPress={() => {
+            onPress={async () => {
               if (paymentMethod === 'bank' && !paymentProof) {
                 Alert.alert('Upload Required', 'Please upload payment proof before proceeding.');
                 return;
               }
+              
+              setSubmittingPayment(true);
+              onNotification('Submitting payment proof...', 'info');
+              
+              // Simulate upload delay
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
               updateOrderStep('waiting');
+              setSubmittingPayment(false);
               onNotification(
                 `Payment submitted for ${cryptoAmount.toFixed(8)} ${selectedCrypto} - awaiting confirmation`,
-                'info'
+                'success'
               );
             }}
-            disabled={paymentMethod === 'bank' && !paymentProof}
+            disabled={paymentMethod === 'bank' && !paymentProof || submittingPayment}
           >
             <Text style={styles.paidButtonText}>
-              {paymentMethod === 'balance' ? 'Confirm Purchase' : 'Submit Payment Proof'}
+              {submittingPayment ? 'Submitting...' : paymentMethod === 'balance' ? 'Confirm Purchase' : 'Submit Payment Proof'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -878,7 +897,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   disabledButton: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   buyButtonText: {
     color: 'white',
@@ -1217,6 +1236,19 @@ const styles = StyleSheet.create({
   changeProofText: {
     color: 'white',
     fontSize: 14,
+    fontWeight: 'bold',
+  },
+  uploadingContainer: {
+    backgroundColor: '#f1f5f9',
+    padding: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#3b82f6',
+  },
+  uploadingText: {
+    color: '#3b82f6',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
