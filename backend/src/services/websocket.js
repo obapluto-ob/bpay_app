@@ -65,8 +65,8 @@ class WebSocketService {
 
   authenticateClient(ws, data) {
     try {
-      const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
-      ws.userId = decoded.userId;
+      const decoded = jwt.verify(data.token, process.env.JWT_SECRET || 'fallback-secret');
+      ws.userId = decoded.id || decoded.userId; // Support both id and userId
       ws.userType = data.userType || 'user'; // 'user' or 'admin'
       
       if (ws.userType === 'admin') {
@@ -85,6 +85,7 @@ class WebSocketService {
       
       console.log(`${ws.userType} ${ws.userId} connected`);
     } catch (error) {
+      console.error('Auth error:', error);
       ws.send(JSON.stringify({
         type: 'auth_error',
         message: 'Invalid token'
