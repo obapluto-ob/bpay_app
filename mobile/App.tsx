@@ -679,72 +679,53 @@ export default function App() {
   
   const checkPriceAlerts = (rates: Record<string, number>) => {
     const btcPrice = rates.BTC || 0;
-    const usdtKesRate = (rates.USDT || 1) * exchangeRates.USDKES;
+    const usdtPrice = rates.USDT || 1;
+    const usdtKesRate = usdtPrice * exchangeRates.USDKES;
+    const usdtNgnRate = usdtPrice * exchangeRates.USDNGN;
     
-    // Only check if we have valid exchange rates and prices
     if (exchangeRates.USDKES === 0 || btcPrice === 0) return;
     
-    // Initialize alerts state on first valid data
     if (!alertsInitialized && usdtKesRate > 100) {
-      setPriceAlerts(prev => ({
+      setPriceAlerts({
         BTC_100K: { triggered: btcPrice >= 100000, target: 100000 },
-        USDT_KES_HIGH: { triggered: usdtKesRate >= 129, target: 129 },
+        USDT_KES_HIGH: { triggered: usdtKesRate >= 150, target: 150 },
         USDT_KES_LOW: { triggered: usdtKesRate <= 128, target: 128 }
-      }));
+      });
       setAlertsInitialized(true);
       return;
     }
     
     if (!alertsInitialized) return;
     
-    // BTC hits $100K alert
     if (btcPrice >= 100000 && !priceAlerts.BTC_100K.triggered) {
       addNotification(
-        `MILESTONE ALERT: Bitcoin hits $${btcPrice.toLocaleString()}! Historic $100K breakthrough!`,
+        `MILESTONE: Bitcoin hits $${btcPrice.toLocaleString()}! Historic $100K breakthrough!`,
         'success'
       );
-      setPriceAlerts(prev => ({
-        ...prev,
-        BTC_100K: { ...prev.BTC_100K, triggered: true }
-      }));
+      setPriceAlerts(prev => ({ ...prev, BTC_100K: { ...prev.BTC_100K, triggered: true } }));
     }
     
-    // USDT rate alerts for both currencies
-    const usdtNgnRate = (rates.USDT || 1) * exchangeRates.USDNGN;
-    
-    if (usdtKesRate > 100 && usdtKesRate < 200) {
-      if (usdtKesRate >= 129 && !priceAlerts.USDT_KES_HIGH.triggered) {
-        addNotification(
-          `USDT Alert: Rate hits KSh ${usdtKesRate.toFixed(2)} / ₦${usdtNgnRate.toFixed(2)} - High end of target range!`,
-          'warning'
-        );
-        setPriceAlerts(prev => ({
-          ...prev,
-          USDT_KES_HIGH: { ...prev.USDT_KES_HIGH, triggered: true }
-        }));
-      }
-      
-      if (usdtKesRate <= 128 && !priceAlerts.USDT_KES_LOW.triggered) {
-        addNotification(
-          `USDT Alert: Rate drops to KSh ${usdtKesRate.toFixed(2)} / ₦${usdtNgnRate.toFixed(2)} - Low end of target range!`,
-          'info'
-        );
-        setPriceAlerts(prev => ({
-          ...prev,
-          USDT_KES_LOW: { ...prev.USDT_KES_LOW, triggered: true }
-        }));
-      }
+    if (usdtKesRate >= 150 && !priceAlerts.USDT_KES_HIGH.triggered) {
+      addNotification(
+        `USDT Alert: Rate hits KSh ${usdtKesRate.toFixed(2)} / ₦${usdtNgnRate.toFixed(2)} - High target reached!`,
+        'warning'
+      );
+      setPriceAlerts(prev => ({ ...prev, USDT_KES_HIGH: { ...prev.USDT_KES_HIGH, triggered: true } }));
     }
     
-    // Reset alerts when prices move away from targets
+    if (usdtKesRate <= 128 && !priceAlerts.USDT_KES_LOW.triggered) {
+      addNotification(
+        `USDT Alert: Rate drops to KSh ${usdtKesRate.toFixed(2)} / ₦${usdtNgnRate.toFixed(2)} - Low target reached!`,
+        'info'
+      );
+      setPriceAlerts(prev => ({ ...prev, USDT_KES_LOW: { ...prev.USDT_KES_LOW, triggered: true } }));
+    }
+    
     if (btcPrice < 98000 && priceAlerts.BTC_100K.triggered) {
-      setPriceAlerts(prev => ({
-        ...prev,
-        BTC_100K: { ...prev.BTC_100K, triggered: false }
-      }));
+      setPriceAlerts(prev => ({ ...prev, BTC_100K: { ...prev.BTC_100K, triggered: false } }));
     }
     
-    if (usdtKesRate < 127 || usdtKesRate > 130) {
+    if (usdtKesRate < 127 || usdtKesRate > 151) {
       setPriceAlerts(prev => ({
         ...prev,
         USDT_KES_HIGH: { ...prev.USDT_KES_HIGH, triggered: false },
@@ -837,7 +818,7 @@ export default function App() {
             {selectedAccount === 'crypto' && (
               <>
                 <View style={styles.balanceHeader}>
-                  <Text style={styles.balanceCountry}>Crypto Assets</Text>
+                  <Text style={styles.balanceCountry}>Crypto Wallet</Text>
                 </View>
                 <View style={styles.cryptoBalances}>
                   <View style={styles.cryptoBalance}>
@@ -859,7 +840,7 @@ export default function App() {
             {selectedAccount === 'nigeria' && (
               <>
                 <View style={styles.balanceHeader}>
-                  <Text style={styles.balanceCountry}>Nigeria (NGN)</Text>
+                  <Text style={styles.balanceCountry}>Nigeria Wallet</Text>
                 </View>
                 <Text style={styles.balanceAmount}>₦{balance.NGN?.toLocaleString() || '0'}</Text>
               </>
@@ -868,7 +849,7 @@ export default function App() {
             {selectedAccount === 'kenya' && (
               <>
                 <View style={styles.balanceHeader}>
-                  <Text style={styles.balanceCountry}>Kenya (KES)</Text>
+                  <Text style={styles.balanceCountry}>Kenya Wallet</Text>
                 </View>
                 <Text style={styles.balanceAmount}>KSh{balance.KES?.toLocaleString() || '0'}</Text>
               </>
