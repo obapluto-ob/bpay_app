@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Modal, Image } from 'react-native';
 import { useChat } from '../hooks/useChat';
+import { DepositSuccessScreen } from './DepositSuccessScreen';
 
 interface ChatMessage {
   id: string;
@@ -49,7 +50,25 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
   const [showDispute, setShowDispute] = useState(false);
   const [rating, setRating] = useState(0);
   const [disputeReason, setDisputeReason] = useState('');
+  const [hasPaid, setHasPaid] = useState(false);
+  const [paymentProof, setPaymentProof] = useState<string | null>(null);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Listen for admin approval/decline messages
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.senderType === 'admin') {
+      if (lastMessage.message.toLowerCase().includes('approved') || 
+          lastMessage.message.toLowerCase().includes('credited')) {
+        // Show success screen
+        setTimeout(() => {
+          setShowSuccess(true);
+        }, 1000);
+      }
+    }
+  }, [messages]);
 
   useEffect(() => {
     // Auto-scroll to bottom when new messages arrive
@@ -57,6 +76,52 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   }, [messages]);
+
+  const handleMarkPaid = async () => {
+    const paidMessage = `I have completed the payment for Order #${trade.id}. Uploading proof now...`;
+    sendMessage(paidMessage);
+    setHasPaid(true);
+  };
+
+  const selectPaymentProof = async () => {
+    try {
+      const ImagePicker = require('expo-image-picker');
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please allow access to your photos.');
+        return;
+      }
+
+      setUploadingProof(true);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setPaymentProof(result.assets[0].uri);
+        
+        // Upload proof
+        await fetch(`https://bpay-app.onrender.com/api/trade/${trade.id}/proof`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${userToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ proof: result.assets[0].uri })
+        });
+        
+        // Send message with proof
+        sendMessage('Payment proof uploaded. Please verify and credit my account.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to upload proof. Please try again.');
+    } finally {
+      setUploadingProof(false);
+    }
+  };
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
@@ -195,6 +260,27 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
 
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
+        {!hasPaid && trade.status === 'pending' && (
+          <TouchableOpacity 
+            style={styles.paidButton}
+            onPress={handleMarkPaid}
+          >
+            <Text style={styles.paidButtonText}>I Have Paid</Text>
+          </TouchableOpacity>
+        )}
+        
+        {hasPaid && !paymentProof && (
+          <TouchableOpacity 
+            style={styles.uploadButton}
+            onPress={selectPaymentProof}
+            disabled={uploadingProof}
+          >
+            <Text style={styles.uploadButtonText}>
+              {uploadingProof ? 'Uploading...' : 'Upload Payment Proof'}
+            </Text>
+          </TouchableOpacity>
+        )}
+        
         {trade.status === 'completed' && !trade.adminRating && (
           <TouchableOpacity 
             style={styles.rateButton}
@@ -290,6 +376,23 @@ export const TradeChatScreen: React.FC<TradeChatScreenProps> = ({
           </View>
         </View>
       </Modal>
+      
+      {/* Success Screen */}
+      {showSuccess && (
+        <DepositSuccessScreen
+          crypto={trade.crypto}
+          amount={trade.amount}
+          fiatAmount={trade.fiatAmount}
+          currency={trade.currency}
+          orderId={trade.id}
+          onClose={() => {
+            setShowSuccess(false);
+            if (onTradeComplete) {
+              onTradeComplete('approved', 'Payment verified and crypto credited');
+            }
+          }}
+        />
+      )}
     </View>
   );
 };
@@ -464,6 +567,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 16,
     gap: 12,
+  },
+  paidButton: {
+    flex: 1,
+    backgroundColor: '#10b981',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  paidButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  uploadButton: {
+    flex: 1,
+    backgroundColor: '#3b82f6',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  uploadButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   rateButton: {
     flex: 1,

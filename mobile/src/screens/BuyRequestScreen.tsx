@@ -248,15 +248,14 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
       
       const trade = response.trade;
       
-      // Get assigned admin
+      // Get assigned admin (or schedule if none available)
       const bestAdmin = await getBestAvailableAdmin();
       setAssignedAdmin(bestAdmin);
 
       setEscrowId(trade.id);
       setActiveOrderId(trade.id);
-      setOrderStep('escrow');
       
-      // Save order to storage for persistence
+      // Save order to storage
       const orderData = {
         id: trade.id,
         crypto: selectedCrypto,
@@ -264,34 +263,53 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
         cryptoAmount: cryptoAmountCalculated,
         paymentMethod,
         country: userCountry,
-        step: 'escrow',
+        step: 'waiting',
         createdAt: Date.now()
       };
       await storage.setItem('activeBuyOrder', JSON.stringify(orderData));
       
-      // Send notification
+      // Send first message to admin
+      const firstMessage = `New ${selectedCrypto} buy order created\n\nOrder ID: #${trade.id}\nAmount: ${cryptoAmountCalculated.toFixed(8)} ${selectedCrypto}\nFiat: ${userCountry === 'NG' ? '₦' : 'KSh'}${amount.toLocaleString()}\nPayment Method: ${paymentMethod === 'balance' ? 'Wallet Balance' : (userCountry === 'NG' ? 'Bank Transfer' : 'M-Pesa')}\nCountry: ${userCountry === 'NG' ? 'Nigeria' : 'Kenya'}\n\nWaiting for payment details...`;
+      
+      await fetch(`https://bpay-app.onrender.com/api/trade/${trade.id}/chat`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: firstMessage, type: 'text' })
+      });
+      
+      // Auto-redirect to chat
+      const tradeData = {
+        id: trade.id,
+        type: 'buy',
+        crypto: selectedCrypto,
+        amount: cryptoAmountCalculated,
+        fiatAmount: amount,
+        currency: userCountry === 'NG' ? 'NGN' : 'KES',
+        status: 'pending',
+        assignedAdmin: bestAdmin.id,
+        adminName: bestAdmin.name,
+        adminEmail: bestAdmin.email,
+        adminRating: bestAdmin.averageRating,
+        paymentMethod,
+        chatMessages: []
+      };
+      
+      setCurrentTrade(tradeData);
+      setOrderStep('waiting');
+      setShowChat(true);
+      
       onNotification(
-        `Buy order created: ${cryptoAmountCalculated.toFixed(8)} ${selectedCrypto} for ${userCountry === 'NG' ? '₦' : 'KSh'}${amount.toLocaleString()}`,
+        `Order created - Chat opened with ${bestAdmin.name}`,
         'success'
       );
-      
-      // Start countdown timer
-      const timer = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            onNotification('Buy order expired - order automatically cancelled', 'warning');
-            cancelOrder();
-            return 900;
-          }
-          return prev - 1;
-        });
-      }, 1000);
       
     } catch (error) {
       console.error('Trade creation error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      Alert.alert('Error', `Failed to create escrow order: ${errorMessage}`);
+      Alert.alert('Error', `Failed to create order: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -520,265 +538,6 @@ export const BuyRequestScreen: React.FC<Props> = ({ rates, usdRates, exchangeRat
             {loading ? 'Creating Order...' : 'Create Buy Order'}
           </Text>
         </TouchableOpacity>
-      )}
-      
-      {orderStep === 'escrow' && (
-        <View style={styles.escrowSection}>
-          <View style={styles.escrowHeader}>
-            <Text style={styles.escrowTitle}>Order Created Successfully</Text>
-            <Text style={styles.escrowTimer}>
-              Complete payment within: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-            </Text>
-          </View>
-          
-          <View style={styles.escrowDetails}>
-            <Text style={styles.escrowLabel}>Order ID:</Text>
-            <Text style={styles.escrowValue}>#{escrowId}</Text>
-            
-            <Text style={styles.escrowLabel}>Amount:</Text>
-            <Text style={styles.escrowValue}>
-              {userCountry === 'NG' ? '₦' : 'KSh'}{parseFloat(fiatAmount).toLocaleString()}
-            </Text>
-            
-            <Text style={styles.escrowLabel}>You will receive:</Text>
-            <Text style={styles.escrowValue}>{cryptoAmount.toFixed(8)} {selectedCrypto}</Text>
-            
-            <Text style={styles.escrowLabel}>Status:</Text>
-            <Text style={styles.escrowValue}>Awaiting Payment</Text>
-          </View>
-          
-          <TouchableOpacity 
-            style={styles.proceedButton}
-            onPress={() => {
-              updateOrderStep('payment');
-              onNotification(
-                `Proceeding to payment for order #${escrowId}`,
-                'info'
-              );
-            }}
-          >
-            <Text style={styles.proceedButtonText}>Proceed to Payment</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      
-      {orderStep === 'payment' && (
-        <View style={styles.paymentSection}>
-          <Text style={styles.paymentTitle}>Complete Payment</Text>
-          
-          {paymentMethod === 'bank' && (
-            <View style={styles.bankInfo}>
-              <Text style={styles.sectionTitle}>Payment Details</Text>
-              <Text style={styles.bankText}>
-                {userCountry === 'NG' 
-                  ? 'GTBank\nAccount: 0123456789\nBPay Technologies Ltd'
-                  : 'M-Pesa\nPaybill: 123456\nAccount: BPAY001'
-                }
-              </Text>
-            </View>
-          )}
-          
-          {paymentMethod === 'bank' && (
-            <View style={styles.proofSection}>
-              <Text style={styles.proofTitle}>Upload Payment Proof</Text>
-              <Text style={styles.proofSubtitle}>Take a screenshot of your transfer receipt</Text>
-              
-              {uploadingProof ? (
-                <View style={styles.uploadingContainer}>
-                  <Text style={styles.uploadingText}>Loading image...</Text>
-                </View>
-              ) : paymentProof ? (
-                <View style={styles.proofPreview}>
-                  <Image source={{ uri: paymentProof }} style={styles.proofImage} />
-                  <TouchableOpacity 
-                    style={styles.changeProofButton}
-                    onPress={selectPaymentProof}
-                    disabled={uploadingProof}
-                  >
-                    <Text style={styles.changeProofText}>Change Image</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity 
-                  style={styles.uploadButton}
-                  onPress={selectPaymentProof}
-                  disabled={uploadingProof}
-                >
-                  <Text style={styles.uploadButtonText}>📷 Upload Screenshot</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-          
-          <TouchableOpacity 
-            style={[
-              styles.paidButton, 
-              (paymentMethod === 'bank' && !paymentProof || submittingPayment) && styles.disabledButton
-            ]}
-            onPress={async () => {
-              if (paymentMethod === 'bank' && !paymentProof) {
-                Alert.alert('Upload Required', 'Please upload payment proof before proceeding.');
-                return;
-              }
-              
-              setSubmittingPayment(true);
-              onNotification('Submitting payment proof...', 'info');
-              
-              try {
-                // Upload payment proof to server
-                if (paymentProof && escrowId) {
-                  await apiService.uploadPaymentProof(escrowId, paymentProof, token);
-                }
-                
-                // Get assigned admin BEFORE moving to waiting
-                const bestAdmin = await getBestAvailableAdmin();
-                setAssignedAdmin(bestAdmin);
-                
-                // Move to waiting step
-                await updateOrderStep('waiting');
-                
-                // Auto-open chat immediately
-                const tradeData = {
-                  id: escrowId,
-                  type: 'buy',
-                  crypto: selectedCrypto,
-                  amount: cryptoAmount,
-                  fiatAmount: parseFloat(fiatAmount),
-                  currency: userCountry === 'NG' ? 'NGN' : 'KES',
-                  status: 'processing',
-                  assignedAdmin: bestAdmin.id,
-                  adminName: bestAdmin.name,
-                  adminEmail: bestAdmin.email,
-                  adminRating: bestAdmin.averageRating,
-                  chatMessages: []
-                };
-                
-                setCurrentTrade(tradeData);
-                setShowChat(true);
-                
-                // Send first message to admin via API
-                const firstMessage = `NEW BUY ORDER\n\nOrder ID: #${escrowId}\nCrypto: ${selectedCrypto}\nAmount: ${cryptoAmount.toFixed(8)} ${selectedCrypto}\nFiat: ${userCountry === 'NG' ? '₦' : 'KSh'}${parseFloat(fiatAmount).toLocaleString()}\nPayment Method: ${paymentMethod === 'balance' ? 'Wallet Balance' : (userCountry === 'NG' ? 'Bank Transfer' : 'M-Pesa')}\n\nPayment proof submitted. Please verify.`;
-                
-                await fetch(`https://bpay-app.onrender.com/api/trade/${escrowId}/chat`, {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ message: firstMessage, type: 'text' })
-                });
-                
-                onNotification(
-                  `Chat opened with ${bestAdmin.name} - payment verification in progress`,
-                  'success'
-                );
-              } catch (error) {
-                console.error('Submit payment error:', error);
-                Alert.alert('Error', 'Failed to submit payment. Please try again.');
-              } finally {
-                setSubmittingPayment(false);
-              }
-            }}
-            disabled={paymentMethod === 'bank' && !paymentProof || submittingPayment}
-          >
-            <Text style={styles.paidButtonText}>
-              {submittingPayment ? 'Submitting...' : paymentMethod === 'balance' ? 'Confirm Purchase' : 'Submit Payment Proof'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      
-      {orderStep === 'waiting' && (
-        <View style={styles.waitingSection}>
-          <Text style={styles.waitingTitle}>Payment Verification</Text>
-          <Text style={styles.waitingText}>
-            Your payment is being verified by our admin team.
-            You can chat with the assigned admin below.
-          </Text>
-          
-          <View style={styles.adminAssigned}>
-            <Text style={styles.adminLabel}>Assigned Admin:</Text>
-            <Text style={styles.adminName}>{getAssignedAdminName()}</Text>
-            <Text style={styles.adminRating}>⭐ {getAssignedAdminRating()} rating • Avg response: {getAssignedAdminResponseTime()} min</Text>
-          </View>
-          
-          <TouchableOpacity 
-            style={styles.chatButton}
-            onPress={() => {
-              // Navigate to chat screen with trade data
-              const assignedAdmin = getAssignedAdmin();
-              const tradeData = {
-                id: escrowId,
-                type: 'buy',
-                crypto: selectedCrypto,
-                amount: cryptoAmount,
-                fiatAmount: parseFloat(fiatAmount),
-                currency: userCountry === 'NG' ? 'NGN' : 'KES',
-                status: 'processing',
-                assignedAdmin: assignedAdmin.id,
-                adminName: assignedAdmin.name,
-                adminEmail: assignedAdmin.email,
-                adminRating: assignedAdmin.averageRating,
-                chatMessages: [
-                  {
-                    id: 'msg_1',
-                    senderId: 'system',
-                    senderName: 'System',
-                    senderType: 'admin',
-                    message: `Buy order created: ${cryptoAmount.toFixed(8)} ${selectedCrypto} for ${userCountry === 'NG' ? '₦' : 'KSh'}${parseFloat(fiatAmount).toLocaleString()}. ${assignedAdmin.name} will verify your payment shortly.`,
-                    timestamp: new Date().toISOString(),
-                    type: 'system'
-                  }
-                ]
-              };
-              
-              // Here you would navigate to TradeChatScreen
-              // For now, show alert
-              // Save trade data and navigate to chat
-              const savedTrade = {
-                ...tradeData,
-                createdAt: new Date().toISOString()
-              };
-              
-              // Trade is already saved via API, no need for local storage
-              
-              // Open chat screen
-              setCurrentTrade(tradeData);
-              setShowChat(true);
-              
-              onNotification(
-                `Chat opened with ${assignedAdmin.name} - communicate about your payment verification`,
-                'info'
-              );
-            }}
-          >
-            <Text style={styles.chatButtonText}>💬 Chat with Admin</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.statusIndicator}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusText}>Verifying Payment...</Text>
-          </View>
-          
-          <TouchableOpacity 
-            style={styles.cancelButton}
-            onPress={() => {
-              Alert.alert(
-                'Cancel Order',
-                'Are you sure you want to cancel this order? You can raise a dispute if there are issues.',
-                [
-                  { text: 'Raise Dispute', onPress: () => {
-                    Alert.alert('Dispute', 'Dispute feature will be available in chat with admin.');
-                  }},
-                  { text: 'Cancel Order', style: 'destructive', onPress: cancelOrder },
-                  { text: 'Keep Order', style: 'cancel' }
-                ]
-              );
-            }}
-          >
-            <Text style={styles.cancelButtonText}>Cancel Order</Text>
-          </TouchableOpacity>
-        </View>
       )}
 
       <Text style={styles.disclaimer}>
