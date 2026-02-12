@@ -24,7 +24,6 @@ export const TradeHistoryScreen: React.FC<Props> = ({ token, userCountry, onClos
   }, []);
 
   const loadTrades = async () => {
-    setLoading(true);
     try {
       const response = await fetch(`https://bpay-app.onrender.com/api/trade/history`, {
         headers: {
