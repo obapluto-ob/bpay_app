@@ -2,12 +2,28 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const pool = require('./config/db');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const websocketService = require('./src/services/websocket');
 require('dotenv').config();
+const websocketService = require('./src/services/websocket');
+
+// ── Turso pg shim ──────────────────────────────────────────────────────────
+// Patch require('pg') BEFORE any routes load so every route that does
+// `const { Pool } = require('pg')` gets the Turso client instead.
+const db = require('./config/db');
+const Module = require('module');
+const dbAbsolutePath = require.resolve('./config/db');
+const _resolveFilename = Module._resolveFilename;
+Module._resolveFilename = function(request, parent, isMain, options) {
+  if (request === 'pg') return dbAbsolutePath;
+  return _resolveFilename(request, parent, isMain, options);
+};
+require.cache[dbAbsolutePath] = require.cache[dbAbsolutePath] || {};
+require.cache[dbAbsolutePath].exports = { Pool: db.Pool, ...db };
+// ───────────────────────────────────────────────────────────────────────────
+
+const pool = db;
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,111 +31,22 @@ const PORT = process.env.PORT || 3001;
 // Trust proxy for Render deployment
 app.set('trust proxy', 1);
 
-// Auto-migrate database on startup
+// Auto-migrate database on startup — runs on every environment
 async function initDatabase() {
-  if (process.env.NODE_ENV === 'production') {
-    try {
-      console.log('Initializing database...');
-      
-      const schemaPath = path.join(__dirname, 'src/database/simple_schema.sql');
-      if (fs.existsSync(schemaPath)) {
-        // Only create tables if they don't exist (preserves data)
-        const schema = fs.readFileSync(schemaPath, 'utf8');
-        await pool.query(schema);
-        console.log('Database schema initialized (tables created if not exist)');
+  try {
+    console.log('Initializing Turso database...');
+    const schemaPath = path.join(__dirname, 'src/database/simple_schema.sql');
+    if (fs.existsSync(schemaPath)) {
+      const schema = fs.readFileSync(schemaPath, 'utf8');
+      // Split on semicolons and run each statement individually (libsql requirement)
+      const statements = schema.split(';').map(s => s.trim()).filter(s => s.length > 0);
+      for (const stmt of statements) {
+        try { await pool.query(stmt); } catch (e) { /* ignore already-exists errors */ }
       }
-      
-      // Force add avatar column
-      try {
-        const checkColumn = await pool.query(`
-          SELECT column_name FROM information_schema.columns 
-          WHERE table_name = 'users' AND column_name = 'avatar'
-        `);
-        
-        if (checkColumn.rows.length === 0) {
-          await pool.query('ALTER TABLE users ADD COLUMN avatar TEXT;');
-          console.log('Avatar column added successfully!');
-        } else {
-          console.log('Avatar column already exists');
-        }
-      } catch (error) {
-        console.log('Avatar column migration error:', error.message);
-      }
-      
-      // Add missing columns to users table
-      try {
-        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255);');
-        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;');
-        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);');
-        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;');
-        console.log('✅ User table columns updated');
-        
-        // Update existing users without verification tokens
-        await pool.query(`
-          UPDATE users 
-          SET verification_token = 'legacy_' || id || '_' || EXTRACT(EPOCH FROM NOW())::text,
-              email_verified = false
-          WHERE verification_token IS NULL
-        `);
-        console.log('✅ Existing users updated with verification tokens');
-      } catch (error) {
-        console.log('⚠️ User table migration error:', error.message);
-      }
-      
-      // Add chat tables
-      try {
-        await pool.query(`
-          CREATE TABLE IF NOT EXISTS chat_messages (
-            id SERIAL PRIMARY KEY,
-            trade_id VARCHAR(255) NOT NULL,
-            sender_id VARCHAR(255) NOT NULL,
-            sender_type VARCHAR(20) NOT NULL CHECK (sender_type IN ('user', 'admin')),
-            message TEXT NOT NULL,
-            message_type VARCHAR(20) DEFAULT 'text' CHECK (message_type IN ('text', 'image', 'system')),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );
-        `);
-        
-        await pool.query(`
-          CREATE TABLE IF NOT EXISTS admin_chat_messages (
-            id SERIAL PRIMARY KEY,
-            sender_id VARCHAR(255) NOT NULL,
-            receiver_id VARCHAR(255) NOT NULL,
-            message TEXT NOT NULL,
-            read_at TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );
-        `);
-        
-        // Add rates table
-        await pool.query(`
-          CREATE TABLE IF NOT EXISTS crypto_rates (
-            id SERIAL PRIMARY KEY,
-            crypto VARCHAR(10) UNIQUE NOT NULL,
-            rate DECIMAL(15,2) NOT NULL,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            is_active BOOLEAN DEFAULT true
-          );
-        `);
-        
-        // Insert default rates
-        await pool.query(`
-          INSERT INTO crypto_rates (crypto, rate) VALUES
-          ('BTC', 45000000),
-          ('ETH', 2850000),
-          ('USDT', 1580)
-          ON CONFLICT (crypto) DO NOTHING;
-        `);
-        
-        console.log('Chat and rates tables created successfully!');
-      } catch (error) {
-        console.log('Tables already exist or error:', error.message);
-      }
-      
-      console.log('Database initialized successfully');
-    } catch (error) {
-      console.log('Database already exists or error:', error.message);
+      console.log('✅ Turso schema initialized');
     }
+  } catch (error) {
+    console.log('⚠️ Database init error:', error.message);
   }
 }
 
@@ -218,7 +145,7 @@ server.listen(PORT, async () => {
   console.log(`🚀 BPay API Server Started`);
   console.log(`🚀 Port: ${PORT}`);
   console.log(`🚀 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🚀 Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
+  console.log(`🚀 Database: Turso ${process.env.TURSO_DATABASE_URL ? '✅' : '❌ TURSO_DATABASE_URL missing'}`);
   console.log(`🚀 WebSocket: Enabled`);
   console.log('🚀 ========================================\n');
   
@@ -226,18 +153,6 @@ server.listen(PORT, async () => {
   
   console.log('\n✅ Server ready to accept requests\n');
 });
-
-// Keep Neon DB alive - ping every 4 days to prevent pausing
-if (process.env.NODE_ENV === 'production') {
-  setInterval(async () => {
-    try {
-      await pool.query('SELECT 1');
-      console.log('✅ DB keep-alive ping sent');
-    } catch (e) {
-      console.log('⚠️ DB keep-alive failed:', e.message);
-    }
-  }, 4 * 24 * 60 * 60 * 1000); // every 4 days
-}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
@@ -249,11 +164,8 @@ process.on('SIGTERM', () => {
     // Close WebSocket
     websocketService.shutdown();
     
-    // Close database pool
-    pool.end(() => {
-      console.log('Database pool closed');
-      process.exit(0);
-    });
+    pool.end();
+    process.exit(0);
   });
   
   // Force close after 10 seconds

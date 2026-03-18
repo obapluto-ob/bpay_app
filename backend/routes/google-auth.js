@@ -1,9 +1,8 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
 const router = express.Router();
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const { query: dbQuery } = require('../config/db');
+const pool = { query: dbQuery };
 
 // Verify Google ID token using Google's tokeninfo endpoint (no extra packages needed)
 async function verifyGoogleToken(idToken) {
@@ -61,6 +60,7 @@ router.post('/google', async (req, res) => {
         email: user.email,
         fullName: `${user.first_name} ${user.last_name}`.trim(),
         emailVerified: true,
+        hasSecurityQuestion: !!user.security_question,
         balances: {
           btc: parseFloat(user.btc_balance || 0),
           ngn: parseFloat(user.ngn_balance || 0),

@@ -1,8 +1,7 @@
 const express = require('express');
-const { Pool } = require('pg');
 const router = express.Router();
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const { query: dbQuery } = require('../config/db');
+const pool = { query: dbQuery };
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -21,19 +20,6 @@ const authenticateToken = (req, res, next) => {
 // Create withdrawal request
 router.post('/create', authenticateToken, async (req, res) => {
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS withdrawals (
-        id VARCHAR(255) PRIMARY KEY,
-        user_id VARCHAR(255) NOT NULL,
-        amount DECIMAL(15,2) NOT NULL,
-        currency VARCHAR(10) NOT NULL,
-        bank_details TEXT NOT NULL,
-        status VARCHAR(20) DEFAULT 'pending',
-        admin_notes TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-
     const { amount, currency, bankDetails } = req.body;
     const userId = req.user.id;
     const withdrawalId = 'wd_' + Math.random().toString(36).substr(2, 8).toUpperCase();

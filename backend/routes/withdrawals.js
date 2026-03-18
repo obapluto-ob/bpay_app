@@ -1,8 +1,7 @@
 const express = require('express');
-const { Pool } = require('pg');
 const router = express.Router();
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const { query: dbQuery } = require('../config/db');
+const pool = { query: dbQuery };
 
 // Create withdrawal request
 router.post('/create', async (req, res) => {
@@ -73,7 +72,7 @@ router.post('/admin/:withdrawalId/approve', async (req, res) => {
     const { adminId, notes } = req.body;
     
     await pool.query(
-      'UPDATE withdrawals SET status = $1, admin_notes = $2, processed_by = $3, processed_at = NOW() WHERE id = $4',
+      "UPDATE withdrawals SET status = $1, admin_notes = $2, processed_by = $3, processed_at = datetime('now') WHERE id = $4",
       ['completed', notes, adminId, req.params.withdrawalId]
     );
     
@@ -99,7 +98,7 @@ router.post('/admin/:withdrawalId/reject', async (req, res) => {
     );
     
     await pool.query(
-      'UPDATE withdrawals SET status = $1, admin_notes = $2, processed_by = $3, processed_at = NOW() WHERE id = $4',
+      "UPDATE withdrawals SET status = $1, admin_notes = $2, processed_by = $3, processed_at = datetime('now') WHERE id = $4",
       ['rejected', reason, adminId, req.params.withdrawalId]
     );
     

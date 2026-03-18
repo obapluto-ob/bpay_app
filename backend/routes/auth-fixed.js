@@ -2,11 +2,10 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const { Pool } = require('pg');
 const emailVerification = require('../services/email-verification');
 const router = express.Router();
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const { query: dbQuery } = require('../config/db');
+const pool = { query: dbQuery };
 
 // Check if email exists
 router.get('/check-email', async (req, res) => {
@@ -35,7 +34,7 @@ router.post('/register', [
       return res.status(400).json({ error: 'Please check your information and try again' });
     }
 
-    const { email, password, fullName, cfToken } = req.body;
+    const { email, password, fullName, cfToken, country, securityQuestion, securityAnswer } = req.body;
     
     // Verify Cloudflare Turnstile
     if (cfToken) {
@@ -64,28 +63,6 @@ router.post('/register', [
       return res.status(400).json({ error: 'Please enter both first and last name' });
     }
 
-    // Ensure users table exists
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id VARCHAR(255) PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        first_name VARCHAR(255),
-        last_name VARCHAR(255),
-        country VARCHAR(10),
-        email_verified BOOLEAN DEFAULT false,
-        verification_token VARCHAR(255),
-        reset_token VARCHAR(255),
-        reset_token_expires TIMESTAMP,
-        btc_balance DECIMAL(20,8) DEFAULT 0,
-        eth_balance DECIMAL(20,8) DEFAULT 0,
-        usdt_balance DECIMAL(20,8) DEFAULT 0,
-        ngn_balance DECIMAL(15,2) DEFAULT 0,
-        kes_balance DECIMAL(15,2) DEFAULT 0,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-
     // Check if user exists
     const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existingUser.rows.length > 0) {
@@ -94,13 +71,16 @@ router.post('/register', [
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedAnswer = securityQuestion && securityAnswer 
+      ? await bcrypt.hash(securityAnswer.toLowerCase().trim(), 12) 
+      : null;
     const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     const verificationToken = emailVerification.generateVerificationToken();
 
     // Create user
     const result = await pool.query(
-      'INSERT INTO users (id, email, password, first_name, last_name, email_verified, verification_token) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, email, first_name, last_name',
-      [userId, email, hashedPassword, firstName, lastName, false, verificationToken]
+      'INSERT INTO users (id, email, password, first_name, last_name, email_verified, verification_token, security_question, security_answer) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, email, first_name, last_name',
+      [userId, email, hashedPassword, firstName, lastName, 0, verificationToken, securityQuestion || null, hashedAnswer]
     );
 
     const user = result.rows[0];
@@ -321,7 +301,7 @@ router.get('/verify-email', async (req, res) => {
     
     // Update user as verified
     await pool.query(
-      'UPDATE users SET email_verified = true, verification_token = NULL WHERE verification_token = $1',
+      'UPDATE users SET email_verified = 1, verification_token = NULL WHERE verification_token = $1',
       [token]
     );
     
@@ -337,6 +317,74 @@ router.get('/verify-email', async (req, res) => {
     });
   } catch (error) {
     console.error('Email verification error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get security question for email (no auth needed - for forgot password flow)
+router.post('/security-question', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+    const result = await pool.query('SELECT security_question, password FROM users WHERE email = $1', [email]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'No account found with this email' });
+    const user = result.rows[0];
+    if (!user.security_question) {
+      // Google-only account or no question set
+      const isGoogleOnly = user.password === 'GOOGLE_AUTH_NO_PASSWORD';
+      return res.status(400).json({ 
+        error: isGoogleOnly 
+          ? 'This account uses Google Sign-In. Please use "Continue with Google" to log in.' 
+          : 'No security question set for this account. Please contact support.'
+      });
+    }
+    res.json({ question: user.security_question });
+  } catch (error) {
+    console.error('Security question error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Verify security answer → return short-lived reset token
+router.post('/verify-security-answer', async (req, res) => {
+  try {
+    const { email, answer } = req.body;
+    if (!email || !answer) return res.status(400).json({ error: 'Email and answer required' });
+    const result = await pool.query('SELECT id, security_answer FROM users WHERE email = $1', [email]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    const user = result.rows[0];
+    if (!user.security_answer) return res.status(400).json({ error: 'No security answer on file' });
+    const isMatch = await bcrypt.compare(answer.toLowerCase().trim(), user.security_answer);
+    if (!isMatch) return res.status(400).json({ error: 'Incorrect answer. Please try again.' });
+    const resetToken = require('crypto').randomBytes(32).toString('hex');
+    await pool.query(
+      "UPDATE users SET reset_token = $1, reset_token_expires = datetime('now', '+15 minutes') WHERE id = $2",
+      [resetToken, user.id]
+    );
+    res.json({ resetToken });
+  } catch (error) {
+    console.error('Verify security answer error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Set security question (for Google users post-login, requires JWT)
+router.post('/set-security-question', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+    const { question, answer } = req.body;
+    if (!question || !answer) return res.status(400).json({ error: 'Question and answer required' });
+    const hashedAnswer = await bcrypt.hash(answer.toLowerCase().trim(), 12);
+    await pool.query(
+      'UPDATE users SET security_question = $1, security_answer = $2 WHERE id = $3',
+      [question, hashedAnswer, decoded.id]
+    );
+    res.json({ message: 'Security question set successfully' });
+  } catch (error) {
+    console.error('Set security question error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -365,7 +413,7 @@ router.post('/forgot-password', [
 
     // Store reset token (expires in 1 hour)
     await pool.query(
-      'UPDATE users SET reset_token = $1, reset_token_expires = NOW() + INTERVAL \'1 hour\' WHERE email = $2',
+      "UPDATE users SET reset_token = $1, reset_token_expires = datetime('now', '+1 hour') WHERE email = $2",
       [resetToken, email]
     );
 
@@ -401,7 +449,7 @@ router.post('/reset-password', [
 
     // Find user with valid reset token
     const result = await pool.query(
-      'SELECT id, email, first_name, last_name, email_verified FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
+      "SELECT id, email, first_name, last_name, email_verified FROM users WHERE reset_token = $1 AND reset_token_expires > datetime('now')",
       [token]
     );
 

@@ -1,13 +1,10 @@
 const express = require('express');
-const { Pool } = require('pg');
 const auth = require('../middleware/auth');
 const websocketService = require('../src/services/websocket');
 
 const router = express.Router();
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+const { query: dbQuery } = require('../config/db');
+const pool = { query: dbQuery };
 
 // Get chat messages for a trade
 router.get('/trade/:tradeId/messages', auth, async (req, res) => {

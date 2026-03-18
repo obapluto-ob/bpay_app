@@ -1,12 +1,7 @@
 const express = require('express');
-const { Pool } = require('pg');
 const router = express.Router();
-
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+const { query: dbQuery } = require('../config/db');
+const pool = { query: dbQuery };
 
 // Auth middleware
 const authenticateToken = (req, res, next) => {
@@ -47,21 +42,7 @@ router.post('/upload', authenticateToken, async (req, res) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Ensure avatar column exists
-    try {
-      await pool.query(`
-        DO $$ 
-        BEGIN 
-          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'avatar') THEN
-            ALTER TABLE users ADD COLUMN avatar TEXT;
-          END IF;
-        END $$;
-      `);
-    } catch (columnError) {
-      console.log('Avatar column check/creation:', columnError.message);
-    }
-
-    // Store base64 avatar in database
+    // avatar column is in schema — just update directly
     const result = await pool.query(
       'UPDATE users SET avatar = $1 WHERE id = $2 RETURNING id',
       [avatar, userId]

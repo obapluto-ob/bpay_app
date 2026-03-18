@@ -3,6 +3,16 @@ import '../services/auth_service.dart';
 import '../widgets/google_button.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
+import 'security_question_setup_screen.dart';
+
+const _securityQuestions = [
+  'What was the name of your first pet?',
+  'What city were you born in?',
+  'What is your mother\'s maiden name?',
+  'What was the name of your primary school?',
+  'What was the make of your first car?',
+  'What is your oldest sibling\'s middle name?',
+];
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -15,13 +25,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   String _country = 'NG';
+  String _securityQuestion = _securityQuestions[0];
+  final _securityAnswerCtrl = TextEditingController();
   bool _loading = false;
   bool _showPassword = false;
 
   Future<void> _register() async {
     setState(() => _loading = true);
     try {
-      final res = await AuthService.register(_nameCtrl.text.trim(), _emailCtrl.text.trim(), _passCtrl.text, _country);
+      final res = await AuthService.register(
+        _nameCtrl.text.trim(), _emailCtrl.text.trim(), _passCtrl.text, _country,
+        securityQuestion: _securityQuestion,
+        securityAnswer: _securityAnswerCtrl.text.trim(),
+      );
       if (res['message'] != null || res['token'] != null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Account created! Please login.'), backgroundColor: Colors.green));
@@ -42,7 +58,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final res = await AuthService.googleLogin();
       if (res['token'] != null) {
         if (!mounted) return;
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
+        final hasQ = res['user']?['hasSecurityQuestion'] == true;
+        if (!hasQ) {
+          Navigator.pushReplacement(context, MaterialPageRoute(
+            builder: (_) => SecurityQuestionSetupScreen(token: res['token']),
+          ));
+        } else {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
+        }
       } else {
         _showError(res['error'] ?? 'Google login failed');
       }
@@ -140,10 +163,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             onChanged: (v) => setState(() => _country = v!),
                           ),
                         ),
+                        const SizedBox(height: 10),
+                        // Security question
+                        Container(
+                          decoration: BoxDecoration(color: const Color(0xFFe8eef5), borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: DropdownButton<String>(
+                            value: _securityQuestion,
+                            isExpanded: true,
+                            underline: const SizedBox(),
+                            style: const TextStyle(color: Color(0xFF1a365d), fontSize: 13),
+                            items: _securityQuestions.map((q) => DropdownMenuItem(value: q, child: Text(q, overflow: TextOverflow.ellipsis))).toList(),
+                            onChanged: (v) => setState(() => _securityQuestion = v!),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _inputField(_securityAnswerCtrl, 'Security answer', false),
+                        const SizedBox(height: 4),
+                        const Padding(
+                          padding: EdgeInsets.only(left: 4),
+                          child: Text('Used to recover your account if you forget your password', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                        ),
                         const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
                             onPressed: _loading ? null : _register,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFf59e0b),

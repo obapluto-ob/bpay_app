@@ -1,21 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { Pool } = require('pg');
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+const { query: dbQuery } = require('../config/db');
+const pool = { query: dbQuery };
 
 // Get current rates
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT crypto, buy_rate, sell_rate, updated_at 
-      FROM crypto_rates 
-      WHERE is_active = true
-      ORDER BY crypto
-    `);
+    const result = await pool.query(
+      'SELECT crypto, buy_rate, sell_rate, updated_at FROM crypto_rates WHERE is_active = 1 ORDER BY crypto'
+    );
     
     const rates = {};
     result.rows.forEach(row => {
@@ -38,15 +31,10 @@ router.put('/:crypto', async (req, res) => {
   const { buyRate, sellRate } = req.body;
   
   try {
-    await pool.query(`
-      INSERT INTO crypto_rates (crypto, buy_rate, sell_rate, updated_at, is_active)
-      VALUES ($1, $2, $3, NOW(), true)
-      ON CONFLICT (crypto) 
-      DO UPDATE SET 
-        buy_rate = $2, 
-        sell_rate = $3, 
-        updated_at = NOW()
-    `, [crypto, buyRate, sellRate]);
+    await pool.query(
+      "INSERT INTO crypto_rates (crypto, buy_rate, sell_rate, updated_at, is_active) VALUES ($1, $2, $3, datetime('now'), 1) ON CONFLICT (crypto) DO UPDATE SET buy_rate = $2, sell_rate = $3, updated_at = datetime('now')",
+      [crypto, buyRate, sellRate]
+    );
     
     res.json({ success: true });
   } catch (error) {

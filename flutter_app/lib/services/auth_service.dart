@@ -24,12 +24,16 @@ class AuthService {
   }
 
   static Future<Map<String, dynamic>> register(
-      String name, String email, String password, String country) async {
+      String name, String email, String password, String country,
+      {String? securityQuestion, String? securityAnswer}) async {
     final res = await http.post(
       Uri.parse(ApiConfig.register),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(
-          {'fullName': name, 'email': email, 'password': password, 'country': country}),
+      body: jsonEncode({
+        'fullName': name, 'email': email, 'password': password, 'country': country,
+        if (securityQuestion != null) 'securityQuestion': securityQuestion,
+        if (securityAnswer != null) 'securityAnswer': securityAnswer,
+      }),
     );
     return jsonDecode(res.body);
   }
@@ -39,6 +43,42 @@ class AuthService {
       Uri.parse('${ApiConfig.baseUrl}/auth/forgot-password'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email}),
+    );
+    return jsonDecode(res.body);
+  }
+
+  static Future<Map<String, dynamic>> setSecurityQuestion(String token, String question, String answer) async {
+    final res = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/auth/set-security-question'),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+      body: jsonEncode({'question': question, 'answer': answer}),
+    );
+    return jsonDecode(res.body);
+  }
+
+  static Future<Map<String, dynamic>> getSecurityQuestion(String email) async {
+    final res = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/auth/security-question'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+    return jsonDecode(res.body);
+  }
+
+  static Future<Map<String, dynamic>> verifySecurityAnswer(String email, String answer) async {
+    final res = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/auth/verify-security-answer'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'answer': answer}),
+    );
+    return jsonDecode(res.body);
+  }
+
+  static Future<Map<String, dynamic>> resetPasswordWithToken(String token, String newPassword) async {
+    final res = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/auth/reset-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'token': token, 'newPassword': newPassword}),
     );
     return jsonDecode(res.body);
   }
@@ -72,6 +112,12 @@ class AuthService {
       print('DEBUG googleLogin error: $e');
       return {'error': 'Google sign-in failed: $e'};
     }
+  }
+
+  static Future<void> restoreSession(String token, String userJson) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('token', token);
+    await prefs.setString('user', userJson);
   }
 
   static Future<void> _saveSession(Map<String, dynamic> data) async {

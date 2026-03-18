@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/biometric_service.dart';
 import '../widgets/google_button.dart';
 import 'dashboard_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
+import 'security_question_setup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,6 +20,36 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   bool _showPassword = false;
   String _loadingMsg = 'Logging in...';
+  bool _biometricAvailable = false;
+  bool _biometricEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometrics();
+  }
+
+  Future<void> _checkBiometrics() async {
+    final available = await BiometricService.isAvailable();
+    final enabled = await BiometricService.isEnabled();
+    if (mounted) setState(() { _biometricAvailable = available; _biometricEnabled = enabled; });
+  }
+
+  Future<void> _biometricLogin() async {
+    setState(() { _loading = true; _loadingMsg = 'Authenticating...'; });
+    try {
+      final session = await BiometricService.authenticate(reason: 'Log in to BPay');
+      if (session != null) {
+        await AuthService.restoreSession(session['token']!, session['user']!);
+        if (!mounted) return;
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
+      } else {
+        _showError('Biometric authentication failed');
+      }
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
 
   Future<void> _login() async {
     setState(() { _loading = true; _loadingMsg = 'Logging in...'; });
@@ -27,7 +60,12 @@ class _LoginScreenState extends State<LoginScreen> {
       final res = await AuthService.login(_emailCtrl.text.trim(), _passCtrl.text);
       if (res['token'] != null) {
         if (!mounted) return;
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
+        // Offer to enable biometrics if available but not yet enabled
+        if (_biometricAvailable && !_biometricEnabled) {
+          _offerBiometricSetup(res['token'], res['user']);
+        } else {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
+        }
       } else {
         _showError(res['error'] ?? 'Login failed');
       }
@@ -36,6 +74,30 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       setState(() => _loading = false);
     }
+  }
+
+  void _offerBiometricSetup(String token, dynamic user) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Enable Biometric Login?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+        content: const Text('Use fingerprint or Face ID to log in faster next time.', style: TextStyle(fontSize: 13, color: Colors.grey)),
+        actions: [
+          TextButton(onPressed: () { Navigator.pop(context); Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen())); }, child: const Text('Skip')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFf59e0b), elevation: 0),
+            onPressed: () async {
+              await BiometricService.enableBiometrics(token, jsonEncode(user));
+              if (!mounted) return;
+              Navigator.pop(context);
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
+            },
+            child: const Text('Enable', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _googleLogin() async {
@@ -47,7 +109,14 @@ class _LoginScreenState extends State<LoginScreen> {
       final res = await AuthService.googleLogin();
       if (res['token'] != null) {
         if (!mounted) return;
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
+        final hasQ = res['user']?['hasSecurityQuestion'] == true;
+        if (!hasQ) {
+          Navigator.pushReplacement(context, MaterialPageRoute(
+            builder: (_) => SecurityQuestionSetupScreen(token: res['token']),
+          ));
+        } else {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
+        }
       } else {
         _showError(res['error'] ?? 'Google login failed');
       }
@@ -198,6 +267,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         ]),
                         const SizedBox(height: 14),
                         GoogleButton(onTap: _loading ? null : _googleLogin),
+                        if (_biometricAvailable && _biometricEnabled) ...[  
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _loading ? null : _biometricLogin,
+                              icon: const Icon(Icons.fingerprint, color: Color(0xFF1a365d)),
+                              label: const Text('Use Biometrics', style: TextStyle(color: Color(0xFF1a365d), fontWeight: FontWeight.w600)),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                side: const BorderSide(color: Color(0xFF1a365d), width: 1.5),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const Text("Don't have an account? ", style: TextStyle(color: Colors.grey, fontSize: 13)),

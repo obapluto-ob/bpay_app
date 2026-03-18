@@ -9,20 +9,13 @@ services:
         value: production
       - key: PORT
         value: 3001
-      - key: DATABASE_URL
-        fromDatabase:
-          name: bpay-db
-          property: connectionString
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
-        value: 24h
-      - key: RATE_LIMIT_WINDOW_MS
-        value: 900000
-      - key: RATE_LIMIT_MAX_REQUESTS
-        value: 100
-
-databases:
-  - name: bpay-db
-    databaseName: bpay_production
-    user: bpay_user
+        value: 7d
+      - key: GOOGLE_CLIENT_ID
+        sync: false

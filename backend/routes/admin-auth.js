@@ -1,10 +1,9 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
 const router = express.Router();
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const { query: dbQuery } = require('../config/db');
+const pool = { query: dbQuery };
 
 // Admin login
 router.post('/login', async (req, res) => {

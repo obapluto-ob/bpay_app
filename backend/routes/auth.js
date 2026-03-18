@@ -152,6 +152,61 @@ router.post('/login', [
   }
 });
 
+// Get security question for email (no auth needed)
+router.post('/security-question', [
+  body('email').isEmail().normalizeEmail()
+], async (req, res) => {
+  try {
+    const { email } = req.body;
+    const result = await db.query(
+      'SELECT security_question FROM users WHERE email = $1',
+      [email]
+    );
+    if (result.rows.length === 0 || !result.rows[0].security_question) {
+      return res.status(404).json({ error: 'No security question found for this account' });
+    }
+    res.json({ question: result.rows[0].security_question });
+  } catch (error) {
+    console.error('Security question error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Verify security answer and return a short-lived reset token
+router.post('/verify-security-answer', [
+  body('email').isEmail().normalizeEmail(),
+  body('answer').trim().notEmpty()
+], async (req, res) => {
+  try {
+    const { email, answer } = req.body;
+    const result = await db.query(
+      'SELECT id, security_answer FROM users WHERE email = $1',
+      [email]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const user = result.rows[0];
+    if (!user.security_answer) {
+      return res.status(400).json({ error: 'No security answer set for this account' });
+    }
+    const isMatch = await bcrypt.compare(answer.toLowerCase(), user.security_answer);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Incorrect answer' });
+    }
+    // Generate short-lived reset token (15 minutes)
+    const resetToken = require('crypto').randomBytes(32).toString('hex');
+    await db.query(
+      'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
+      [resetToken, new Date(Date.now() + 15 * 60 * 1000), user.id]
+    );
+    res.json({ resetToken });
+  } catch (error) {
+    console.error('Verify security answer error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Forgot Password - Send Reset Email
 router.post('/forgot-password', [
   body('email').isEmail().normalizeEmail()

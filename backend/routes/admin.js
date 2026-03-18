@@ -1,8 +1,7 @@
 const express = require('express');
-const { Pool } = require('pg');
 const router = express.Router();
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const { query: dbQuery } = require('../config/db');
+const pool = { query: dbQuery };
 
 // Get system stats
 router.get('/stats', async (req, res) => {
@@ -289,23 +288,10 @@ router.get('/profile', async (req, res) => {
 // Get all admins for chat
 router.get('/list', async (req, res) => {
   try {
-    // Create admins table if it doesn't exist
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS admins (
-        id VARCHAR(255) PRIMARY KEY,
-        username VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        role VARCHAR(50) DEFAULT 'admin',
-        is_online BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    
-    // Check if there are any admins, if not create a default one
-    const countResult = await pool.query('SELECT COUNT(*) FROM admins');
+    // Create admins table if it doesn't exist (handled by schema on startup)
+    const countResult = await pool.query('SELECT COUNT(*) as count FROM admins');
     if (parseInt(countResult.rows[0].count) === 0) {
-      const bcrypt = require('bcrypt');
+      const bcrypt = require('bcryptjs');
       const hashedPassword = await bcrypt.hash('admin123', 10);
       
       await pool.query(
@@ -320,7 +306,7 @@ router.get('/list', async (req, res) => {
     }
     
     const result = await pool.query(`
-      SELECT id, username, email, COALESCE(is_online, false) as "isOnline", role
+      SELECT id, username, email, COALESCE(is_online, 0) as "isOnline", role
       FROM admins 
       ORDER BY username ASC
     `);
@@ -341,18 +327,7 @@ router.get('/chat/:adminId', async (req, res) => {
     const currentAdminId = decoded.id;
     const targetAdminId = req.params.adminId;
     
-    // Create admin_chat table if not exists
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS admin_chat (
-        id VARCHAR(255) PRIMARY KEY,
-        sender_id VARCHAR(255) NOT NULL,
-        receiver_id VARCHAR(255) NOT NULL,
-        message TEXT NOT NULL,
-        read BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    
+    // Create admin_chat table if not exists (handled by schema)
     const result = await pool.query(`
       SELECT id, sender_id as "senderId", receiver_id as "receiverId", message, read, created_at as timestamp
       FROM admin_chat 
@@ -389,7 +364,7 @@ router.post('/chat/send', async (req, res) => {
     
     const msgId = 'admin_msg_' + Date.now();
     await pool.query(
-      'INSERT INTO admin_chat (id, sender_id, receiver_id, message, created_at) VALUES ($1, $2, $3, $4, NOW())',
+      'INSERT INTO admin_chat (id, sender_id, receiver_id, message, created_at) VALUES ($1, $2, $3, $4, datetime(\'now\'))',
       [msgId, senderId, receiverId, message]
     );
     
@@ -479,19 +454,7 @@ router.post('/deposits/:id/reject', async (req, res) => {
 // Get trade chat messages (admin view)
 router.get('/trades/:tradeId/chat', async (req, res) => {
   try {
-    // Ensure chat_messages table exists
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS chat_messages (
-        id VARCHAR(255) PRIMARY KEY,
-        trade_id VARCHAR(255) NOT NULL,
-        sender_id VARCHAR(255) NOT NULL,
-        sender_type VARCHAR(20) NOT NULL,
-        message TEXT NOT NULL,
-        image_data TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    
+    // Ensure chat_messages table exists (handled by schema)
     const { tradeId } = req.params;
     const result = await pool.query(
       'SELECT * FROM chat_messages WHERE trade_id = $1 ORDER BY created_at ASC',
@@ -517,19 +480,7 @@ router.get('/trades/:tradeId/chat', async (req, res) => {
 // Send chat message (admin to user)
 router.post('/trades/:tradeId/chat', async (req, res) => {
   try {
-    // Ensure chat_messages table exists
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS chat_messages (
-        id VARCHAR(255) PRIMARY KEY,
-        trade_id VARCHAR(255) NOT NULL,
-        sender_id VARCHAR(255) NOT NULL,
-        sender_type VARCHAR(20) NOT NULL,
-        message TEXT NOT NULL,
-        image_data TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    
+    // Ensure chat_messages table exists (handled by schema)
     const { message, imageData } = req.body;
     const { tradeId } = req.params;
     
@@ -540,7 +491,7 @@ router.post('/trades/:tradeId/chat', async (req, res) => {
     
     const msgId = 'msg_' + Date.now();
     await pool.query(
-      'INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, image_data, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
+      "INSERT INTO chat_messages (id, trade_id, sender_id, sender_type, message, image_data, created_at) VALUES ($1, $2, $3, $4, $5, $6, datetime('now'))",
       [msgId, tradeId, adminId, 'admin', message, imageData || null]
     );
     
