@@ -1,13 +1,12 @@
 [build]
-  base = "frontend"
-  publish = "out"
-  command = "npm install && npm run build"
+  base = "flutter_app"
+  publish = "build/web"
+  command = "flutter build web --release"
+
+[build.environment]
+  FLUTTER_VERSION = "3.24.0"
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-[build.environment]
-  NEXT_PUBLIC_API_URL = "https://bpay-app.onrender.com"
-  NODE_ENV = "production"
