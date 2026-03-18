@@ -126,7 +126,7 @@ async function initDatabase() {
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://bpay-app-frontend.vercel.app', 'https://bpay-app.vercel.app', 'https://bpayapp.netlify.app', 'https://bpay-app.netlify.app', 'https://bpayapp.co.ke', 'https://www.bpayapp.co.ke'],
+  origin: ['http://localhost:3000', 'http://localhost:7357', 'https://bpay-app-frontend.vercel.app', 'https://bpay-app.vercel.app', 'https://bpayapp.netlify.app', 'https://bpay-app.netlify.app', 'https://bpayapp.co.ke', 'https://www.bpayapp.co.ke'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -158,6 +158,7 @@ app.use('/api/debug', require('./routes/debug'));
 app.use('/api/test-db', require('./routes/test-db'));
 app.use('/api/public', require('./routes/public-rates'));
 app.use('/api/auth', require('./routes/auth-fixed'));
+app.use('/api/auth', require('./routes/google-auth'));
 app.use('/api/trade', require('./routes/trade-fixed'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/admin', require('./routes/admin'));
@@ -225,6 +226,18 @@ server.listen(PORT, async () => {
   
   console.log('\n✅ Server ready to accept requests\n');
 });
+
+// Keep Neon DB alive - ping every 4 days to prevent pausing
+if (process.env.NODE_ENV === 'production') {
+  setInterval(async () => {
+    try {
+      await pool.query('SELECT 1');
+      console.log('✅ DB keep-alive ping sent');
+    } catch (e) {
+      console.log('⚠️ DB keep-alive failed:', e.message);
+    }
+  }, 4 * 24 * 60 * 60 * 1000); // every 4 days
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
