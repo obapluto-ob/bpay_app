@@ -3,7 +3,7 @@ const { Pool } = require('pg');
 // Single shared database pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false },
   max: 10,
   min: 2,
   idleTimeoutMillis: 10000,

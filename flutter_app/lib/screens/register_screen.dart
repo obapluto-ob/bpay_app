@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../widgets/google_button.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
-export 'login_screen.dart' show _GoogleButton;
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -170,7 +170,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 12),
 
                         // Google Sign-In button
-                        _GoogleButton(onTap: _loading ? null : _googleLogin),
+                        GoogleButton(onTap: _loading ? null : _googleLogin),
                         const SizedBox(height: 14),
                         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const Text('Already have an account? ', style: TextStyle(color: Colors.grey, fontSize: 13)),

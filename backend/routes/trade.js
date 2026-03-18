@@ -27,6 +27,28 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
+// Proxy Luno BTC/KES rate (avoids CORS from browser)
+router.get('/luno-rates', async (req, res) => {
+  try {
+    const https = require('https');
+    const data = await new Promise((resolve, reject) => {
+      https.get('https://api.luno.com/api/1/ticker?pair=XBTKES', (r) => {
+        let body = '';
+        r.on('data', chunk => body += chunk);
+        r.on('end', () => resolve(JSON.parse(body)));
+      }).on('error', reject);
+    });
+    res.json({
+      btcKes: parseFloat(data.last_trade || 0),
+      btcKesAsk: parseFloat(data.ask || 0),
+      btcKesBid: parseFloat(data.bid || 0),
+      source: 'luno',
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Luno fetch failed' });
+  }
+});
+
 // Get crypto rates from custom rates table
 router.get('/rates', async (req, res) => {
   try {
