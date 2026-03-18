@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
 import 'dashboard_screen.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -76,8 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 90,
-                    height: 90,
+                    width: 90, height: 90,
                     decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                     child: Center(
                       child: RichText(
@@ -156,7 +156,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 6),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 4),
+                              child: Text('Forgot password?', style: TextStyle(color: Color(0xFFf59e0b), fontSize: 13, fontWeight: FontWeight.w500)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -244,16 +255,11 @@ class _GoogleButtonState extends State<_GoogleButton> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _GoogleLogo(size: 20),
+            SizedBox(width: 20, height: 20, child: CustomPaint(painter: _GoogleLogoPainter())),
             const SizedBox(width: 10),
             const Text(
               'Continue with Google',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF3C4043),
-                letterSpacing: 0.1,
-              ),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF3C4043), letterSpacing: 0.1),
             ),
           ],
         ),
@@ -262,69 +268,39 @@ class _GoogleButtonState extends State<_GoogleButton> {
   }
 }
 
-class _GoogleLogo extends StatelessWidget {
-  final double size;
-  const _GoogleLogo({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(painter: _GoogleLogoPainter()),
-    );
-  }
-}
-
 class _GoogleLogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w / 2;
-    final cy = h / 2;
-    final r = w / 2;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final r = size.width / 2;
 
-    // Draw colored arcs
     final segments = [
-      // [startAngle, sweepAngle, color]
-      [-1.047, 2.094, const Color(0xFF4285F4)],  // Blue (right)
-      [1.047, 1.047, const Color(0xFF34A853)],   // Green (bottom-right)
-      [2.094, 1.047, const Color(0xFFFBBC05)],   // Yellow (bottom-left)
-      [3.141, 2.094, const Color(0xFFEA4335)],   // Red (left+top)
+      [-1.047, 2.094, const Color(0xFF4285F4)],
+      [1.047, 1.047, const Color(0xFF34A853)],
+      [2.094, 1.047, const Color(0xFFFBBC05)],
+      [3.141, 2.094, const Color(0xFFEA4335)],
     ];
 
     for (final seg in segments) {
-      final paint = Paint()
-        ..color = seg[2] as Color
-        ..style = PaintingStyle.fill;
+      final paint = Paint()..color = seg[2] as Color..style = PaintingStyle.fill;
       final path = Path()
         ..moveTo(cx, cy)
-        ..arcTo(Rect.fromCircle(center: Offset(cx, cy), radius: r),
-            seg[0] as double, seg[1] as double, false)
+        ..arcTo(Rect.fromCircle(center: Offset(cx, cy), radius: r), seg[0] as double, seg[1] as double, false)
         ..close();
       canvas.drawPath(path, paint);
     }
 
-    // White inner circle
     canvas.drawCircle(Offset(cx, cy), r * 0.6, Paint()..color = Colors.white);
 
-    // Blue horizontal bar (the crossbar of the G)
-    final barPaint = Paint()..color = const Color(0xFF4285F4);
     final barTop = cy - r * 0.13;
     final barBottom = cy + r * 0.13;
-    canvas.drawRect(Rect.fromLTRB(cx, barTop, cx + r, barBottom), barPaint);
-
-    // White inner circle again to clip the bar inside
-    canvas.drawCircle(Offset(cx, cy), r * 0.58, Paint()..color = Colors.white);
-
-    // Redraw blue bar only in right half outside inner circle
-    final barPath = Path()
-      ..addRect(Rect.fromLTRB(cx, barTop, cx + r, barBottom));
-    final innerCirclePath = Path()
-      ..addOval(Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.58));
-    final combined = Path.combine(PathOperation.difference, barPath, innerCirclePath);
-    canvas.drawPath(combined, barPaint);
+    final barPath = Path()..addRect(Rect.fromLTRB(cx, barTop, cx + r, barBottom));
+    final innerPath = Path()..addOval(Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.58));
+    canvas.drawPath(
+      Path.combine(PathOperation.difference, barPath, innerPath),
+      Paint()..color = const Color(0xFF4285F4),
+    );
   }
 
   @override
