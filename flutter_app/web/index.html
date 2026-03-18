@@ -29,7 +29,7 @@
       }
       if (event.data && event.data.type === 'GOOGLE_AUTH_ERROR') {
         if (window._googleSignInReject) {
-          window._googleSignInReject(event.data.error);
+          window._googleSignInReject(new Error(event.data.error));
           window._googleSignInResolve = null;
           window._googleSignInReject = null;
         }
