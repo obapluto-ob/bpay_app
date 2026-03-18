@@ -1,14 +1,14 @@
 class ApiConfig {
   // Toggle: true = local backend, false = production Render
-  static const bool _useLocal = true;
+  static const bool _useLocal = false;
 
   static const String baseUrl = _useLocal
       ? 'http://localhost:3001/api'
-      : 'https://bpay-app.onrender.com/api';
+      : 'https://api.bpayapp.co.ke/api';
 
   static const String wsUrl = _useLocal
       ? 'ws://localhost:3001'
-      : 'wss://bpay-app.onrender.com';
+      : 'wss://api.bpayapp.co.ke';
 
   // Auth
   static const String login = '$baseUrl/auth/login';
