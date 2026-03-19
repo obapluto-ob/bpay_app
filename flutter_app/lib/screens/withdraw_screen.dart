@@ -13,7 +13,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   final _amountCtrl  = TextEditingController();
   final _addressCtrl = TextEditingController();
   bool _loading = false;
-  String _selectedAsset = 'BTC';
+  String? _selectedAsset; // null = list view, set = form view
 
   static const _assets = [
     ('BTC',  'Bitcoin',      'XBT',  Color(0xFFf59e0b)),
@@ -26,21 +26,24 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     ('BCH',  'Bitcoin Cash', 'BCH',  Color(0xFF8DC351)),
   ];
 
-  double get _balance {
-    final b = widget.balance[_selectedAsset] ?? 0;
+  double _getBalance(String ticker) {
+    final b = widget.balance[ticker] ?? 0;
     return (b as num).toDouble();
   }
 
-  Color get _assetColor => _assets.firstWhere((a) => a.$1 == _selectedAsset).$4;
-  String get _lunoAsset => _assets.firstWhere((a) => a.$1 == _selectedAsset).$3;
+  String _fmt(double val, String ticker) {
+    if (['USDT', 'USDC', 'TRX'].contains(ticker)) return val.toStringAsFixed(2);
+    if (ticker == 'XRP') return val.toStringAsFixed(4);
+    return val.toStringAsFixed(6);
+  }
 
-  Future<void> _withdraw() async {
+  Future<void> _withdraw(String ticker, String lunoAsset, Color color) async {
     final amount  = _amountCtrl.text.trim();
     final address = _addressCtrl.text.trim();
     if (amount.isEmpty || address.isEmpty) { _snack('Please fill all fields', Colors.red); return; }
     final amountNum = double.tryParse(amount);
     if (amountNum == null || amountNum <= 0) { _snack('Invalid amount', Colors.red); return; }
-    if (amountNum > _balance) { _snack('Insufficient $_selectedAsset balance', Colors.red); return; }
+    if (amountNum > _getBalance(ticker)) { _snack('Insufficient $ticker balance', Colors.red); return; }
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -48,13 +51,13 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Confirm Withdrawal', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _confirmRow('Asset',   _selectedAsset),
-          _confirmRow('Amount',  '$amount $_selectedAsset'),
-          _confirmRow('To',      address.length > 14 ? '${address.substring(0, 8)}...${address.substring(address.length - 6)}' : address),
+          _confirmRow('Asset',  ticker),
+          _confirmRow('Amount', '$amount $ticker'),
+          _confirmRow('To',     address.length > 14 ? '${address.substring(0, 8)}...${address.substring(address.length - 6)}' : address),
           const SizedBox(height: 12),
           Container(padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
-            child: const Text('⚠️ This cannot be undone. Verify the address carefully.',
+            child: const Text('⚠️ Cannot be undone. Verify the address carefully.',
               style: TextStyle(color: Colors.orange, fontSize: 12))),
         ]),
         actions: [
@@ -72,7 +75,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
 
     setState(() => _loading = true);
     try {
-      final res = await WalletService.sendCrypto(widget.token, _lunoAsset, amount, address);
+      final res = await WalletService.sendCrypto(widget.token, lunoAsset, amount, address);
       if (!mounted) return;
       if (res['success'] == true) {
         _snack('Withdrawal sent!', Colors.green);
@@ -81,7 +84,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         _snack(res['error'] ?? 'Withdrawal failed', Colors.red);
       }
     } catch (_) {
-      _snack('Network error. Please try again.', Colors.red);
+      _snack('Network error', Colors.red);
     }
     setState(() => _loading = false);
   }
@@ -97,136 +100,6 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     ]),
   );
 
-  @override
-  Widget build(BuildContext context) {
-    final color = _assetColor;
-    return Scaffold(
-      backgroundColor: const Color(0xFF1e293b),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-              child: Row(children: [
-                IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
-                const Expanded(child: Text('Withdraw Crypto', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))),
-              ]),
-            ),
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.only(top: 16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFf1f5f9),
-                  borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-                ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-
-                    // Asset selector
-                    const Text('Select Asset', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0f172a))),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      height: 72,
-                      child: ListView(scrollDirection: Axis.horizontal, children: _assets.map((a) {
-                        final selected = _selectedAsset == a.$1;
-                        return GestureDetector(
-                          onTap: () => setState(() { _selectedAsset = a.$1; _amountCtrl.clear(); }),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 10),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: selected ? a.$4 : Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: selected ? a.$4 : const Color(0xFFe2e8f0)),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
-                            ),
-                            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              _logo(a.$1, a.$4, size: 24),
-                              const SizedBox(height: 4),
-                              Text(a.$1, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
-                                color: selected ? Colors.white : const Color(0xFF0f172a))),
-                            ]),
-                          ),
-                        );
-                      }).toList()),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Balance card
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
-                      child: Row(children: [
-                        _logo(_selectedAsset, color, size: 44),
-                        const SizedBox(width: 14),
-                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          const Text('Available Balance', style: TextStyle(color: Color(0xFF94a3b8), fontSize: 12)),
-                          Text('${_balance.toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')} $_selectedAsset',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: color)),
-                        ])),
-                        GestureDetector(
-                          onTap: () => _amountCtrl.text = _balance.toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), ''),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                            child: Text('MAX', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
-                          ),
-                        ),
-                      ]),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Amount
-                    _label('Amount ($_selectedAsset)'),
-                    const SizedBox(height: 8),
-                    _inputField(_amountCtrl, '0.00000000', TextInputType.number),
-                    const SizedBox(height: 16),
-
-                    // Address
-                    _label('$_selectedAsset Wallet Address'),
-                    const SizedBox(height: 8),
-                    _inputField(_addressCtrl, 'Enter destination address', TextInputType.text),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(10)),
-                      child: const Row(children: [
-                        Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 18),
-                        SizedBox(width: 8),
-                        Expanded(child: Text('Double-check the address. Crypto sent to wrong address cannot be recovered.',
-                          style: TextStyle(color: Color(0xFF92400e), fontSize: 12, height: 1.5))),
-                      ]),
-                    ),
-                    const SizedBox(height: 28),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _loading ? null : _withdraw,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFef4444),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          elevation: 0,
-                        ),
-                        child: _loading
-                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : Text('Withdraw $_selectedAsset', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                      ),
-                    ),
-                  ]),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _logo(String asset, Color color, {double size = 36}) {
     return Container(
       width: size, height: size,
@@ -237,6 +110,171 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         errorBuilder: (_, __, ___) => Center(child: Text(asset[0],
           style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: size * 0.4))),
       )),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF1e293b),
+      body: SafeArea(
+        child: Column(children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+            child: Row(children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () {
+                  if (_selectedAsset != null) {
+                    setState(() { _selectedAsset = null; _amountCtrl.clear(); _addressCtrl.clear(); });
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              Expanded(child: Text(
+                _selectedAsset != null ? 'Withdraw $_selectedAsset' : 'Withdraw Crypto',
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              )),
+            ]),
+          ),
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.only(top: 16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFf1f5f9),
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+              ),
+              child: _selectedAsset == null ? _buildAssetList() : _buildForm(),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  // Step 1 — pick asset (same card style as dashboard)
+  Widget _buildAssetList() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Select asset to withdraw', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0f172a))),
+          const SizedBox(height: 12),
+          ..._assets.map((a) {
+            final ticker = a.$1;
+            final name   = a.$2;
+            final color  = a.$4;
+            final bal    = _getBalance(ticker);
+            return GestureDetector(
+              onTap: () => setState(() { _selectedAsset = ticker; _amountCtrl.clear(); _addressCtrl.clear(); }),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+                ),
+                child: Row(children: [
+                  _logo(ticker, color, size: 44),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(ticker, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0f172a))),
+                    Text(name,   style: const TextStyle(color: Color(0xFF94a3b8), fontSize: 12)),
+                  ])),
+                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text(_fmt(bal, ticker), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: color)),
+                    Text(ticker, style: const TextStyle(color: Color(0xFF94a3b8), fontSize: 11)),
+                  ]),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.chevron_right, color: Color(0xFF94a3b8)),
+                ]),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // Step 2 — enter amount + address
+  Widget _buildForm() {
+    final a     = _assets.firstWhere((x) => x.$1 == _selectedAsset!);
+    final ticker = a.$1;
+    final luno   = a.$3;
+    final color  = a.$4;
+    final bal    = _getBalance(ticker);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Balance card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+          child: Row(children: [
+            _logo(ticker, color, size: 48),
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Available Balance', style: TextStyle(color: Color(0xFF94a3b8), fontSize: 12)),
+              Text('${_fmt(bal, ticker)} $ticker',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: color)),
+            ])),
+            GestureDetector(
+              onTap: () => setState(() => _amountCtrl.text = _fmt(bal, ticker)),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                child: Text('MAX', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 20),
+
+        _label('Amount ($ticker)'),
+        const SizedBox(height: 8),
+        _inputField(_amountCtrl, '0.00', TextInputType.number),
+        const SizedBox(height: 16),
+
+        _label('$ticker Wallet Address'),
+        const SizedBox(height: 8),
+        _inputField(_addressCtrl, 'Enter destination address', TextInputType.text),
+        const SizedBox(height: 8),
+
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(10)),
+          child: const Row(children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 18),
+            SizedBox(width: 8),
+            Expanded(child: Text('Double-check the address. Crypto sent to wrong address cannot be recovered.',
+              style: TextStyle(color: Color(0xFF92400e), fontSize: 12, height: 1.5))),
+          ]),
+        ),
+        const SizedBox(height: 28),
+
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _loading ? null : () => _withdraw(ticker, luno, color),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFef4444),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
+            child: _loading
+                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : Text('Withdraw $ticker', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+          ),
+        ),
+      ]),
     );
   }
 
