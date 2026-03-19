@@ -53,7 +53,7 @@ class _SellScreenState extends State<SellScreen> {
 
   Future<void> _loadDepositAddress() async {
     try {
-      final res = await WalletService.getBtcAddress(widget.token);
+      final res = await WalletService.getAddress(widget.token, 'XBT');
       setState(() => _depositAddress = res['address']);
     } catch (_) {}
   }

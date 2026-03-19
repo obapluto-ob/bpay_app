@@ -12,9 +12,9 @@ class DepositScreen extends StatefulWidget {
 
 class _DepositScreenState extends State<DepositScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String? _btcAddress;
-  bool _loadingAddress = false;
-  String? _addressError;
+  final Map<String, String> _addresses = {};
+  final Map<String, bool> _loading = {};
+  final Map<String, String> _errors = {};
   final _amountCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   bool _loadingDeposit = false;
@@ -25,20 +25,35 @@ class _DepositScreenState extends State<DepositScreen> with SingleTickerProvider
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadBtcAddress();
+    // Auto-load all addresses on open
+    for (final a in _assets) _loadAddress(a.$1);
   }
 
-  Future<void> _loadBtcAddress() async {
-    setState(() { _loadingAddress = true; _addressError = null; });
+  static const _assets = [
+    ('XBT',  'BTC',  'Bitcoin',      Color(0xFFf59e0b)),
+    ('ETH',  'ETH',  'Ethereum',     Color(0xFF627EEA)),
+    ('USDT', 'USDT', 'Tether',       Color(0xFF26A17B)),
+    ('USDC', 'USDC', 'USD Coin',     Color(0xFF2775CA)),
+    ('XRP',  'XRP',  'Ripple',       Color(0xFF346AA9)),
+    ('SOL',  'SOL',  'Solana',       Color(0xFF9945FF)),
+    ('TRX',  'TRX',  'Tron',         Color(0xFFEF0027)),
+    ('BCH',  'BCH',  'Bitcoin Cash', Color(0xFF8DC351)),
+  ];
+
+  Future<void> _loadAddress(String lunoAsset) async {
+    setState(() { _loading[lunoAsset] = true; _errors.remove(lunoAsset); });
     try {
-      final res = await WalletService.getBtcAddress(widget.token);
+      final res = await WalletService.getAddress(widget.token, lunoAsset);
       final addr = res['address'] as String?;
-      setState(() => _btcAddress = (addr != null && addr.isNotEmpty) ? addr : null);
-      if (_btcAddress == null) setState(() => _addressError = res['error'] ?? 'Could not generate address');
+      if (addr != null && addr.isNotEmpty) {
+        setState(() => _addresses[lunoAsset] = addr);
+      } else {
+        setState(() => _errors[lunoAsset] = res['error'] ?? 'Failed');
+      }
     } catch (_) {
-      setState(() => _addressError = 'Network error. Tap to retry.');
+      setState(() => _errors[lunoAsset] = 'Network error');
     }
-    setState(() => _loadingAddress = false);
+    setState(() => _loading[lunoAsset] = false);
   }
 
   Future<void> _initiateDeposit() async {
@@ -120,25 +135,17 @@ class _DepositScreenState extends State<DepositScreen> with SingleTickerProvider
   }
 
   Widget _buildCryptoTab() {
-    const assets = [
-      ('XBT', 'BTC', 'Bitcoin',      Color(0xFFf59e0b)),
-      ('ETH', 'ETH', 'Ethereum',     Color(0xFF627EEA)),
-      ('USDT','USDT','Tether',       Color(0xFF26A17B)),
-      ('USDC','USDC','USD Coin',     Color(0xFF2775CA)),
-      ('XRP', 'XRP', 'Ripple',       Color(0xFF346AA9)),
-      ('SOL', 'SOL', 'Solana',       Color(0xFF9945FF)),
-      ('TRX', 'TRX', 'Tron',         Color(0xFFEF0027)),
-      ('BCH', 'BCH', 'Bitcoin Cash', Color(0xFF8DC351)),
-    ];
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
-        children: assets.map((a) {
+        children: _assets.map((a) {
           final lunoAsset = a.$1;
-          final ticker    = a.$2;
-          final name      = a.$3;
-          final color     = a.$4;
-          final isBtc     = lunoAsset == 'XBT';
+          final ticker   = a.$2;
+          final name     = a.$3;
+          final color    = a.$4;
+          final address  = _addresses[lunoAsset];
+          final loading  = _loading[lunoAsset] == true;
+          final error    = _errors[lunoAsset];
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
@@ -157,62 +164,61 @@ class _DepositScreenState extends State<DepositScreen> with SingleTickerProvider
                       Text(ticker, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0f172a))),
                       Text(name, style: const TextStyle(color: Color(0xFF94a3b8), fontSize: 12)),
                     ])),
-                    if (isBtc)
-                      ElevatedButton(
-                        onPressed: _loadingAddress ? null : _loadBtcAddress,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color, elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text('Get Address', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                      )
+                    if (loading)
+                      const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFf59e0b)))
+                    else if (address != null)
+                      const Icon(Icons.check_circle, color: Colors.green, size: 22)
                     else
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-                        child: const Text('Coming Soon', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w600)),
+                      GestureDetector(
+                        onTap: () => _loadAddress(lunoAsset),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                          child: Text('Get Address', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
                       ),
                   ],
                 ),
-                if (isBtc) ...[
+                if (address != null) ...[
                   const SizedBox(height: 12),
-                  if (_loadingAddress)
-                    const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(color: Color(0xFFf59e0b)))
-                  else if (_btcAddress != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: const Color(0xFFf8fafc), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFe2e8f0))),
-                      child: Row(
-                        children: [
-                          Expanded(child: Text(_btcAddress!, style: const TextStyle(fontFamily: 'monospace', fontSize: 11, color: Color(0xFF0f172a)))),
-                          GestureDetector(
-                            onTap: () {
-                              Clipboard.setData(ClipboardData(text: _btcAddress!));
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Address copied!'), backgroundColor: Colors.green));
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(color: const Color(0xFFf59e0b).withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                              child: const Icon(Icons.copy, color: Color(0xFFf59e0b), size: 16),
-                            ),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: const Color(0xFFf8fafc), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFe2e8f0))),
+                    child: Row(
+                      children: [
+                        Expanded(child: Text(address, style: const TextStyle(fontFamily: 'monospace', fontSize: 11, color: Color(0xFF0f172a)))),
+                        GestureDetector(
+                          onTap: () {
+                            Clipboard.setData(ClipboardData(text: address));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('$ticker address copied!'),
+                              backgroundColor: Colors.green,
+                            ));
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                            child: Icon(Icons.copy, color: color, size: 16),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: Colors.amber.shade50, borderRadius: BorderRadius.circular(8)),
-                      child: const Row(children: [
-                        Icon(Icons.info_outline, color: Color(0xFFf59e0b), size: 16),
-                        SizedBox(width: 8),
-                        Expanded(child: Text('Send only BTC to this address. Min: 0.0001 BTC', style: TextStyle(color: Color(0xFF92400e), fontSize: 11))),
-                      ]),
-                    ),
-                  ] else if (_addressError != null)
-                    Text(_addressError!, style: const TextStyle(color: Colors.red, fontSize: 12), textAlign: TextAlign.center),
-                ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: color.withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
+                    child: Row(children: [
+                      Icon(Icons.info_outline, color: color, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text('Send only $ticker to this address', style: TextStyle(color: color, fontSize: 11))),
+                    ]),
+                  ),
+                ] else if (error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(error, style: const TextStyle(color: Colors.red, fontSize: 11), textAlign: TextAlign.center),
+                  ),
               ],
             ),
           );

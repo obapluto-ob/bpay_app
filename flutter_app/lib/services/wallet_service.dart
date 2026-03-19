@@ -11,9 +11,9 @@ class WalletService {
     return jsonDecode(res.body);
   }
 
-  static Future<Map<String, dynamic>> getBtcAddress(String token) async {
+  static Future<Map<String, dynamic>> getAddress(String token, String lunoAsset) async {
     final res = await http.get(
-      Uri.parse('${ApiConfig.lunoAddress}?asset=XBT'),
+      Uri.parse('${ApiConfig.lunoAddress}?asset=$lunoAsset'),
       headers: {'Authorization': 'Bearer $token'},
     );
     return jsonDecode(res.body);
