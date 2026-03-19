@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="BPay - Crypto to Cash Trading">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="BPay">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <title>BPay - Crypto to Cash Trading</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    // Google OAuth2 popup flow
+    window._googleSignInResolve = null;
+    window._googleSignInReject = null;
+
+    // Listen for token from popup
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'GOOGLE_AUTH_TOKEN') {
+        if (window._googleSignInResolve) {
+          window._googleSignInResolve(event.data.token);
+          window._googleSignInResolve = null;
+          window._googleSignInReject = null;
+        }
+      }
+      if (event.data && event.data.type === 'GOOGLE_AUTH_ERROR') {
+        if (window._googleSignInReject) {
+          window._googleSignInReject(new Error(event.data.error));
+          window._googleSignInResolve = null;
+          window._googleSignInReject = null;
+        }
+      }
+    });
+
+    function googleSignIn() {
+      return new Promise(function(resolve, reject) {
+        window._googleSignInResolve = resolve;
+        window._googleSignInReject = reject;
+
+        var clientId = '190738669096-jgbi9f7lnflnck00utdafn47qu8ubu9f.apps.googleusercontent.com';
+        var redirectUri = encodeURIComponent(window.location.origin + '/google_callback.html');
+        var scope = encodeURIComponent('openid email profile');
+        var url = 'https://accounts.google.com/o/oauth2/v2/auth'
+          + '?client_id=' + clientId
+          + '&redirect_uri=' + redirectUri
+          + '&response_type=token+id_token'
+          + '&scope=' + scope
+          + '&prompt=select_account'
+          + '&nonce=' + Math.random().toString(36).substring(2);
+
+        var popup = window.open(url, 'googleSignIn', 'width=500,height=600,left=400,top=100');
+
+        // Check if popup was blocked
+        if (!popup || popup.closed) {
+          reject('Popup blocked. Please allow popups for this site.');
+          return;
+        }
+
+        // Timeout after 2 minutes
+        var timeout = setTimeout(function() {
+          reject('Google sign-in timed out');
+          window._googleSignInResolve = null;
+          window._googleSignInReject = null;
+        }, 120000);
+
+        // Clear timeout when resolved
+        var origResolve = window._googleSignInResolve;
+        window._googleSignInResolve = function(token) {
+          clearTimeout(timeout);
+          resolve(token);
+        };
+      });
+    }
+  </script>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
