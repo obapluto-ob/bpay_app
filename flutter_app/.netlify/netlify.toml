@@ -7,9 +7,9 @@ redirects = []
 [functions."*"]
 
 [build]
-publish = "c:\\Users\\USER\\bpay_app\\flutter_app\\build\\web"
+publish = "C:\\Users\\USER\\bpay_app\\flutter_app\\build\\web"
 publishOrigin = "config"
-base = "c:\\Users\\USER\\bpay_app\\flutter_app"
+base = "C:\\Users\\USER\\bpay_app\\flutter_app"
 
 [build.environment]
 
