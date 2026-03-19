@@ -79,20 +79,22 @@ router.get('/poll', async (req, res) => {
   if (!SUPPORTED_ASSETS.includes(asset)) {
     return res.status(400).json({ error: `Unsupported asset: ${asset}. Supported: ${SUPPORTED_ASSETS.join(', ')}` });
   }
+  try {
     const result = await lunoService.getTransactions(asset);
     if (!result.success) return res.status(400).json({ error: result.error });
 
     let credited = 0;
-    for (const tx of result.transactions) {
+    const transactions = result.transactions || [];
+    for (const tx of transactions) {
       if (parseFloat(tx.balance_delta) > 0) {
         const addr = tx.details?.funding_address || tx.details?.address || '';
         if (addr) {
-          const credited_result = await _creditDeposit(addr, parseFloat(tx.balance_delta), asset, String(tx.row_index));
-          if (credited_result) credited++;
+          const ok = await _creditDeposit(addr, parseFloat(tx.balance_delta), asset, String(tx.row_index));
+          if (ok) credited++;
         }
       }
     }
-    res.json({ success: true, asset, credited, scanned: result.transactions.length });
+    res.json({ success: true, asset, credited, scanned: transactions.length });
   } catch (error) {
     console.error('Poll error:', error);
     res.status(500).json({ error: 'Poll failed' });
