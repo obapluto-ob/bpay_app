@@ -1,59 +1,71 @@
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 
-const https = require('https');
+let _cache = null;
+let _cacheTime = 0;
+const CACHE_TTL = 60_000; // 60s
 
-function httpsGet(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, (r) => {
-      let body = '';
-      r.on('data', c => body += c);
-      r.on('end', () => resolve(JSON.parse(body)));
-    }).on('error', reject);
-  });
-}
+// Pairs with direct KES pricing on Luno
+const KES_PAIRS = ['XBTKES', 'ETHKES', 'USDTKES', 'USDCKES'];
+// Pairs priced in XBT — we cross-multiply with XBTKES
+const XBT_PAIRS = { XRP: 'XRPXBT', SOL: 'SOLXBT', TRX: 'TRXXBT', BCH: 'BCHXBT' };
 
-// Get real-time crypto rates — BTC from Luno, others from CoinGecko
 router.get('/', async (req, res) => {
+  if (_cache && Date.now() - _cacheTime < CACHE_TTL) return res.json(_cache);
+
   try {
-    const [luno, gecko] = await Promise.all([
-      httpsGet('https://api.luno.com/api/1/ticker?pair=XBTKES'),
-      httpsGet('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether,usd-coin,ripple,solana,tron,bitcoin-cash&vs_currencies=kes,usd&include_24hr_change=true'),
-    ]);
+    const { data } = await axios.get('https://api.luno.com/api/1/tickers');
+    const tickers = data.tickers || [];
+    const byPair = {};
+    for (const t of tickers) byPair[t.pair] = t;
 
-    const btcKes = parseFloat(luno.last_trade || 0);
-    const btcKesAsk = parseFloat(luno.ask || 0);
-    const btcKesBid = parseFloat(luno.bid || 0);
+    const xbtKes = parseFloat(byPair['XBTKES']?.last_trade || 0);
 
-    res.json({
-      btcKes,
-      btcKesAsk,
-      btcKesBid,
+    function kesFromPair(pair) {
+      return parseFloat(byPair[pair]?.last_trade || 0);
+    }
+    function change(pair) {
+      // Luno tickers don't include 24h change — return 0
+      return 0;
+    }
+    function xbtCross(xbtPair) {
+      const inXbt = parseFloat(byPair[xbtPair]?.last_trade || 0);
+      return inXbt * xbtKes;
+    }
+
+    _cache = {
+      btcKes:    xbtKes,
+      btcKesAsk: parseFloat(byPair['XBTKES']?.ask || 0),
+      btcKesBid: parseFloat(byPair['XBTKES']?.bid || 0),
       source: 'luno',
       rates: {
-        BTC:  { kes: btcKes,                              usd: gecko.bitcoin?.usd  || 0, change24h: gecko.bitcoin?.usd_24h_change  || 0 },
-        ETH:  { kes: gecko.ethereum?.kes  || 0,           usd: gecko.ethereum?.usd || 0, change24h: gecko.ethereum?.usd_24h_change || 0 },
-        USDT: { kes: gecko.tether?.kes    || 0,           usd: gecko.tether?.usd   || 0, change24h: gecko.tether?.usd_24h_change   || 0 },
-        USDC: { kes: gecko['usd-coin']?.kes || 0,         usd: gecko['usd-coin']?.usd || 0, change24h: gecko['usd-coin']?.usd_24h_change || 0 },
-        XRP:  { kes: gecko.ripple?.kes    || 0,           usd: gecko.ripple?.usd   || 0, change24h: gecko.ripple?.usd_24h_change   || 0 },
-        SOL:  { kes: gecko.solana?.kes    || 0,           usd: gecko.solana?.usd   || 0, change24h: gecko.solana?.usd_24h_change   || 0 },
-        TRX:  { kes: gecko.tron?.kes      || 0,           usd: gecko.tron?.usd     || 0, change24h: gecko.tron?.usd_24h_change     || 0 },
-        BCH:  { kes: gecko['bitcoin-cash']?.kes || 0,     usd: gecko['bitcoin-cash']?.usd || 0, change24h: gecko['bitcoin-cash']?.usd_24h_change || 0 },
+        BTC:  { kes: xbtKes,                    change24h: 0 },
+        ETH:  { kes: kesFromPair('ETHKES'),      change24h: 0 },
+        USDT: { kes: kesFromPair('USDTKES'),     change24h: 0 },
+        USDC: { kes: kesFromPair('USDCKES'),     change24h: 0 },
+        XRP:  { kes: xbtCross('XRPXBT'),        change24h: 0 },
+        SOL:  { kes: xbtCross('SOLXBT'),        change24h: 0 },
+        TRX:  { kes: xbtCross('TRXXBT'),        change24h: 0 },
+        BCH:  { kes: xbtCross('BCHXBT'),        change24h: 0 },
       },
-    });
+    };
+    _cacheTime = Date.now();
+    res.json(_cache);
   } catch (error) {
-    console.error('Live rates error:', error);
+    console.error('Live rates error:', error.message);
+    if (_cache) return res.json({ ..._cache, source: 'cached' });
     res.json({
-      btcKes: 14200000, btcKesAsk: 14250000, btcKesBid: 14150000, source: 'fallback',
+      btcKes: 9500000, btcKesAsk: 9550000, btcKesBid: 9450000, source: 'fallback',
       rates: {
-        BTC:  { kes: 14200000, usd: 105000, change24h: 0 },
-        ETH:  { kes: 370000,   usd: 2800,   change24h: 0 },
-        USDT: { kes: 135,      usd: 1,      change24h: 0 },
-        USDC: { kes: 135,      usd: 1,      change24h: 0 },
-        XRP:  { kes: 310,      usd: 2.3,    change24h: 0 },
-        SOL:  { kes: 21000,    usd: 155,    change24h: 0 },
-        TRX:  { kes: 34,       usd: 0.25,   change24h: 0 },
-        BCH:  { kes: 60000,    usd: 450,    change24h: 0 },
+        BTC:  { kes: 9500000, change24h: 0 },
+        ETH:  { kes: 20000,   change24h: 0 },
+        USDT: { kes: 133,     change24h: 0 },
+        USDC: { kes: 91,      change24h: 0 },
+        XRP:  { kes: 310,     change24h: 0 },
+        SOL:  { kes: 21000,   change24h: 0 },
+        TRX:  { kes: 34,      change24h: 0 },
+        BCH:  { kes: 60000,   change24h: 0 },
       },
     });
   }

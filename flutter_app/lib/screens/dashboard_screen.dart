@@ -325,6 +325,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: isCrypto ? [
             _actionBtn('Sell', '↓', const Color(0xFFef4444), () => _navigate(SellScreen(token: _token, country: 'KE', rates: _rates, balance: _balance))),
             _actionBtn('Deposit', '₿', const Color(0xFF3b82f6), () => _navigate(DepositScreen(token: _token, country: 'KE'))),
+            _actionBtn('Withdraw', '↑', const Color(0xFFf59e0b), () => _navigate(WithdrawScreen(token: _token, balance: _balance))),
             _actionBtn('History', '⟳', const Color(0xFF8b5cf6), () => _navigate(TradeHistoryScreen(token: _token))),
           ] : [
             _actionBtn('Buy', '↑', const Color(0xFF10b981), () => _navigate(BuyScreen(token: _token, country: 'KE', rates: _rates))),
