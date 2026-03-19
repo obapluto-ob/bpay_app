@@ -49,10 +49,11 @@ class LunoService {
 
   async createReceiveAddress(asset) {
     try {
-      const accountId = this.getAccountId(asset);
-      const body = accountId ? { asset, account_id: accountId } : { asset };
-      const res = await axios.post(`${this.baseURL}/funding_address`, body, this.auth());
-      return { success: true, address: res.data.address, addressId: res.data.id };
+      const res = await axios.get(`${this.baseURL}/funding_address`, {
+        ...this.auth(),
+        params: { asset },
+      });
+      return { success: true, address: res.data.address, addressId: res.data.account_id };
     } catch (error) {
       return { success: false, error: error.response?.data?.error || error.message };
     }
