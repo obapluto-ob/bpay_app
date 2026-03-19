@@ -76,10 +76,10 @@ class LunoService {
     try {
       const accountId = this.getAccountId(asset);
       if (!accountId) return { success: false, error: `No account ID for ${asset}` };
-      const res = await axios.get(`${this.baseURL}/listtransactions`, {
-        ...this.auth(),
-        params: { id: accountId, min_row: 1, max_row: 100 },
-      });
+      const res = await axios.get(
+        `${this.baseURL}/accounts/${accountId}/transactions`,
+        { ...this.auth(), params: { min_row: 1, max_row: 100 } }
+      );
       return { success: true, transactions: res.data.transactions || [] };
     } catch (error) {
       return { success: false, error: error.response?.data?.error || error.message };

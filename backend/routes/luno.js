@@ -76,7 +76,9 @@ router.post('/webhook', async (req, res) => {
 // GET /api/luno/poll?asset=XBT — poll Luno transactions and credit any new deposits
 router.get('/poll', async (req, res) => {
   const asset = (req.query.asset || 'XBT').toUpperCase();
-  try {
+  if (!SUPPORTED_ASSETS.includes(asset)) {
+    return res.status(400).json({ error: `Unsupported asset: ${asset}. Supported: ${SUPPORTED_ASSETS.join(', ')}` });
+  }
     const result = await lunoService.getTransactions(asset);
     if (!result.success) return res.status(400).json({ error: result.error });
 
