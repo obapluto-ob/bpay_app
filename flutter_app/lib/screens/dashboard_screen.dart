@@ -315,6 +315,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildQuickActions() {
     final isCrypto = _isCrypto;
+    final actions = isCrypto ? [
+      ('Sell',     Icons.arrow_circle_down_rounded, const Color(0xFFef4444), () => _navigate(SellScreen(token: _token, country: 'KE', rates: _rates, balance: _balance))),
+      ('Deposit',  Icons.add_circle_outline_rounded, const Color(0xFF3b82f6), () => _navigate(DepositScreen(token: _token, country: 'KE'))),
+      ('Withdraw', Icons.arrow_circle_up_rounded,   const Color(0xFFf59e0b), () => _navigate(WithdrawScreen(token: _token, balance: _balance))),
+      ('History',  Icons.receipt_long_outlined,     const Color(0xFF8b5cf6), () => _navigate(TradeHistoryScreen(token: _token))),
+    ] : [
+      ('Buy',      Icons.arrow_circle_up_rounded,   const Color(0xFF10b981), () => _navigate(BuyScreen(token: _token, country: 'KE', rates: _rates))),
+      ('Deposit',  Icons.add_circle_outline_rounded, const Color(0xFF3b82f6), () => _navigate(DepositScreen(token: _token, country: 'KE'))),
+      ('Withdraw', Icons.arrow_circle_down_rounded, const Color(0xFFf59e0b), () => _navigate(WithdrawScreen(token: _token, balance: _balance))),
+      ('History',  Icons.receipt_long_outlined,     const Color(0xFF8b5cf6), () => _navigate(TradeHistoryScreen(token: _token))),
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -322,61 +333,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: isCrypto ? [
-            _actionBtn('Sell', '↓', const Color(0xFFef4444), () => _navigate(SellScreen(token: _token, country: 'KE', rates: _rates, balance: _balance))),
-            _actionBtn('Deposit', '₿', const Color(0xFF3b82f6), () => _navigate(DepositScreen(token: _token, country: 'KE'))),
-            _actionBtn('Withdraw', '↑', const Color(0xFFf59e0b), () => _navigate(WithdrawScreen(token: _token, balance: _balance))),
-            _actionBtn('History', '⟳', const Color(0xFF8b5cf6), () => _navigate(TradeHistoryScreen(token: _token))),
-          ] : [
-            _actionBtn('Buy', '↑', const Color(0xFF10b981), () => _navigate(BuyScreen(token: _token, country: 'KE', rates: _rates))),
-            _actionBtn('Deposit', '↓', const Color(0xFF3b82f6), () => _navigate(DepositScreen(token: _token, country: 'KE'))),
-            _actionBtn('Withdraw', '↑', const Color(0xFFf59e0b), () => _navigate(WithdrawScreen(token: _token, balance: _balance))),
-            _actionBtn('History', '⟳', const Color(0xFF8b5cf6), () => _navigate(TradeHistoryScreen(token: _token))),
-          ],
+          children: actions.map((a) => GestureDetector(
+            onTap: a.$4,
+            child: Column(children: [
+              Container(
+                width: 56, height: 56,
+                decoration: BoxDecoration(
+                  color: a.$3.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(a.$2, color: a.$3, size: 26),
+              ),
+              const SizedBox(height: 6),
+              Text(a.$1, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: a.$3)),
+            ]),
+          )).toList(),
         ),
       ],
     );
   }
 
-  Widget _actionBtn(String label, String icon, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 52, height: 52,
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8)]),
-            child: Center(child: Text(icon, style: TextStyle(fontSize: 22, color: color))),
-          ),
-          const SizedBox(height: 6),
-          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildLiveRates() {
-    final btcRate = _getBtcRate();
-    final btcAsk = (_rates['btcKesAsk'] as num?)?.toDouble() ?? 0;
-    final source = _rates['source'] == 'luno' ? '🟢 Luno Live' : _rates['source'] == 'fallback' ? '🟡 Cached' : '⚪ Loading...';
     final r = (_rates['rates'] as Map?) ?? {};
+    final source = _rates['source'] == 'luno' ? '🟢 Luno Live' : _rates['source'] == 'cached' ? '🟡 Cached' : _rates['source'] == 'fallback' ? '🔴 Offline' : '⚪ ...';
 
     String fmt(dynamic val) {
       final n = (val as num?)?.toDouble() ?? 0;
-      if (n == 0) return 'N/A';
+      if (n == 0) return '—';
+      if (n < 10)   return 'KSh${n.toStringAsFixed(4)}';
+      if (n < 1000) return 'KSh${n.toStringAsFixed(2)}';
       return 'KSh${n.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}'; 
     }
 
-    String chg(dynamic val) {
-      final n = (val as num?)?.toDouble() ?? 0;
-      return '${n >= 0 ? '+' : ''}${n.toStringAsFixed(2)}%';
-    }
-
-    Color chgColor(dynamic val) {
-      final n = (val as num?)?.toDouble() ?? 0;
-      return n >= 0 ? Colors.green : Colors.red;
-    }
+    const rateAssets = [
+      ('BTC', 'Bitcoin',      Color(0xFFf59e0b)),
+      ('ETH', 'Ethereum',     Color(0xFF627EEA)),
+      ('USDT','Tether',       Color(0xFF26A17B)),
+      ('USDC','USD Coin',     Color(0xFF2775CA)),
+      ('XRP', 'Ripple',       Color(0xFF346AA9)),
+      ('SOL', 'Solana',       Color(0xFF9945FF)),
+      ('TRX', 'Tron',         Color(0xFFEF0027)),
+      ('BCH', 'Bitcoin Cash', Color(0xFF8DC351)),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -389,73 +387,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        _rateCard('BTC', 'Bitcoin', const Color(0xFFf59e0b),
-          btcRate > 0 ? fmt(btcRate) : 'Loading...',
-          change: r['BTC']?['change24h'], chgColor: chgColor(r['BTC']?['change24h']),
-          subtitle: btcAsk > 0 ? 'Ask: ${fmt(btcAsk)}' : null),
-        _rateCard('ETH', 'Ethereum', const Color(0xFF627EEA), fmt(r['ETH']?['kes']),
-          change: r['ETH']?['change24h'], chgColor: chgColor(r['ETH']?['change24h'])),
-        _rateCard('USDT', 'Tether', const Color(0xFF26A17B), fmt(r['USDT']?['kes']),
-          change: r['USDT']?['change24h'], chgColor: chgColor(r['USDT']?['change24h'])),
-        _rateCard('USDC', 'USD Coin', const Color(0xFF2775CA), fmt(r['USDC']?['kes']),
-          change: r['USDC']?['change24h'], chgColor: chgColor(r['USDC']?['change24h'])),
-        _rateCard('XRP', 'Ripple', const Color(0xFF346AA9), fmt(r['XRP']?['kes']),
-          change: r['XRP']?['change24h'], chgColor: chgColor(r['XRP']?['change24h'])),
-        _rateCard('SOL', 'Solana', const Color(0xFF9945FF), fmt(r['SOL']?['kes']),
-          change: r['SOL']?['change24h'], chgColor: chgColor(r['SOL']?['change24h'])),
-        _rateCard('TRX', 'Tron', const Color(0xFFEF0027), fmt(r['TRX']?['kes']),
-          change: r['TRX']?['change24h'], chgColor: chgColor(r['TRX']?['change24h'])),
-        _rateCard('BCH', 'Bitcoin Cash', const Color(0xFF8DC351), fmt(r['BCH']?['kes']),
-          change: r['BCH']?['change24h'], chgColor: chgColor(r['BCH']?['change24h'])),
+        ...rateAssets.map((a) {
+          final kes = r[a.$1]?['kes'];
+          final btcAsk = (_rates['btcKesAsk'] as num?)?.toDouble() ?? 0;
+          final displayRate = a.$1 == 'BTC' ? fmt(_getBtcRate()) : fmt(kes);
+          final sub = a.$1 == 'BTC' && btcAsk > 0 ? 'Ask: ${fmt(btcAsk)}' : null;
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)]),
+            child: Row(children: [
+              _cryptoLogo(a.$1),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(a.$1, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(a.$2, style: const TextStyle(color: Color(0xFF94a3b8), fontSize: 11)),
+              ])),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text(displayRate, style: TextStyle(color: a.$3, fontWeight: FontWeight.bold, fontSize: 14)),
+                if (sub != null) Text(sub, style: const TextStyle(fontSize: 10, color: Color(0xFF94a3b8)))
+                else Text('via Luno', style: TextStyle(fontSize: 10, color: a.$3.withOpacity(0.6))),
+              ]),
+            ]),
+          );
+        }),
       ],
     );
   }
 
-  Widget _rateCard(String crypto, String name, Color color, String rate, {String? subtitle, dynamic change, Color? chgColor}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
-      child: Row(
-        children: [
-          _cryptoLogo(crypto),
-          const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(crypto, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            Text(name, style: const TextStyle(color: Color(0xFF94a3b8), fontSize: 12)),
-          ])),
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(rate, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 15)),
-            if (change != null) Text(
-              '${(change as num) >= 0 ? '+' : ''}${(change as num).toStringAsFixed(2)}%',
-              style: TextStyle(fontSize: 11, color: chgColor ?? Colors.grey),
-            ) else if (subtitle != null) Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF94a3b8))),
-          ]),
-        ],
-      ),
-    );
-  }
 
-  Widget _comingSoonRate(String crypto, String name) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(14)),
-      child: Row(
-        children: [
-          Container(width: 40, height: 40, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(20)),
-            child: const Center(child: Icon(Icons.lock_clock, color: Colors.grey, size: 18))),
-          const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(crypto, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.grey)),
-            Text(name, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          ])),
-          const Text('Coming Soon', style: TextStyle(color: Colors.grey, fontSize: 11)),
-        ],
-      ),
-    );
-  }
 
   Widget _buildBottomNav() {
     final isCrypto = _isCrypto;
