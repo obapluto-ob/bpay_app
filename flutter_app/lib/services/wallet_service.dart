@@ -23,7 +23,7 @@ class WalletService {
     final res = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/withdrawals/crypto'),
       headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      body: jsonEncode({'amount': amount, 'address': address}),
+      body: jsonEncode({'amount': amount, 'address': address, 'asset': asset}),
     );
     return jsonDecode(res.body);
   }

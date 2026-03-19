@@ -52,24 +52,27 @@ router.get('/profile', authenticateToken, async (req, res) => {
 router.get('/balance', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const query = 'SELECT btc_balance, eth_balance, usdt_balance, ngn_balance, kes_balance FROM users WHERE id = $1';
-    const result = await pool.query(query, [userId]);
-    
-    if (result.rows.length === 0) {
-      return res.json({ BTC: 0, ETH: 0, USDT: 0, NGN: 0, KES: 0 });
-    }
-    
-    const user = result.rows[0];
+    const result = await pool.query(
+      'SELECT btc_balance, eth_balance, usdt_balance, usdc_balance, xrp_balance, sol_balance, trx_balance, bch_balance, ngn_balance, kes_balance FROM users WHERE id = ?',
+      [userId]
+    );
+    if (result.rows.length === 0) return res.json({ BTC:0,ETH:0,USDT:0,USDC:0,XRP:0,SOL:0,TRX:0,BCH:0,NGN:0,KES:0 });
+    const u = result.rows[0];
     res.json({
-      BTC: parseFloat(user.btc_balance) || 0,
-      ETH: parseFloat(user.eth_balance) || 0,
-      USDT: parseFloat(user.usdt_balance) || 0,
-      NGN: parseFloat(user.ngn_balance) || 0,
-      KES: parseFloat(user.kes_balance) || 0
+      BTC:  parseFloat(u.btc_balance)  || 0,
+      ETH:  parseFloat(u.eth_balance)  || 0,
+      USDT: parseFloat(u.usdt_balance) || 0,
+      USDC: parseFloat(u.usdc_balance) || 0,
+      XRP:  parseFloat(u.xrp_balance)  || 0,
+      SOL:  parseFloat(u.sol_balance)  || 0,
+      TRX:  parseFloat(u.trx_balance)  || 0,
+      BCH:  parseFloat(u.bch_balance)  || 0,
+      NGN:  parseFloat(u.ngn_balance)  || 0,
+      KES:  parseFloat(u.kes_balance)  || 0,
     });
   } catch (error) {
     console.error('Balance error:', error);
-    res.json({ BTC: 0, ETH: 0, USDT: 0, NGN: 0, KES: 0 });
+    res.json({ BTC:0,ETH:0,USDT:0,USDC:0,XRP:0,SOL:0,TRX:0,BCH:0,NGN:0,KES:0 });
   }
 });
 
