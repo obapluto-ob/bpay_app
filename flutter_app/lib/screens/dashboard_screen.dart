@@ -295,15 +295,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _cryptoLogo(String asset, {double size = 36}) {
     const logos = {
-      'BTC':  'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
-      'ETH':  'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
-      'USDT': 'https://assets.coingecko.com/coins/images/325/small/Tether.png',
-      'XRP':  'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
-      'SOL':  'https://assets.coingecko.com/coins/images/4128/small/solana.png',
+      'BTC':  'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
+      'ETH':  'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+      'USDT': 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+      'USDC': 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+      'XRP':  'https://cryptologos.cc/logos/xrp-xrp-logo.png',
+      'SOL':  'https://cryptologos.cc/logos/solana-sol-logo.png',
+      'TRX':  'https://cryptologos.cc/logos/tron-trx-logo.png',
+      'BCH':  'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
     };
     const colors = {
       'BTC': Color(0xFFf59e0b), 'ETH': Color(0xFF627EEA),
-      'USDT': Color(0xFF26A17B), 'XRP': Color(0xFF346AA9), 'SOL': Color(0xFF9945FF),
+      'USDT': Color(0xFF26A17B), 'USDC': Color(0xFF2775CA),
+      'XRP': Color(0xFF346AA9), 'SOL': Color(0xFF9945FF),
+      'TRX': Color(0xFFEF0027), 'BCH': Color(0xFF8DC351),
     };
     final url = logos[asset];
     final color = colors[asset] ?? Colors.grey;

@@ -121,7 +121,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                             width: 48, height: 48,
                             decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFf59e0b).withOpacity(0.1)),
                             child: ClipOval(child: Image.network(
-                              'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+                              'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => const Icon(Icons.currency_bitcoin, color: Color(0xFFf59e0b)),
                             )),
@@ -170,9 +170,9 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       // Coming soon assets
                       const Text('Other Assets', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0f172a))),
                       const SizedBox(height: 12),
-                      _comingSoonRow('ETH', 'Ethereum', 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', const Color(0xFF627EEA)),
-                      _comingSoonRow('USDT', 'Tether', 'https://assets.coingecko.com/coins/images/325/small/Tether.png', const Color(0xFF26A17B)),
-                      _comingSoonRow('XRP', 'Ripple', 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png', const Color(0xFF346AA9)),
+                      _comingSoonRow('ETH', 'Ethereum', 'https://cryptologos.cc/logos/ethereum-eth-logo.png', const Color(0xFF627EEA)),
+                      _comingSoonRow('USDT', 'Tether', 'https://cryptologos.cc/logos/tether-usdt-logo.png', const Color(0xFF26A17B)),
+                      _comingSoonRow('XRP', 'Ripple', 'https://cryptologos.cc/logos/xrp-xrp-logo.png', const Color(0xFF346AA9)),
                       _comingSoonRow('KES', 'M-Pesa', null, const Color(0xFF10b981)),
                       _comingSoonRow('NGN', 'Bank Transfer', null, const Color(0xFF3b82f6)),
                       const SizedBox(height: 24),

@@ -13,7 +13,7 @@ class WalletService {
 
   static Future<Map<String, dynamic>> getBtcAddress(String token) async {
     final res = await http.get(
-      Uri.parse(ApiConfig.lunoAddress),
+      Uri.parse('${ApiConfig.lunoAddress}?asset=XBT'),
       headers: {'Authorization': 'Bearer $token'},
     );
     return jsonDecode(res.body);

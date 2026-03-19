@@ -129,7 +129,7 @@ class _DepositScreenState extends State<DepositScreen> with SingleTickerProvider
                   width: 64, height: 64,
                   decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFf59e0b).withOpacity(0.1)),
                   child: ClipOval(child: Image.network(
-                    'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+                    'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => const Icon(Icons.currency_bitcoin, size: 36, color: Color(0xFFf59e0b)),
                   )),
@@ -209,10 +209,10 @@ class _DepositScreenState extends State<DepositScreen> with SingleTickerProvider
             ),
           ),
           const SizedBox(height: 16),
-          _comingSoonCard('ETH', 'Ethereum', 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', const Color(0xFF627EEA)),
-          _comingSoonCard('USDT', 'Tether', 'https://assets.coingecko.com/coins/images/325/small/Tether.png', const Color(0xFF26A17B)),
-          _comingSoonCard('XRP', 'Ripple', 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png', const Color(0xFF346AA9)),
-          _comingSoonCard('SOL', 'Solana', 'https://assets.coingecko.com/coins/images/4128/small/solana.png', const Color(0xFF9945FF)),
+          _comingSoonCard('ETH', 'Ethereum', 'https://cryptologos.cc/logos/ethereum-eth-logo.png', const Color(0xFF627EEA)),
+          _comingSoonCard('USDT', 'Tether', 'https://cryptologos.cc/logos/tether-usdt-logo.png', const Color(0xFF26A17B)),
+          _comingSoonCard('XRP', 'Ripple', 'https://cryptologos.cc/logos/xrp-xrp-logo.png', const Color(0xFF346AA9)),
+          _comingSoonCard('SOL', 'Solana', 'https://cryptologos.cc/logos/solana-sol-logo.png', const Color(0xFF9945FF)),
         ],
       ),
     );
