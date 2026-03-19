@@ -1,16 +1,15 @@
-redirectsOrigin = "config"
 plugins = []
 headers = []
+redirects = []
 
 [functions]
 
 [functions."*"]
 
 [build]
-publish = "C:\\Users\\USER\\bpay_app\\flutter_app"
-publishOrigin = "default"
-base = "C:\\Users\\USER\\bpay_app\\flutter_app"
-ignore = "exit 0"
+publish = "c:\\Users\\USER\\bpay_app\\flutter_app\\build\\web"
+publishOrigin = "config"
+base = "c:\\Users\\USER\\bpay_app\\flutter_app"
 
 [build.environment]
 
@@ -25,15 +24,3 @@ ignore = "exit 0"
 [build.processing.js]
 
 [build.services]
-
-[[redirects]]
-from = "/*"
-to = "/index.html"
-status = 200.0
-force = false
-
-[redirects.query]
-
-[redirects.conditions]
-
-[redirects.headers]

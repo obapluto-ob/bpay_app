@@ -1,135 +1,100 @@
 const axios = require('axios');
-const crypto = require('crypto');
+
+// Map Luno asset codes to our DB balance columns
+const ASSET_MAP = {
+  XBT:  { col: 'btc_balance',  accountEnv: 'LUNO_ACCOUNT_XBT'  },
+  ETH:  { col: 'eth_balance',  accountEnv: 'LUNO_ACCOUNT_ETH'  },
+  USDT: { col: 'usdt_balance', accountEnv: 'LUNO_ACCOUNT_USDT' },
+  USDC: { col: 'usdc_balance', accountEnv: 'LUNO_ACCOUNT_USDC' },
+  XRP:  { col: 'xrp_balance',  accountEnv: 'LUNO_ACCOUNT_XRP'  },
+  SOL:  { col: 'sol_balance',  accountEnv: 'LUNO_ACCOUNT_SOL'  },
+  TRX:  { col: 'trx_balance',  accountEnv: 'LUNO_ACCOUNT_TRX'  },
+  BCH:  { col: 'bch_balance',  accountEnv: 'LUNO_ACCOUNT_BCH'  },
+  KES:  { col: 'kes_balance',  accountEnv: 'LUNO_ACCOUNT_KES'  },
+};
 
 class LunoService {
   constructor() {
     this.baseURL = process.env.LUNO_BASE_URL || 'https://api.luno.com/api/1';
     this.apiKey = process.env.LUNO_API_KEY;
     this.apiSecret = process.env.LUNO_API_SECRET;
-    this.accountId = process.env.LUNO_ACCOUNT_ID;
   }
 
-  getAuthConfig() {
-    return {
-      auth: {
-        username: this.apiKey,
-        password: this.apiSecret
-      },
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    };
+  auth() {
+    return { auth: { username: this.apiKey, password: this.apiSecret } };
   }
 
-  async getBalance() {
+  getAssetInfo(asset) {
+    return ASSET_MAP[asset.toUpperCase()] || null;
+  }
+
+  getAccountId(asset) {
+    const info = this.getAssetInfo(asset);
+    return info ? process.env[info.accountEnv] : null;
+  }
+
+  getBalanceCol(asset) {
+    const info = this.getAssetInfo(asset);
+    return info ? info.col : null;
+  }
+
+  async getAllBalances() {
     try {
-      const path = '/balance';
-      const config = this.getAuthConfig();
-      
-      const response = await axios.get(`${this.baseURL}${path}`, config);
-      return {
-        success: true,
-        balances: response.data.balance
-      };
+      const res = await axios.get(`${this.baseURL}/balance`, this.auth());
+      return { success: true, balances: res.data.balance };
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || error.message
-      };
+      return { success: false, error: error.response?.data?.error || error.message };
     }
   }
 
-  async createReceiveAddress(currency) {
+  async createReceiveAddress(asset) {
     try {
-      const path = '/funding_address';
-      const body = JSON.stringify({ asset: currency });
-      const headers = this.createAuthHeaders('POST', path, body);
-      
-      const response = await axios.post(`${this.baseURL}${path}`, { asset: currency }, { headers });
-      return {
-        success: true,
-        address: response.data.address,
-        addressId: response.data.id
-      };
+      const accountId = this.getAccountId(asset);
+      const body = accountId ? { asset, account_id: accountId } : { asset };
+      const res = await axios.post(`${this.baseURL}/funding_address`, body, this.auth());
+      return { success: true, address: res.data.address, addressId: res.data.id };
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || error.message
-      };
+      return { success: false, error: error.response?.data?.error || error.message };
     }
   }
 
-  async sendCrypto({ currency, amount, address, reference }) {
+  async sendCrypto({ asset, amount, address, reference }) {
     try {
-      const path = '/send';
-      const body = JSON.stringify({
+      const res = await axios.post(`${this.baseURL}/send`, {
         amount: amount.toString(),
-        currency,
+        currency: asset,
         address,
-        description: reference || 'BPay withdrawal'
-      });
-      const headers = this.createAuthHeaders('POST', path, body);
-      
-      const response = await axios.post(`${this.baseURL}${path}`, {
-        amount: amount.toString(),
-        currency,
-        address,
-        description: reference || 'BPay withdrawal'
-      }, { headers });
-      
-      return {
-        success: true,
-        withdrawalId: response.data.withdrawal_id,
-        fee: response.data.fee
-      };
+        description: reference || 'BPay withdrawal',
+      }, this.auth());
+      return { success: true, withdrawalId: res.data.withdrawal_id, fee: res.data.fee };
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || error.message
-      };
+      return { success: false, error: error.response?.data?.error || error.message };
     }
   }
 
-  async getTransactionHistory(currency, limit = 100) {
+  async getTransactions(asset) {
     try {
-      const path = `/listTransactions`;
-      const headers = this.createAuthHeaders('GET', path);
-      
-      const response = await axios.get(`${this.baseURL}${path}`, {
-        headers,
-        params: { min_row: 1, max_row: limit }
+      const accountId = this.getAccountId(asset);
+      if (!accountId) return { success: false, error: `No account ID for ${asset}` };
+      const res = await axios.get(`${this.baseURL}/listtransactions`, {
+        ...this.auth(),
+        params: { id: accountId, min_row: 1, max_row: 100 },
       });
-      
-      return {
-        success: true,
-        transactions: response.data.transactions
-      };
+      return { success: true, transactions: res.data.transactions || [] };
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || error.message
-      };
+      return { success: false, error: error.response?.data?.error || error.message };
     }
   }
 
   async getWithdrawalStatus(withdrawalId) {
     try {
-      const path = `/withdrawals/${withdrawalId}`;
-      const headers = this.createAuthHeaders('GET', path);
-      
-      const response = await axios.get(`${this.baseURL}${path}`, { headers });
-      return {
-        success: true,
-        status: response.data.status,
-        data: response.data
-      };
+      const res = await axios.get(`${this.baseURL}/withdrawals/${withdrawalId}`, this.auth());
+      return { success: true, status: res.data.status, data: res.data };
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || error.message
-      };
+      return { success: false, error: error.response?.data?.error || error.message };
     }
   }
 }
 
 module.exports = new LunoService();
+module.exports.ASSET_MAP = ASSET_MAP;

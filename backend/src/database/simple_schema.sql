@@ -20,6 +20,11 @@ CREATE TABLE IF NOT EXISTS users (
     btc_balance REAL DEFAULT 0,
     eth_balance REAL DEFAULT 0,
     usdt_balance REAL DEFAULT 0,
+    usdc_balance REAL DEFAULT 0,
+    xrp_balance REAL DEFAULT 0,
+    sol_balance REAL DEFAULT 0,
+    trx_balance REAL DEFAULT 0,
+    bch_balance REAL DEFAULT 0,
     ngn_balance REAL DEFAULT 0,
     kes_balance REAL DEFAULT 0,
     avatar TEXT,
@@ -172,3 +177,28 @@ CREATE INDEX IF NOT EXISTS idx_admin_chat_receiver ON admin_chat_messages(receiv
 CREATE INDEX IF NOT EXISTS idx_price_alerts_user ON price_alerts(user_id);
 CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);
 CREATE INDEX IF NOT EXISTS idx_withdrawals_user ON withdrawals(user_id);
+
+CREATE TABLE IF NOT EXISTS user_crypto_addresses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    currency TEXT NOT NULL,
+    address TEXT NOT NULL,
+    address_id TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(user_id, currency)
+);
+
+CREATE TABLE IF NOT EXISTS crypto_deposits (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    currency TEXT NOT NULL,
+    amount REAL NOT NULL,
+    luno_transaction_id TEXT UNIQUE,
+    address TEXT,
+    status TEXT DEFAULT 'completed',
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_addresses ON user_crypto_addresses(user_id);
+CREATE INDEX IF NOT EXISTS idx_crypto_deposits_user ON crypto_deposits(user_id);
+CREATE INDEX IF NOT EXISTS idx_crypto_deposits_txid ON crypto_deposits(luno_transaction_id);

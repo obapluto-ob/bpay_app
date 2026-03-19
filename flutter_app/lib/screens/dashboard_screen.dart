@@ -277,10 +277,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _cryptoRow(String asset, String balance, {bool comingSoon = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          const SizedBox(width: 4),
+          _cryptoLogo(asset, size: 28),
+          const SizedBox(width: 10),
           Expanded(child: Text(balance, style: TextStyle(fontWeight: FontWeight.w600, color: comingSoon ? Colors.grey : const Color(0xFF0f172a)))),
           if (comingSoon) Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -289,6 +290,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _cryptoLogo(String asset, {double size = 36}) {
+    const logos = {
+      'BTC':  'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+      'ETH':  'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+      'USDT': 'https://assets.coingecko.com/coins/images/325/small/Tether.png',
+      'XRP':  'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
+      'SOL':  'https://assets.coingecko.com/coins/images/4128/small/solana.png',
+    };
+    const colors = {
+      'BTC': Color(0xFFf59e0b), 'ETH': Color(0xFF627EEA),
+      'USDT': Color(0xFF26A17B), 'XRP': Color(0xFF346AA9), 'SOL': Color(0xFF9945FF),
+    };
+    final url = logos[asset];
+    final color = colors[asset] ?? Colors.grey;
+    return Container(
+      width: size, height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color.withOpacity(0.1)),
+      child: url != null
+          ? ClipOval(child: Image.network(url, width: size, height: size, fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Center(child: Text(asset[0], style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: size * 0.4)))))
+          : Center(child: Text(asset[0], style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: size * 0.4))),
     );
   }
 
@@ -392,8 +417,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
       child: Row(
         children: [
-          Container(width: 40, height: 40, decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-            child: Center(child: Text(symbol, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)))),
+          _cryptoLogo(crypto),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(crypto, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),

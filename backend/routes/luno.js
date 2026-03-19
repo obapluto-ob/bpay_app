@@ -1,205 +1,124 @@
 const express = require('express');
-const { Pool } = require('pg');
-const lunoService = require('../services/luno');
 const router = express.Router();
+const { query } = require('../config/db');
+const lunoService = require('../services/luno');
+const { ASSET_MAP } = require('../services/luno');
+const jwt = require('jsonwebtoken');
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const SUPPORTED_ASSETS = Object.keys(ASSET_MAP).filter(a => a !== 'KES'); // KES is fiat on Luno
 
-// Get crypto balances
-router.get('/balance', async (req, res) => {
+const auth = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Access token required' });
   try {
-    const result = await lunoService.getBalance();
-    if (result.success) {
-      res.json({ success: true, balances: result.balances });
-    } else {
-      res.status(400).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Luno balance error:', error);
-    res.status(500).json({ error: 'Failed to fetch balance' });
+    req.user = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+    next();
+  } catch {
+    res.status(403).json({ error: 'Invalid token' });
   }
-});
+};
 
-// Generate deposit address for user
-router.post('/deposit/address', async (req, res) => {
+// GET /api/luno/address?asset=XBT — get or generate unique deposit address per user per asset
+router.get('/address', auth, async (req, res) => {
+  const asset = (req.query.asset || 'XBT').toUpperCase();
+  const userId = req.user.id;
+
+  if (!SUPPORTED_ASSETS.includes(asset)) {
+    return res.status(400).json({ error: `Unsupported asset: ${asset}` });
+  }
+
   try {
-    const { userId, currency } = req.body;
-    
-    // Check if user already has an address for this currency
-    const existing = await pool.query(
-      'SELECT luno_address FROM user_crypto_addresses WHERE user_id = $1 AND currency = $2',
-      [userId, currency]
+    const existing = await query(
+      'SELECT address FROM user_crypto_addresses WHERE user_id = ? AND currency = ?',
+      [userId, asset]
     );
-    
-    if (existing.rows.length > 0) {
-      return res.json({
-        success: true,
-        address: existing.rows[0].luno_address,
-        message: 'Using existing deposit address'
-      });
-    }
-    
-    const result = await lunoService.createReceiveAddress(currency);
-    
-    if (result.success) {
-      // Store address for user
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS user_crypto_addresses (
-          id SERIAL PRIMARY KEY,
-          user_id VARCHAR(255) NOT NULL,
-          currency VARCHAR(10) NOT NULL,
-          luno_address VARCHAR(255) NOT NULL,
-          luno_address_id VARCHAR(255),
-          created_at TIMESTAMP DEFAULT NOW()
-        )
-      `);
-      
-      await pool.query(
-        'INSERT INTO user_crypto_addresses (user_id, currency, luno_address, luno_address_id) VALUES ($1, $2, $3, $4)',
-        [userId, currency, result.address, result.addressId]
-      );
-      
-      res.json({
-        success: true,
-        address: result.address,
-        message: 'New deposit address generated'
-      });
-    } else {
-      res.status(400).json({ error: result.error });
-    }
+    if (existing.rows.length > 0) return res.json({ address: existing.rows[0].address, asset });
+
+    const result = await lunoService.createReceiveAddress(asset);
+    if (!result.success) return res.status(400).json({ error: result.error });
+
+    await query(
+      'INSERT OR IGNORE INTO user_crypto_addresses (user_id, currency, address, address_id) VALUES (?, ?, ?, ?)',
+      [userId, asset, result.address, result.addressId || '']
+    );
+    res.json({ address: result.address, asset });
   } catch (error) {
     console.error('Luno address error:', error);
     res.status(500).json({ error: 'Failed to generate address' });
   }
 });
 
-// Process crypto withdrawal
-router.post('/withdrawal/send', async (req, res) => {
+// GET /api/luno/balances — all Luno wallet balances (admin/debug)
+router.get('/balances', auth, async (req, res) => {
   try {
-    const { userId, currency, amount, address, reference } = req.body;
-    
-    // Check user balance
-    const user = await pool.query(`SELECT ${currency.toLowerCase()}_balance FROM users WHERE id = $1`, [userId]);
-    const balance = parseFloat(user.rows[0]?.[`${currency.toLowerCase()}_balance`] || 0);
-    
-    if (balance < amount) {
-      return res.status(400).json({ error: 'Insufficient balance' });
-    }
-    
-    // Send via Luno
-    const result = await lunoService.sendCrypto({
-      currency,
-      amount,
-      address,
-      reference
-    });
-    
-    if (result.success) {
-      // Deduct from user balance
-      await pool.query(
-        `UPDATE users SET ${currency.toLowerCase()}_balance = ${currency.toLowerCase()}_balance - $1 WHERE id = $2`,
-        [amount, userId]
-      );
-      
-      // Record withdrawal
-      const withdrawalId = `LUNO_${Date.now()}_${userId}`;
-      await pool.query(`
-        INSERT INTO crypto_withdrawals (id, user_id, currency, amount, address, luno_withdrawal_id, fee, status, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-      `, [withdrawalId, userId, currency, amount, address, result.withdrawalId, result.fee, 'processing']);
-      
-      res.json({
-        success: true,
-        withdrawalId,
-        lunoWithdrawalId: result.withdrawalId,
-        fee: result.fee,
-        message: 'Withdrawal initiated successfully'
-      });
-    } else {
-      res.status(400).json({ error: result.error });
-    }
+    const result = await lunoService.getAllBalances();
+    if (result.success) return res.json({ success: true, balances: result.balances });
+    res.status(400).json({ error: result.error });
   } catch (error) {
-    console.error('Luno withdrawal error:', error);
-    res.status(500).json({ error: 'Failed to process withdrawal' });
+    res.status(500).json({ error: 'Failed to fetch balances' });
   }
 });
 
-// Check withdrawal status
-router.get('/withdrawal/:withdrawalId/status', async (req, res) => {
-  try {
-    const { withdrawalId } = req.params;
-    
-    // Get Luno withdrawal ID from database
-    const withdrawal = await pool.query(
-      'SELECT luno_withdrawal_id FROM crypto_withdrawals WHERE id = $1',
-      [withdrawalId]
-    );
-    
-    if (withdrawal.rows.length === 0) {
-      return res.status(404).json({ error: 'Withdrawal not found' });
-    }
-    
-    const lunoWithdrawalId = withdrawal.rows[0].luno_withdrawal_id;
-    const result = await lunoService.getWithdrawalStatus(lunoWithdrawalId);
-    
-    if (result.success) {
-      // Update local status
-      await pool.query(
-        'UPDATE crypto_withdrawals SET status = $1 WHERE id = $2',
-        [result.status, withdrawalId]
-      );
-      
-      res.json({
-        success: true,
-        status: result.status,
-        data: result.data
-      });
-    } else {
-      res.status(400).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Withdrawal status error:', error);
-    res.status(500).json({ error: 'Failed to check status' });
-  }
-});
-
-// Webhook for Luno notifications
+// POST /api/luno/webhook — Luno deposit notification
 router.post('/webhook', async (req, res) => {
   try {
     const { type, data } = req.body;
-    
-    if (type === 'RECEIVE') {
-      // Handle incoming crypto deposit
-      const { address, amount, currency, transaction_id } = data;
-      
-      // Find user by address
-      const userAddress = await pool.query(
-        'SELECT user_id FROM user_crypto_addresses WHERE luno_address = $1 AND currency = $2',
-        [address, currency]
-      );
-      
-      if (userAddress.rows.length > 0) {
-        const userId = userAddress.rows[0].user_id;
-        
-        // Credit user balance
-        await pool.query(
-          `UPDATE users SET ${currency.toLowerCase()}_balance = ${currency.toLowerCase()}_balance + $1 WHERE id = $2`,
-          [amount, userId]
-        );
-        
-        // Record deposit
-        await pool.query(`
-          INSERT INTO crypto_deposits (id, user_id, currency, amount, luno_transaction_id, status, created_at)
-          VALUES ($1, $2, $3, $4, $5, $6, NOW())
-        `, [`LUNO_DEP_${Date.now()}`, userId, currency, amount, transaction_id, 'completed']);
-      }
+    if (type === 'RECEIVE' && data) {
+      await _creditDeposit(data.address, parseFloat(data.amount), data.currency || 'XBT', data.transaction_id);
     }
-    
     res.json({ success: true });
   } catch (error) {
-    console.error('Luno webhook error:', error);
-    res.status(500).json({ error: 'Webhook processing failed' });
+    console.error('Webhook error:', error);
+    res.status(500).json({ error: 'Webhook failed' });
   }
 });
+
+// GET /api/luno/poll?asset=XBT — poll Luno transactions and credit any new deposits
+router.get('/poll', async (req, res) => {
+  const asset = (req.query.asset || 'XBT').toUpperCase();
+  try {
+    const result = await lunoService.getTransactions(asset);
+    if (!result.success) return res.status(400).json({ error: result.error });
+
+    let credited = 0;
+    for (const tx of result.transactions) {
+      if (parseFloat(tx.balance_delta) > 0) {
+        const addr = tx.details?.funding_address || tx.details?.address || '';
+        if (addr) {
+          const credited_result = await _creditDeposit(addr, parseFloat(tx.balance_delta), asset, String(tx.row_index));
+          if (credited_result) credited++;
+        }
+      }
+    }
+    res.json({ success: true, asset, credited, scanned: result.transactions.length });
+  } catch (error) {
+    console.error('Poll error:', error);
+    res.status(500).json({ error: 'Poll failed' });
+  }
+});
+
+// Internal: credit deposit to user, returns true if credited
+async function _creditDeposit(address, amount, asset, txId) {
+  const col = lunoService.getBalanceCol(asset);
+  if (!col) return false;
+
+  const dup = await query('SELECT id FROM crypto_deposits WHERE luno_transaction_id = ?', [txId]);
+  if (dup.rows.length > 0) return false;
+
+  const userAddr = await query(
+    'SELECT user_id FROM user_crypto_addresses WHERE address = ? AND currency = ?',
+    [address, asset]
+  );
+  if (userAddr.rows.length === 0) return false;
+
+  const userId = userAddr.rows[0].user_id;
+  await query(`UPDATE users SET ${col} = ${col} + ? WHERE id = ?`, [amount, userId]);
+  await query(
+    'INSERT INTO crypto_deposits (id, user_id, currency, amount, luno_transaction_id, address, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [`DEP_${Date.now()}`, userId, asset, amount, txId, address, 'completed']
+  );
+  console.log(`✅ Credited ${amount} ${asset} to user ${userId}`);
+  return true;
+}
 
 module.exports = router;

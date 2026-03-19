@@ -21,9 +21,9 @@ class WalletService {
 
   static Future<Map<String, dynamic>> sendCrypto(String token, String asset, String amount, String address) async {
     final res = await http.post(
-      Uri.parse(ApiConfig.lunoSend),
+      Uri.parse('${ApiConfig.baseUrl}/withdrawals/crypto'),
       headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      body: jsonEncode({'asset': asset, 'amount': amount, 'address': address}),
+      body: jsonEncode({'amount': amount, 'address': address}),
     );
     return jsonDecode(res.body);
   }

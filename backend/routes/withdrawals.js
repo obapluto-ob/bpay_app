@@ -1,111 +1,102 @@
 const express = require('express');
 const router = express.Router();
-const { query: dbQuery } = require('../config/db');
-const pool = { query: dbQuery };
+const { query } = require('../config/db');
+const lunoService = require('../services/luno');
+const jwt = require('jsonwebtoken');
 
-// Create withdrawal request
-router.post('/create', async (req, res) => {
+const auth = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Access token required' });
   try {
-    const { userId, amount, currency, walletAddress, bankDetails } = req.body;
-    const id = `withdraw_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Check balance
-    const user = await pool.query(`SELECT ${currency.toLowerCase()}_balance FROM users WHERE id = $1`, [userId]);
-    const balance = parseFloat(user.rows[0][`${currency.toLowerCase()}_balance`] || 0);
-    
-    if (balance < amount) {
-      return res.status(400).json({ error: 'Insufficient balance' });
+    req.user = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+    next();
+  } catch {
+    res.status(403).json({ error: 'Invalid token' });
+  }
+};
+
+// POST /api/withdrawals/crypto — send BTC to external address
+router.post('/crypto', auth, async (req, res) => {
+  const { amount, address } = req.body;
+  const userId = req.user.id;
+
+  if (!amount || !address) return res.status(400).json({ error: 'Amount and address required' });
+  const amountNum = parseFloat(amount);
+  if (isNaN(amountNum) || amountNum <= 0) return res.status(400).json({ error: 'Invalid amount' });
+  if (amountNum < 0.0001) return res.status(400).json({ error: 'Minimum withdrawal is 0.0001 BTC' });
+
+  try {
+    // Check user BTC balance
+    const user = await query('SELECT btc_balance FROM users WHERE id = ?', [userId]);
+    if (!user.rows[0]) return res.status(404).json({ error: 'User not found' });
+    const balance = parseFloat(user.rows[0].btc_balance || 0);
+    if (balance < amountNum) return res.status(400).json({ error: `Insufficient balance. Available: ${balance.toFixed(6)} BTC` });
+
+    // Deduct balance immediately (lock funds)
+    await query('UPDATE users SET btc_balance = btc_balance - ? WHERE id = ?', [amountNum, userId]);
+
+    // Send via Luno
+    const result = await lunoService.sendCrypto({ currency: 'XBT', amount: amountNum, address, reference: `BPay withdrawal ${userId}` });
+
+    if (result.success) {
+      const wdId = `WD_${Date.now()}_${userId.slice(-6)}`;
+      await query(
+        'INSERT INTO withdrawals (id, user_id, amount, currency, wallet_address, status) VALUES (?, ?, ?, ?, ?, ?)',
+        [wdId, userId, amountNum, 'BTC', address, 'processing']
+      );
+      return res.json({ success: true, withdrawalId: wdId, message: 'Withdrawal sent successfully' });
     }
-    
-    // Lock funds
-    await pool.query(
-      `UPDATE users SET ${currency.toLowerCase()}_balance = ${currency.toLowerCase()}_balance - $1 WHERE id = $2`,
-      [amount, userId]
-    );
-    
-    await pool.query(
-      'INSERT INTO withdrawals (id, user_id, amount, currency, wallet_address, bank_details) VALUES ($1, $2, $3, $4, $5, $6)',
-      [id, userId, amount, currency, walletAddress, JSON.stringify(bankDetails)]
-    );
-    
-    res.json({ success: true, withdrawalId: id, message: 'Withdrawal request submitted. Admin will process within 24 hours.' });
+
+    // Luno failed — refund user
+    await query('UPDATE users SET btc_balance = btc_balance + ? WHERE id = ?', [amountNum, userId]);
+    res.status(400).json({ error: result.error || 'Withdrawal failed. Funds returned to your balance.' });
   } catch (error) {
-    console.error('Create withdrawal error:', error);
-    res.status(500).json({ error: 'Failed to create withdrawal' });
+    console.error('Crypto withdrawal error:', error);
+    // Attempt refund on unexpected error
+    try { await query('UPDATE users SET btc_balance = btc_balance + ? WHERE id = ?', [amountNum, userId]); } catch (_) {}
+    res.status(500).json({ error: 'Withdrawal failed. Funds returned to your balance.' });
   }
 });
 
-// Get user withdrawals
-router.get('/user/:userId', async (req, res) => {
+// GET /api/withdrawals/history — user withdrawal history
+router.get('/history', auth, async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM withdrawals WHERE user_id = $1 ORDER BY created_at DESC',
-      [req.params.userId]
+    const result = await query(
+      'SELECT id, amount, currency, wallet_address, status, created_at FROM withdrawals WHERE user_id = ? ORDER BY created_at DESC LIMIT 20',
+      [req.user.id]
     );
     res.json({ withdrawals: result.rows });
   } catch (error) {
-    console.error('Get withdrawals error:', error);
-    res.status(500).json({ error: 'Failed to fetch withdrawals' });
+    res.status(500).json({ error: 'Failed to fetch history' });
   }
 });
 
-// Admin: Get all pending withdrawals
-router.get('/admin/pending', async (req, res) => {
+// Admin: get pending withdrawals
+router.get('/admin/pending', auth, async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT w.*, u.first_name, u.last_name, u.email 
-      FROM withdrawals w 
-      JOIN users u ON w.user_id = u.id 
-      WHERE w.status = 'pending' 
-      ORDER BY w.created_at ASC
+    const result = await query(`
+      SELECT w.*, u.first_name, u.last_name, u.email
+      FROM withdrawals w JOIN users u ON w.user_id = u.id
+      WHERE w.status = 'pending' ORDER BY w.created_at ASC
     `);
     res.json({ withdrawals: result.rows });
   } catch (error) {
-    console.error('Get pending withdrawals error:', error);
     res.status(500).json({ error: 'Failed to fetch withdrawals' });
   }
 });
 
-// Admin: Approve withdrawal
-router.post('/admin/:withdrawalId/approve', async (req, res) => {
+// Admin: reject withdrawal and refund
+router.post('/admin/:id/reject', auth, async (req, res) => {
   try {
-    const { adminId, notes } = req.body;
-    
-    await pool.query(
-      "UPDATE withdrawals SET status = $1, admin_notes = $2, processed_by = $3, processed_at = datetime('now') WHERE id = $4",
-      ['completed', notes, adminId, req.params.withdrawalId]
-    );
-    
-    res.json({ success: true, message: 'Withdrawal approved' });
+    const wd = await query('SELECT * FROM withdrawals WHERE id = ?', [req.params.id]);
+    if (!wd.rows[0]) return res.status(404).json({ error: 'Not found' });
+    const { user_id, amount, currency } = wd.rows[0];
+    const col = currency === 'BTC' ? 'btc_balance' : `${currency.toLowerCase()}_balance`;
+    await query(`UPDATE users SET ${col} = ${col} + ? WHERE id = ?`, [amount, user_id]);
+    await query("UPDATE withdrawals SET status = 'rejected', admin_notes = ?, processed_at = datetime('now') WHERE id = ?", [req.body.reason || '', req.params.id]);
+    res.json({ success: true });
   } catch (error) {
-    console.error('Approve withdrawal error:', error);
-    res.status(500).json({ error: 'Failed to approve withdrawal' });
-  }
-});
-
-// Admin: Reject withdrawal (refund user)
-router.post('/admin/:withdrawalId/reject', async (req, res) => {
-  try {
-    const { adminId, reason } = req.body;
-    
-    const withdrawal = await pool.query('SELECT * FROM withdrawals WHERE id = $1', [req.params.withdrawalId]);
-    const { user_id, amount, currency } = withdrawal.rows[0];
-    
-    // Refund user
-    await pool.query(
-      `UPDATE users SET ${currency.toLowerCase()}_balance = ${currency.toLowerCase()}_balance + $1 WHERE id = $2`,
-      [amount, user_id]
-    );
-    
-    await pool.query(
-      "UPDATE withdrawals SET status = $1, admin_notes = $2, processed_by = $3, processed_at = datetime('now') WHERE id = $4",
-      ['rejected', reason, adminId, req.params.withdrawalId]
-    );
-    
-    res.json({ success: true, message: 'Withdrawal rejected and funds refunded' });
-  } catch (error) {
-    console.error('Reject withdrawal error:', error);
-    res.status(500).json({ error: 'Failed to reject withdrawal' });
+    res.status(500).json({ error: 'Failed to reject' });
   }
 });
 
