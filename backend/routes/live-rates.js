@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
   try {
     const [luno, gecko] = await Promise.all([
       httpsGet('https://api.luno.com/api/1/ticker?pair=XBTKES'),
-      httpsGet('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether,ripple,solana&vs_currencies=kes,usd&include_24hr_change=true'),
+      httpsGet('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether,usd-coin,ripple,solana,tron,bitcoin-cash&vs_currencies=kes,usd&include_24hr_change=true'),
     ]);
 
     const btcKes = parseFloat(luno.last_trade || 0);
@@ -34,8 +34,11 @@ router.get('/', async (req, res) => {
         BTC:  { kes: btcKes,                              usd: gecko.bitcoin?.usd  || 0, change24h: gecko.bitcoin?.usd_24h_change  || 0 },
         ETH:  { kes: gecko.ethereum?.kes  || 0,           usd: gecko.ethereum?.usd || 0, change24h: gecko.ethereum?.usd_24h_change || 0 },
         USDT: { kes: gecko.tether?.kes    || 0,           usd: gecko.tether?.usd   || 0, change24h: gecko.tether?.usd_24h_change   || 0 },
+        USDC: { kes: gecko['usd-coin']?.kes || 0,         usd: gecko['usd-coin']?.usd || 0, change24h: gecko['usd-coin']?.usd_24h_change || 0 },
         XRP:  { kes: gecko.ripple?.kes    || 0,           usd: gecko.ripple?.usd   || 0, change24h: gecko.ripple?.usd_24h_change   || 0 },
         SOL:  { kes: gecko.solana?.kes    || 0,           usd: gecko.solana?.usd   || 0, change24h: gecko.solana?.usd_24h_change   || 0 },
+        TRX:  { kes: gecko.tron?.kes      || 0,           usd: gecko.tron?.usd     || 0, change24h: gecko.tron?.usd_24h_change     || 0 },
+        BCH:  { kes: gecko['bitcoin-cash']?.kes || 0,     usd: gecko['bitcoin-cash']?.usd || 0, change24h: gecko['bitcoin-cash']?.usd_24h_change || 0 },
       },
     });
   } catch (error) {
@@ -46,8 +49,11 @@ router.get('/', async (req, res) => {
         BTC:  { kes: 14200000, usd: 105000, change24h: 0 },
         ETH:  { kes: 370000,   usd: 2800,   change24h: 0 },
         USDT: { kes: 135,      usd: 1,      change24h: 0 },
+        USDC: { kes: 135,      usd: 1,      change24h: 0 },
         XRP:  { kes: 310,      usd: 2.3,    change24h: 0 },
         SOL:  { kes: 21000,    usd: 155,    change24h: 0 },
+        TRX:  { kes: 34,       usd: 0.25,   change24h: 0 },
+        BCH:  { kes: 60000,    usd: 450,    change24h: 0 },
       },
     });
   }

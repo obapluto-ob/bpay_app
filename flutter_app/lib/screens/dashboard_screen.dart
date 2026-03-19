@@ -242,11 +242,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           Row(children: [const Text('₿', style: TextStyle(fontSize: 22)), const SizedBox(width: 8), const Text('Crypto Assets', style: TextStyle(color: Color(0xFF64748b), fontWeight: FontWeight.w600))]),
           const SizedBox(height: 12),
-          _cryptoRow('BTC', '${_btcBalance.toStringAsFixed(6)} BTC'),
-          _cryptoRow('ETH', '0.0000 ETH', comingSoon: true),
-          _cryptoRow('USDT', '0.00 USDT', comingSoon: true),
-          _cryptoRow('XRP', '0.00 XRP', comingSoon: true),
-          _cryptoRow('SOL', '0.0000 SOL', comingSoon: true),
+          _cryptoRow('BTC', '${(_balance['btc_balance'] ?? _balance['BTC'] ?? 0).toStringAsFixed(6)} BTC'),
+          _cryptoRow('ETH', '${(_balance['eth_balance'] ?? _balance['ETH'] ?? 0).toStringAsFixed(6)} ETH'),
+          _cryptoRow('USDT', '${(_balance['usdt_balance'] ?? _balance['USDT'] ?? 0).toStringAsFixed(2)} USDT'),
+          _cryptoRow('USDC', '${(_balance['usdc_balance'] ?? _balance['USDC'] ?? 0).toStringAsFixed(2)} USDC'),
+          _cryptoRow('XRP', '${(_balance['xrp_balance'] ?? _balance['XRP'] ?? 0).toStringAsFixed(4)} XRP'),
+          _cryptoRow('SOL', '${(_balance['sol_balance'] ?? _balance['SOL'] ?? 0).toStringAsFixed(6)} SOL'),
+          _cryptoRow('TRX', '${(_balance['trx_balance'] ?? _balance['TRX'] ?? 0).toStringAsFixed(2)} TRX'),
+          _cryptoRow('BCH', '${(_balance['bch_balance'] ?? _balance['BCH'] ?? 0).toStringAsFixed(6)} BCH'),
         ],
       );
     }
@@ -294,31 +297,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _cryptoLogo(String asset, {double size = 36}) {
-    const logos = {
-      'BTC':  'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
-      'ETH':  'https://cryptologos.cc/logos/ethereum-eth-logo.png',
-      'USDT': 'https://cryptologos.cc/logos/tether-usdt-logo.png',
-      'USDC': 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
-      'XRP':  'https://cryptologos.cc/logos/xrp-xrp-logo.png',
-      'SOL':  'https://cryptologos.cc/logos/solana-sol-logo.png',
-      'TRX':  'https://cryptologos.cc/logos/tron-trx-logo.png',
-      'BCH':  'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
-    };
     const colors = {
       'BTC': Color(0xFFf59e0b), 'ETH': Color(0xFF627EEA),
       'USDT': Color(0xFF26A17B), 'USDC': Color(0xFF2775CA),
       'XRP': Color(0xFF346AA9), 'SOL': Color(0xFF9945FF),
       'TRX': Color(0xFFEF0027), 'BCH': Color(0xFF8DC351),
     };
-    final url = logos[asset];
     final color = colors[asset] ?? Colors.grey;
+    final url = 'https://api.bpayapp.co.ke/api/logos/$asset';
     return Container(
       width: size, height: size,
       decoration: BoxDecoration(shape: BoxShape.circle, color: color.withOpacity(0.1)),
-      child: url != null
-          ? ClipOval(child: Image.network(url, width: size, height: size, fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Center(child: Text(asset[0], style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: size * 0.4)))))
-          : Center(child: Text(asset[0], style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: size * 0.4))),
+      child: ClipOval(child: Image.network(url, width: size, height: size, fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Center(child: Text(asset[0], style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: size * 0.4))))),
     );
   }
 
@@ -397,24 +388,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        _rateCard('BTC', 'Bitcoin', '₿',
+        _rateCard('BTC', 'Bitcoin', const Color(0xFFf59e0b),
           btcRate > 0 ? fmt(btcRate) : 'Loading...',
-          const Color(0xFFf59e0b),
           change: r['BTC']?['change24h'], chgColor: chgColor(r['BTC']?['change24h']),
           subtitle: btcAsk > 0 ? 'Ask: ${fmt(btcAsk)}' : null),
-        _rateCard('ETH', 'Ethereum', 'Ξ', fmt(r['ETH']?['kes']), const Color(0xFF627EEA),
+        _rateCard('ETH', 'Ethereum', const Color(0xFF627EEA), fmt(r['ETH']?['kes']),
           change: r['ETH']?['change24h'], chgColor: chgColor(r['ETH']?['change24h'])),
-        _rateCard('USDT', 'Tether', '₮', fmt(r['USDT']?['kes']), const Color(0xFF26A17B),
+        _rateCard('USDT', 'Tether', const Color(0xFF26A17B), fmt(r['USDT']?['kes']),
           change: r['USDT']?['change24h'], chgColor: chgColor(r['USDT']?['change24h'])),
-        _rateCard('XRP', 'Ripple', 'X', fmt(r['XRP']?['kes']), const Color(0xFF346AA9),
+        _rateCard('USDC', 'USD Coin', const Color(0xFF2775CA), fmt(r['USDC']?['kes']),
+          change: r['USDC']?['change24h'], chgColor: chgColor(r['USDC']?['change24h'])),
+        _rateCard('XRP', 'Ripple', const Color(0xFF346AA9), fmt(r['XRP']?['kes']),
           change: r['XRP']?['change24h'], chgColor: chgColor(r['XRP']?['change24h'])),
-        _rateCard('SOL', 'Solana', '◎', fmt(r['SOL']?['kes']), const Color(0xFF9945FF),
+        _rateCard('SOL', 'Solana', const Color(0xFF9945FF), fmt(r['SOL']?['kes']),
           change: r['SOL']?['change24h'], chgColor: chgColor(r['SOL']?['change24h'])),
+        _rateCard('TRX', 'Tron', const Color(0xFFEF0027), fmt(r['TRX']?['kes']),
+          change: r['TRX']?['change24h'], chgColor: chgColor(r['TRX']?['change24h'])),
+        _rateCard('BCH', 'Bitcoin Cash', const Color(0xFF8DC351), fmt(r['BCH']?['kes']),
+          change: r['BCH']?['change24h'], chgColor: chgColor(r['BCH']?['change24h'])),
       ],
     );
   }
 
-  Widget _rateCard(String crypto, String name, String symbol, String rate, Color color, {String? subtitle, dynamic change, Color? chgColor}) {
+  Widget _rateCard(String crypto, String name, Color color, String rate, {String? subtitle, dynamic change, Color? chgColor}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),

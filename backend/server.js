@@ -106,6 +106,7 @@ app.use('/api/email', require('./routes/email'));
 app.use('/api/sasapay-test', require('./routes/sasapay-test'));
 app.use('/api/sasapay', require('./routes/sasapay'));
 app.use('/api/luno', require('./routes/luno'));
+app.use('/api/logos', require('./routes/crypto-logos'));
 app.use('/api/auto-email', require('./routes/auto-email'));
 app.use('/api/demo', require('./routes/demo'));
 app.use('/api/test', require('./routes/test-routes'));
