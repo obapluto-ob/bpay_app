@@ -41,13 +41,13 @@ class _SellScreenState extends State<SellScreen> {
 
   double _getSellRate() {
     try {
-      final usdRate = (widget.rates['bitcoin']?['usd'] ?? 0).toDouble();
-      final fxRate = _selectedCurrency == 'NGN' ? (widget.rates['usdNgn'] ?? 1580).toDouble() : (widget.rates['usdKes'] ?? 130).toDouble();
-      return usdRate * fxRate * 0.98; // 2% margin
+      // Use Luno KES rate directly, apply 2% margin
+      final btcKes = (widget.rates['rates']?['BTC']?['kes'] ?? widget.rates['btcKes'] ?? 0).toDouble();
+      return btcKes * 0.98;
     } catch (_) { return 0; }
   }
 
-  double get _btcBalance => (widget.balance['BTC'] ?? 0).toDouble();
+  double get _btcBalance => (widget.balance['btc_balance'] ?? widget.balance['BTC'] ?? 0).toDouble();
   double get _cryptoAmount => double.tryParse(_amountCtrl.text) ?? 0;
   double get _fiatAmount => _cryptoAmount * _getSellRate();
 

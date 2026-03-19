@@ -15,45 +15,43 @@ const auth = (req, res, next) => {
   }
 };
 
-// POST /api/withdrawals/crypto — send BTC to external address
+// POST /api/withdrawals/crypto — send crypto to external address
 router.post('/crypto', auth, async (req, res) => {
-  const { amount, address } = req.body;
+  const { amount, address, asset = 'XBT' } = req.body;
   const userId = req.user.id;
+  const lunoAsset = asset.toUpperCase();
 
   if (!amount || !address) return res.status(400).json({ error: 'Amount and address required' });
   const amountNum = parseFloat(amount);
   if (isNaN(amountNum) || amountNum <= 0) return res.status(400).json({ error: 'Invalid amount' });
-  if (amountNum < 0.0001) return res.status(400).json({ error: 'Minimum withdrawal is 0.0001 BTC' });
+
+  const col = lunoService.getBalanceCol(lunoAsset);
+  if (!col) return res.status(400).json({ error: `Unsupported asset: ${lunoAsset}` });
 
   try {
-    // Check user BTC balance
-    const user = await query('SELECT btc_balance FROM users WHERE id = ?', [userId]);
+    const user = await query(`SELECT ${col} FROM users WHERE id = ?`, [userId]);
     if (!user.rows[0]) return res.status(404).json({ error: 'User not found' });
-    const balance = parseFloat(user.rows[0].btc_balance || 0);
-    if (balance < amountNum) return res.status(400).json({ error: `Insufficient balance. Available: ${balance.toFixed(6)} BTC` });
+    const balance = parseFloat(user.rows[0][col] || 0);
+    if (balance < amountNum) return res.status(400).json({ error: `Insufficient balance. Available: ${balance} ${lunoAsset}` });
 
-    // Deduct balance immediately (lock funds)
-    await query('UPDATE users SET btc_balance = btc_balance - ? WHERE id = ?', [amountNum, userId]);
+    await query(`UPDATE users SET ${col} = ${col} - ? WHERE id = ?`, [amountNum, userId]);
 
-    // Send via Luno
-    const result = await lunoService.sendCrypto({ currency: 'XBT', amount: amountNum, address, reference: `BPay withdrawal ${userId}` });
+    const result = await lunoService.sendCrypto({ asset: lunoAsset, amount: amountNum, address, reference: `BPay withdrawal ${userId}` });
 
     if (result.success) {
-      const wdId = `WD_${Date.now()}_${userId.slice(-6)}`;
+      const wdId = `WD_${Date.now()}_${userId.toString().slice(-6)}`;
       await query(
         'INSERT INTO withdrawals (id, user_id, amount, currency, wallet_address, status) VALUES (?, ?, ?, ?, ?, ?)',
-        [wdId, userId, amountNum, 'BTC', address, 'processing']
+        [wdId, userId, amountNum, lunoAsset, address, 'processing']
       );
       return res.json({ success: true, withdrawalId: wdId, message: 'Withdrawal sent successfully' });
     }
 
-    // Luno failed — refund user
-    await query('UPDATE users SET btc_balance = btc_balance + ? WHERE id = ?', [amountNum, userId]);
+    await query(`UPDATE users SET ${col} = ${col} + ? WHERE id = ?`, [amountNum, userId]);
     res.status(400).json({ error: result.error || 'Withdrawal failed. Funds returned to your balance.' });
   } catch (error) {
     console.error('Crypto withdrawal error:', error);
-    // Attempt refund on unexpected error
-    try { await query('UPDATE users SET btc_balance = btc_balance + ? WHERE id = ?', [amountNum, userId]); } catch (_) {}
+    try { await query(`UPDATE users SET ${col} = ${col} + ? WHERE id = ?`, [amountNum, userId]); } catch (_) {}
     res.status(500).json({ error: 'Withdrawal failed. Funds returned to your balance.' });
   }
 });
