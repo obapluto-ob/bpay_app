@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/trade_service.dart';
 import '../services/wallet_service.dart';
+import '../services/notification_service.dart';
 import 'login_screen.dart';
 import 'buy_screen.dart';
 import 'sell_screen.dart';
@@ -21,8 +22,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? _user;
   String _token = '';
   bool _loading = true;
-  String _selectedAccount = 'crypto'; // crypto, kenya
-  int _activeTab = 0; // 0=home, 1=sell/buy, 2=history, 3=profile
+  String _selectedAccount = 'crypto';
+  int _activeTab = 0;
+  List<dynamic> _notifications = [];
+  int _unread = 0;
 
   @override
   void initState() {
@@ -39,11 +42,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadData() async {
     setState(() => _loading = true);
     try {
-      final rates = await TradeService.getRates();
-      final balance = await WalletService.getBalance(_token);
+      final results = await Future.wait([
+        TradeService.getRates(),
+        WalletService.getBalance(_token),
+        NotificationService.getNotifications(_token),
+      ]);
       setState(() {
-        _rates = rates;
-        _balance = balance;
+        _rates = results[0] as Map<String, dynamic>;
+        _balance = results[1] as Map<String, dynamic>;
+        final n = results[2] as Map<String, dynamic>;
+        _notifications = n['notifications'] ?? [];
+        _unread = (n['unread'] ?? 0) as int;
       });
     } catch (_) {}
     setState(() => _loading = false);
@@ -165,9 +174,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-            onPressed: () {},
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                onPressed: _showNotifications,
+              ),
+              if (_unread > 0) Positioned(right: 8, top: 8,
+                child: Container(
+                  width: 16, height: 16,
+                  decoration: const BoxDecoration(color: Color(0xFFef4444), shape: BoxShape.circle),
+                  child: Center(child: Text('$_unread', style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold))),
+                )),
+            ],
           ),
         ],
       ),
@@ -268,12 +287,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const Divider(height: 20),
         Text('KES Fiat: KSh${_kesBalance.toStringAsFixed(2)}', style: const TextStyle(color: Color(0xFF475569), fontSize: 13)),
         Text('BTC value: KSh${btcVal.toStringAsFixed(0)}', style: const TextStyle(color: Color(0xFF475569), fontSize: 13)),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
-          child: const Text('✅ Powered by Luno', style: TextStyle(fontSize: 11, color: Colors.green)),
-        ),
       ],
     );
   }
@@ -389,9 +402,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 12),
         ...rateAssets.map((a) {
           final kes = r[a.$1]?['kes'];
-          final btcAsk = (_rates['btcKesAsk'] as num?)?.toDouble() ?? 0;
-          final displayRate = a.$1 == 'BTC' ? fmt(_getBtcRate()) : fmt(kes);
-          final sub = a.$1 == 'BTC' && btcAsk > 0 ? 'Ask: ${fmt(btcAsk)}' : null;
+          final displayRate = fmt(kes);
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -406,8 +417,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ])),
               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                 Text(displayRate, style: TextStyle(color: a.$3, fontWeight: FontWeight.bold, fontSize: 14)),
-                if (sub != null) Text(sub, style: const TextStyle(fontSize: 10, color: Color(0xFF94a3b8)))
-                else Text('via Luno', style: TextStyle(fontSize: 10, color: a.$3.withOpacity(0.6))),
+                Text('via Luno', style: TextStyle(fontSize: 10, color: a.$3.withOpacity(0.6))),
               ]),
             ]),
           );
@@ -470,8 +480,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _showProfile() {
-    setState(() => _activeTab = 3);
+  void _showNotifications() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -482,19 +491,107 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
-            CircleAvatar(radius: 32, backgroundColor: const Color(0xFFf59e0b),
-              child: Text(_userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
-                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold))),
-            const SizedBox(height: 12),
-            Text(_userName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text(_user?['email'] ?? '', style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 24),
-            ListTile(leading: const Icon(Icons.logout, color: Colors.red), title: const Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
-              onTap: () { Navigator.pop(context); _logout(); }),
+            const SizedBox(height: 16),
+            const Row(children: [
+              Icon(Icons.notifications, color: Color(0xFFf59e0b)),
+              SizedBox(width: 8),
+              Text('Notifications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ]),
+            const SizedBox(height: 16),
+            if (_notifications.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: Text('No notifications yet', style: TextStyle(color: Color(0xFF94a3b8)))),
+              )
+            else
+              ..._notifications.take(8).map((n) {
+                final colorMap = {'green': Colors.green, 'red': Colors.red, 'orange': const Color(0xFFf59e0b), 'blue': const Color(0xFF3b82f6), 'purple': const Color(0xFF8b5cf6)};
+                final iconMap = {'check_circle': Icons.check_circle_outline, 'cancel': Icons.cancel_outlined, 'pending': Icons.hourglass_empty, 'arrow_downward': Icons.arrow_downward, 'arrow_upward': Icons.arrow_upward};
+                final color = colorMap[n['color']] ?? Colors.grey;
+                final icon = iconMap[n['icon']] ?? Icons.notifications_outlined;
+                final time = n['time'] != null ? (n['time'] as String).substring(0, 10) : '';
+                return _notifItem(icon, n['title'] ?? '', '${n['subtitle'] ?? ''}  $time', color);
+              }),
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
+
+  Widget _notifItem(IconData icon, String title, String sub, Color color) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    leading: Container(width: 40, height: 40,
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+      child: Icon(icon, color: color, size: 20)),
+    title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+    subtitle: Text(sub, style: const TextStyle(fontSize: 11, color: Color(0xFF94a3b8))),
+  );
+
+  void _showProfile() {
+    setState(() => _activeTab = 3);
+    final country = _user?['country'] ?? 'KE';
+    final email   = _user?['email'] ?? '';
+    final joined  = _user?['createdAt'] ?? '';
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            CircleAvatar(radius: 36, backgroundColor: const Color(0xFFf59e0b),
+              child: Text(_userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
+                style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold))),
+            const SizedBox(height: 12),
+            Text(_userName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(email, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+            const SizedBox(height: 20),
+            Container(
+              decoration: BoxDecoration(color: const Color(0xFFf8fafc), borderRadius: BorderRadius.circular(14)),
+              child: Column(children: [
+                _profileRow(Icons.flag_outlined,      'Country',  country == 'KE' ? '🇰🇪 Kenya' : '🇳🇬 Nigeria'),
+                const Divider(height: 1, indent: 56),
+                _profileRow(Icons.verified_outlined,  'KYC',      'Verified ✅'),
+                const Divider(height: 1, indent: 56),
+                _profileRow(Icons.calendar_today_outlined, 'Joined', joined.isNotEmpty ? joined.substring(0, 10) : 'N/A'),
+                const Divider(height: 1, indent: 56),
+                _profileRow(Icons.security_outlined,  'Security', '2FA Available'),
+              ]),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(color: const Color(0xFFf8fafc), borderRadius: BorderRadius.circular(14)),
+              child: Column(children: [
+                ListTile(
+                  leading: const Icon(Icons.history, color: Color(0xFF8b5cf6)),
+                  title: const Text('Trade History', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                  onTap: () { Navigator.pop(context); _navigate(TradeHistoryScreen(token: _token)); },
+                ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: const Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600, fontSize: 14)),
+                  onTap: () { Navigator.pop(context); _logout(); },
+                ),
+              ]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _profileRow(IconData icon, String label, String value) => ListTile(
+    leading: Icon(icon, color: const Color(0xFF64748b), size: 20),
+    title: Text(label, style: const TextStyle(color: Color(0xFF94a3b8), fontSize: 12)),
+    subtitle: Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF0f172a))),
+    dense: true,
+  );
 }

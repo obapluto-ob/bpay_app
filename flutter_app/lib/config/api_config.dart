@@ -25,6 +25,9 @@ class ApiConfig {
   static const String withdraw = '$baseUrl/user/withdraw';
   static const String deposit = '$baseUrl/deposit/initiate';
 
+  // Notifications
+  static const String notifications = '$baseUrl/notifications';
+
   // Luno
   static const String lunoBalance = '$baseUrl/luno/balance';
   static const String lunoAddress = '$baseUrl/luno/address';
