@@ -160,14 +160,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     const SizedBox(height: 8),
     const Text('Choose a strong password (min 6 characters).', style: TextStyle(color: Colors.grey, fontSize: 13)),
     const SizedBox(height: 24),
-    _field(_newPassCtrl, 'New password', Icons.lock_outline, TextInputType.text, obscure: !_showPass,
-      suffix: TextButton(
+    _field(_newPassCtrl, 'New password', Icons.lock_outline, TextInputType.text, !_showPass,
+      TextButton(
         onPressed: () => setState(() => _showPass = !_showPass),
         child: Text(_showPass ? 'Hide' : 'Show', style: const TextStyle(color: Colors.grey, fontSize: 13)),
       ),
     ),
     const SizedBox(height: 12),
-    _field(_confirmPassCtrl, 'Confirm password', Icons.lock_outline, TextInputType.text, obscure: true),
+    _field(_confirmPassCtrl, 'Confirm password', Icons.lock_outline, TextInputType.text, true),
     const SizedBox(height: 20),
     _btn('Reset Password', _loading ? null : _submitNewPassword),
   ]);

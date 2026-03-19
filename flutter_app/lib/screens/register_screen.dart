@@ -185,6 +185,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Text('Used to recover your account if you forget your password', style: TextStyle(color: Colors.grey, fontSize: 11)),
                         ),
                         const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
                             onPressed: _loading ? null : _register,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFf59e0b),
